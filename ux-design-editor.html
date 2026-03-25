@@ -143,6 +143,31 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 .anno-btn:hover{color:var(--yellow);}
 .anno-input{background:var(--bg);border:1px solid var(--yellow);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--text);width:150px;outline:none;}
 
+/* Reference Tags */
+.ref-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
+.ref-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid var(--border);background:var(--surface);color:var(--accent);}
+.ref-tag:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+.ref-tag.changed{color:var(--orange);border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.08);}
+.ref-tag.changed:hover{background:var(--orange);color:#fff;}
+.ref-tag.deleted{color:var(--red);border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.08);text-decoration:line-through;cursor:default;}
+.ref-tag .ref-mode{font-weight:700;opacity:.7;}
+.back-ref-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;align-items:center;}
+.back-ref-label{font-size:11px;color:var(--text2);}
+.back-ref-tag{display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:10px;font-size:11px;cursor:pointer;transition:all .15s;color:var(--text2);background:rgba(255,255,255,.04);border:1px solid var(--border);}
+.back-ref-tag:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+.ref-link-btn{background:transparent;border:1px solid var(--border);color:var(--text2);cursor:pointer;font-size:13px;padding:3px 5px;border-radius:4px;transition:all .15s;}
+.ref-link-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+/* Ref highlight animation */
+.ref-highlight{animation:refFlash 0.5s ease-in-out 3;}
+@keyframes refFlash{0%,100%{box-shadow:0 0 0 2px transparent;}50%{box-shadow:0 0 0 3px var(--yellow);}}
+/* Ref modal */
+.ref-modal-list{max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;background:var(--bg);padding:4px;}
+.ref-modal-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:4px;cursor:pointer;font-size:13px;transition:all .1s;}
+.ref-modal-item:hover{background:var(--surface2);}
+.ref-modal-item input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer;}
+.ref-modal-item .ref-modal-label{flex:1;color:var(--text);}
+.ref-modal-item .ref-modal-id{font-size:11px;color:var(--text2);font-family:monospace;}
+
 /* Drag & Drop */
 .dragging{opacity:.5;transform:scale(.98);}
 .drag-over{border:2px dashed var(--accent) !important;background:rgba(108,140,255,.05) !important;}
@@ -257,6 +282,289 @@ let hist = [], hIdx = -1, activeMode = 'A';
 const STORAGE_KEY = 'ux_design_editor_data';
 const ANNO_STORAGE_KEY = 'ux_design_editor_annotations';
 const SNAPSHOT_STORAGE_KEY = 'ux_design_editor_snapshot';
+const FINGERPRINT_STORAGE_KEY = 'ux_design_editor_fingerprints';
+
+// ====== Reference Network ======
+// 运行时反向索引（不持久化），key = 被引用方ID，value = [{ from, fromMode, fromLabel }]
+let refIndex = {};
+// 引用指纹（持久化），建立引用时记录被引用对象的内容hash，用于变更检测
+let refFingerprints = {};
+
+/**
+ * 从 store 构建反向引用索引
+ * B.refs.A → refIndex[aModuleId] = [{ from: bPathId, fromMode:'B', fromLabel }]
+ * D.refs.B → refIndex[bPathId]   = [{ from: dSpecId, fromMode:'D', fromLabel }]
+ * D.refs.C → refIndex[cPageId]   = [{ from: dSpecId, fromMode:'D', fromLabel }]
+ */
+function buildRefIndex() {
+  refIndex = {};
+  // B→A
+  (store.B || []).forEach(path => {
+    (path.refs?.A || []).forEach(aId => {
+      if (!refIndex[aId]) refIndex[aId] = [];
+      refIndex[aId].push({ from: path.id, fromMode: 'B', fromLabel: path.title });
+    });
+  });
+  // D→B
+  (store.D || []).forEach(spec => {
+    (spec.refs?.B || []).forEach(bId => {
+      if (!refIndex[bId]) refIndex[bId] = [];
+      refIndex[bId].push({ from: spec.id, fromMode: 'D', fromLabel: spec.specName });
+    });
+    // D→C
+    (spec.refs?.C || []).forEach(cId => {
+      if (!refIndex[cId]) refIndex[cId] = [];
+      refIndex[cId].push({ from: spec.id, fromMode: 'D', fromLabel: spec.specName });
+    });
+  });
+}
+
+/**
+ * 对节点对象生成轻量内容指纹（djb2 hash），排除 refs/collapsed/id 等非内容字段
+ */
+function fingerprint(obj) {
+  const content = JSON.stringify(obj, (key, val) => {
+    if (['refs', 'collapsed', 'id'].includes(key)) return undefined;
+    return val;
+  });
+  let hash = 5381;
+  for (let i = 0; i < content.length; i++) {
+    hash = ((hash << 5) + hash) + content.charCodeAt(i);
+  }
+  return 'fp_' + (hash >>> 0).toString(36);
+}
+
+/**
+ * 记录被引用对象的当前内容指纹
+ */
+function snapshotFingerprint(targetId, targetObj) {
+  refFingerprints[targetId] = fingerprint(targetObj);
+  try { localStorage.setItem(FINGERPRINT_STORAGE_KEY, JSON.stringify(refFingerprints)); } catch(e) {}
+}
+
+/**
+ * 检查被引用对象内容是否已变更
+ */
+function hasRefChanged(targetId, targetObj) {
+  const saved = refFingerprints[targetId];
+  if (!saved) return false;
+  return saved !== fingerprint(targetObj);
+}
+
+/**
+ * 确保 B 和 D 数据中的 refs 字段存在（导入兼容）
+ */
+function ensureRefs() {
+  (store.B || []).forEach(path => {
+    if (!path.refs) path.refs = {};
+    if (!path.refs.A) path.refs.A = [];
+  });
+  (store.D || []).forEach(spec => {
+    if (!spec.refs) spec.refs = {};
+    if (!spec.refs.B) spec.refs.B = [];
+    if (!spec.refs.C) spec.refs.C = [];
+  });
+}
+
+/**
+ * 根据 ID 在 store 中查找对应节点及其标签
+ * 返回 { mode, label, obj } 或 null
+ */
+function resolveRefTarget(targetId) {
+  // 在 A 模块中查找
+  const aMod = store.A.modules?.find(m => m.id === targetId);
+  if (aMod) return { mode: 'A', label: aMod.name, obj: aMod };
+  // 在 B 路径中查找
+  const bPath = (store.B || []).find(p => p.id === targetId);
+  if (bPath) return { mode: 'B', label: bPath.title, obj: bPath };
+  // 在 C 页面中查找
+  const cPage = (store.C || []).find(p => p.id === targetId);
+  if (cPage) return { mode: 'C', label: cPage.pageName, obj: cPage };
+  // 在 D 交互稿中查找
+  const dSpec = (store.D || []).find(s => s.id === targetId);
+  if (dSpec) return { mode: 'D', label: dSpec.specName, obj: dSpec };
+  return null;
+}
+
+/**
+ * 渲染正向引用标签行（B卡片显示refs.A，D卡片显示refs.B和refs.C）
+ */
+function renderRefTags(item, itemMode) {
+  if (!item.refs) return '';
+  const tags = [];
+  const refKeys = itemMode === 'B' ? ['A'] : ['B', 'C'];
+  refKeys.forEach(targetMode => {
+    (item.refs[targetMode] || []).forEach(targetId => {
+      const resolved = resolveRefTarget(targetId);
+      if (!resolved) {
+        tags.push(`<span class="ref-tag deleted" title="引用目标已删除">⚠️ <span class="ref-mode">${targetMode}:</span>(已删除)</span>`);
+      } else {
+        const changed = hasRefChanged(targetId, resolved.obj);
+        const cls = changed ? 'ref-tag changed' : 'ref-tag';
+        const prefix = changed ? '⚠️ ' : '';
+        tags.push(`<span class="${cls}" onclick="jumpToRef('${targetId}','${resolved.mode}')" title="${changed ? '内容已变更，点击查看' : '点击跳转'}">${prefix}<span class="ref-mode">${targetMode}:</span>${esc(resolved.label)}</span>`);
+      }
+    });
+  });
+  if (tags.length === 0) return '';
+  return `<div class="ref-tags">${tags.join('')}</div>`;
+}
+
+/**
+ * 渲染反向引用标签行（A模块/B路径/C页面 显示"被谁引用"）
+ */
+function renderBackRefTags(itemId) {
+  const refs = refIndex[itemId];
+  if (!refs || refs.length === 0) return '';
+  const tags = refs.map(r =>
+    `<span class="back-ref-tag" onclick="jumpToRef('${r.from}','${r.fromMode}')" title="点击跳转到 ${r.fromLabel}">${r.fromMode}:${esc(r.fromLabel)}</span>`
+  ).join('');
+  return `<div class="back-ref-row"><span class="back-ref-label">📍被引用:</span>${tags}</div>`;
+}
+
+/**
+ * 跳转到引用目标：切换Tab + 滚动 + 高亮闪烁
+ */
+function jumpToRef(targetId, targetMode) {
+  switchMode(targetMode);
+  requestAnimationFrame(() => {
+    const selectors = [
+      `.card[data-path="${targetId}"]`,
+      `.card[data-mod="${targetId}"]`,
+      `.card[data-page="${targetId}"]`,
+      `.card[data-spec="${targetId}"]`
+    ];
+    let el = null;
+    for (const sel of selectors) {
+      el = document.querySelector(sel);
+      if (el) break;
+    }
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('ref-highlight');
+      setTimeout(() => el.classList.remove('ref-highlight'), 2000);
+    } else {
+      toast('未找到目标节点');
+    }
+  });
+}
+
+/**
+ * 打开引用管理浮层
+ */
+function openRefModal(itemId, itemMode) {
+  const item = itemMode === 'B' ? (store.B || []).find(p => p.id === itemId) : (store.D || []).find(s => s.id === itemId);
+  if (!item) return;
+  if (!item.refs) item.refs = {};
+
+  let sections = '';
+
+  if (itemMode === 'B') {
+    const aModules = store.A.modules || [];
+    const selectedA = new Set(item.refs.A || []);
+    sections += `<div style="margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px;">📎 引用功能模块（A）</div>
+      <div class="ref-modal-list" id="refListA">
+        ${aModules.length === 0 ? '<div style="padding:12px;color:var(--text2);font-size:13px;">暂无功能模块数据</div>' :
+          aModules.map(m => `<label class="ref-modal-item">
+            <input type="checkbox" value="${m.id}" ${selectedA.has(m.id) ? 'checked' : ''}>
+            <span class="ref-modal-label">${esc(m.name)}</span>
+            <span class="ref-modal-id">${m.id}</span>
+          </label>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  if (itemMode === 'D') {
+    const bPaths = store.B || [];
+    const selectedB = new Set(item.refs.B || []);
+    sections += `<div style="margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px;">📎 引用行为路径（B）</div>
+      <div class="ref-modal-list" id="refListB">
+        ${bPaths.length === 0 ? '<div style="padding:12px;color:var(--text2);font-size:13px;">暂无行为路径数据</div>' :
+          bPaths.map(p => `<label class="ref-modal-item">
+            <input type="checkbox" value="${p.id}" ${selectedB.has(p.id) ? 'checked' : ''}>
+            <span class="ref-modal-label">${esc(p.title)}</span>
+            <span class="ref-modal-id">${p.id}</span>
+          </label>`).join('')}
+      </div>
+    </div>`;
+
+    const cPages = store.C || [];
+    const selectedC = new Set(item.refs.C || []);
+    sections += `<div style="margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px;">📎 引用信息架构（C）</div>
+      <div class="ref-modal-list" id="refListC">
+        ${cPages.length === 0 ? '<div style="padding:12px;color:var(--text2);font-size:13px;">暂无信息架构数据</div>' :
+          cPages.map(p => `<label class="ref-modal-item">
+            <input type="checkbox" value="${p.id}" ${selectedC.has(p.id) ? 'checked' : ''}>
+            <span class="ref-modal-label">${esc(p.pageName)}</span>
+            <span class="ref-modal-id">${p.id}</span>
+          </label>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `<div class="modal" style="max-width:480px;">
+    <h2>🔗 管理引用关系</h2>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">选择该${itemMode === 'B' ? '路径' : '交互稿'}所关联的上游模块，建立引用后可跳转导航和变更检测</p>
+    ${sections}
+    <div class="m-actions">
+      <button onclick="this.closest('.modal-overlay').remove()">取消</button>
+      <button class="primary" onclick="saveRefs('${itemId}','${itemMode}')">保存</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+}
+
+/**
+ * 保存引用关系
+ */
+function saveRefs(itemId, itemMode) {
+  const item = itemMode === 'B' ? (store.B || []).find(p => p.id === itemId) : (store.D || []).find(s => s.id === itemId);
+  if (!item) return;
+  if (!item.refs) item.refs = {};
+
+  if (itemMode === 'B') {
+    const listA = document.getElementById('refListA');
+    if (listA) {
+      const checked = [...listA.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
+      item.refs.A = checked;
+      checked.forEach(aId => {
+        const mod = store.A.modules?.find(m => m.id === aId);
+        if (mod) snapshotFingerprint(aId, mod);
+      });
+    }
+  }
+
+  if (itemMode === 'D') {
+    const listB = document.getElementById('refListB');
+    if (listB) {
+      const checked = [...listB.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
+      item.refs.B = checked;
+      checked.forEach(bId => {
+        const path = (store.B || []).find(p => p.id === bId);
+        if (path) snapshotFingerprint(bId, path);
+      });
+    }
+    const listC = document.getElementById('refListC');
+    if (listC) {
+      const checked = [...listC.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
+      item.refs.C = checked;
+      checked.forEach(cId => {
+        const page = (store.C || []).find(p => p.id === cId);
+        if (page) snapshotFingerprint(cId, page);
+      });
+    }
+  }
+
+  document.querySelector('.modal-overlay')?.remove();
+  save(); renderAll();
+  toast('引用关系已保存');
+}
 
 // ====== LocalStorage ======
 function saveToStorage() {
@@ -300,7 +608,10 @@ function clearStorage() {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(ANNO_STORAGE_KEY);
     localStorage.removeItem(SNAPSHOT_STORAGE_KEY);
+    localStorage.removeItem(FINGERPRINT_STORAGE_KEY);
     annotations = {};
+    refFingerprints = {};
+    refIndex = {};
     store = { A: {}, B: [], C: [], D: [] };
     importSnapshot = { A: {}, B: [], C: [], D: [] };
     hist = []; hIdx = -1;
@@ -331,6 +642,7 @@ function save() {
   hIdx = hist.length - 1;
   updHist();
   saveToStorage(); // 同步到 LocalStorage
+  buildRefIndex(); // 每次保存后刷新引用索引
 }
 function undo() {
   if (hIdx <= 0) return;
@@ -673,6 +985,7 @@ function renderModule(m) {
       <div class="info">
         <div class="title editable" contenteditable="true" data-f="a-modname" data-i="${m.id}">${esc(m.name)}</div>
         <div class="meta">优先级：<span class="module-priority ${pCls}" onclick="aCyclePriority('${m.id}')" style="cursor:pointer" title="点击切换">${pLabel}</span></div>
+        ${renderBackRefTags(m.id)}
       </div>
       <div class="actions">
         <button onclick="aToggleMod('${m.id}')">${m.collapsed ? '▶' : '▼'}</button>
@@ -925,8 +1238,11 @@ function renderB() {
           <div class="title editable" contenteditable="true" data-f="b-title" data-i="${path.id}">${esc(path.title)}${renderAnno(path.id)}</div>
           <div class="meta">【起点】<span class="editable" contenteditable="true" data-f="b-start" data-i="${path.id}">${esc(path.startPoint)}</span></div>
           <div class="meta">【体验关键点】<span class="editable" contenteditable="true" data-f="b-key" data-i="${path.id}">${esc(path.keyPoint)}</span></div>
+          ${renderRefTags(path, 'B')}
+          ${renderBackRefTags(path.id)}
         </div>
         <div class="actions">
+          <button class="ref-link-btn" onclick="openRefModal('${path.id}','B')" title="管理引用关系">🔗</button>
           <button onclick="bToggle('${path.id}')">${path.collapsed?'▶':'▼'}</button>
           <button onclick="showCtx(event,bCtxPath('${path.id}'))">⋯</button>
         </div>
@@ -1170,11 +1486,12 @@ function renderC() {
     return;
   }
   el.innerHTML = store.C.map(page => `
-    <div class="card">
+    <div class="card" data-page="${page.id}">
       <div class="card-header">
         <span class="drag-handle">⠿</span>
         <div class="info">
           <div class="title">🏗️ <span class="editable" contenteditable="true" data-f="c-page" data-i="${page.id}">${esc(page.pageName)}</span></div>
+          ${renderBackRefTags(page.id)}
         </div>
         <div class="actions">
           <button onclick="cToggle('${page.id}')">${page.collapsed?'▶':'▼'}</button>
@@ -1430,13 +1747,15 @@ function renderD() {
     return;
   }
   el.innerHTML = store.D.map(spec => `
-    <div class="card">
+    <div class="card" data-spec="${spec.id}">
       <div class="card-header">
         <span class="drag-handle">⠿</span>
         <div class="info">
           <div class="title">📱 <span class="editable" contenteditable="true" data-f="d-name" data-i="${spec.id}">${esc(spec.specName)}</span></div>
+          ${renderRefTags(spec, 'D')}
         </div>
         <div class="actions">
+          <button class="ref-link-btn" onclick="openRefModal('${spec.id}','D')" title="管理引用关系">🔗</button>
           <button onclick="dToggle('${spec.id}')">${spec.collapsed?'▶':'▼'}</button>
           <button class="danger" style="color:var(--red)" onclick="if(confirm('删除？'))dDelSpec('${spec.id}')">🗑</button>
         </div>
@@ -1591,6 +1910,7 @@ function doImport() {
     if (d.B) store.B = d.B;
     if (d.C) store.C = d.C;
     if (d.D) store.D = d.D;
+    ensureRefs(); // 兼容无 refs 字段的旧数据
     // 保存导入快照用于后续对比
     importSnapshot = JSON.parse(JSON.stringify(store));
     try { localStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(importSnapshot)); } catch(e) {}
@@ -1851,6 +2171,7 @@ function loadFromShareLink() {
     if (data.B) store.B = data.B;
     if (data.C) store.C = data.C;
     if (data.D) store.D = data.D;
+    ensureRefs(); // 兼容无 refs 字段的分享数据
     // 同时作为导入快照
     importSnapshot = JSON.parse(JSON.stringify(store));
     try { localStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(importSnapshot)); } catch(e) {}
@@ -1893,6 +2214,15 @@ try {
   const snapData = localStorage.getItem(SNAPSHOT_STORAGE_KEY);
   if (snapData) importSnapshot = JSON.parse(snapData);
 } catch(e) {}
+
+// 加载引用指纹
+try {
+  const fpData = localStorage.getItem(FINGERPRINT_STORAGE_KEY);
+  if (fpData) refFingerprints = JSON.parse(fpData);
+} catch(e) {}
+
+// 确保 refs 字段存在 + 构建反向索引
+ensureRefs();
 
 save();
 renderAll();
