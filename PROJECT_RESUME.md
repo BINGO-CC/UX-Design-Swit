@@ -1,6 +1,6 @@
 # UX 设计交互编辑器 — 项目续接文档
 
-> **文档版本**：v2.3（2026-03-25 更新）  
+> **文档版本**：v3.0（2026-03-25 更新）  
 > **用途**：在新对话中快速恢复项目上下文，确保迭代连续性
 
 ---
@@ -18,7 +18,7 @@
 
 | 文件路径 | 说明 | 状态 |
 |---------|------|------|
-| `f:\codemake\ux-design-editor.html` | 统一交互编辑器（主文件） | ✅ 已完成 v2.3 |
+| `f:\codemake\ux-design-editor.html` | 统一交互编辑器（主文件） | ✅ 已完成 v3.0 |
 | `f:\codemake\.codemaker\skills\ux-design.md` | UX设计 Skill 指令 | ✅ 已更新（含JSON输出） |
 | `f:\codemake\PROJECT_RESUME.md` | 本文档 | ✅ 当前文件 |
 | `f:\codemake\behavior-path-editor.html` | 早期原型（仅模式B） | 🔒 已废弃 |
@@ -66,6 +66,14 @@ const ANNO_STORAGE_KEY = 'ux_design_editor_annotations';
 | **导入导出** | JSON 模块级导出（全部/仅修改） | 下拉菜单 + `importSnapshot` 对比 |
 | **导入导出** | Markdown 导出 | 自定义格式化函数 |
 | **分享** | 🔗 生成分享链接（URL 携带压缩数据） | LZ-String 压缩 + URL hash |
+| **引用** | 模式间数据引用（D→B、D→C、B→A） | `refs` 字段 + `refIndex` 反向索引 |
+| **引用** | 引用管理浮层（🔗按钮 + checkbox选择） | `openRefModal()` + `saveRefs()` |
+| **引用** | 正向引用标签（可点击跳转） | `renderRefTags()` + `jumpToRef()` |
+| **引用** | 反向引用标签（📍被引用 + 可点击跳转） | `renderBackRefTags()` + `refIndex` |
+| **引用** | 变更检测（⚠️橙色标签 + 内容指纹） | `fingerprint()` + `hasRefChanged()` |
+| **引用** | 变更详情弹窗 + 标记已读 | `showRefChangeDetail()` + `ackRefChange()` |
+| **引用** | 📊 覆盖率报告（进度条 + 孤立节点） | `showCoverageReport()` + `generateCoverageReport()` |
+| **引用** | 覆盖率报告 Markdown 导出 | `exportCoverageReportMd()` |
 | **UI** | 四模式 Tab 切换 | `switchMode()` |
 | **UI** | 卡片折叠/展开 | `collapsed` 属性 |
 | **UI** | 优先级切换（模式A） | `aCyclePriority()` |
@@ -76,17 +84,21 @@ const ANNO_STORAGE_KEY = 'ux_design_editor_annotations';
 ### 2.3 代码结构（ux-design-editor.html）
 
 ```
-行 1-170:    CSS 样式（含空状态、下拉菜单样式）
-行 171-210:  HTML 结构（工具栏含下拉导出菜单 + Tab + 容器）
-行 211-310:  核心工具函数（nid, toast, save, undo, redo, LocalStorage, clearStorage）
-行 310-520:  拖拽排序 + 批注功能
-行 520-620:  空状态判断 + 模式 A 渲染
-行 620-910:  模式 B 渲染
-行 910-1160: 模式 C 渲染
-行 1160-1420:模式 D 渲染
-行 1420-1570:onBlur 统一编辑处理
-行 1570-1740:导入/导出功能（含模块级导出、diff对比、下拉菜单）
-行 1740-1800:初始化逻辑（含快照加载）
+行 1-195:    CSS 样式（含引用标签、覆盖率报告、下拉菜单样式）
+行 196-260:  HTML 结构（工具栏含下拉导出菜单+覆盖率入口 + Tab + 容器）
+行 261-390:  核心工具函数 + 引用网络数据层（refs/refIndex/fingerprint/ensureRefs/resolveRefTarget）
+行 390-570:  引用UI层（renderRefTags/renderBackRefTags/jumpToRef/openRefModal/saveRefs）
+行 570-650:  变更检测（showRefChangeDetail/computeRefChangeSummary/ackRefChange）
+行 650-845:  覆盖率报告（generateCoverageReport/renderProgressBar/showCoverageReport/exportCoverageReportMd）
+行 845-920:  LocalStorage + History + Tab切换 + 编辑绑定
+行 920-960:  批注 + 拖拽排序
+行 960-1040: 空状态判断 + 模式 A 渲染（含反向引用标签）
+行 1040-1260:模式 B 渲染（含🔗按钮+引用标签+反向引用标签）
+行 1260-1510:模式 C 渲染（含data-page属性+反向引用标签）
+行 1510-1820:模式 D 渲染（含🔗按钮+引用标签+data-spec属性）
+行 1820-1930:onBlur 统一编辑处理
+行 1930-2120:导入/导出功能（含模块级导出、diff对比、下拉菜单）
+行 2120-2200:初始化逻辑（含快照加载+fingerprint加载+ensureRefs）
 ```
 
 ### 2.4 关键新增数据结构
@@ -101,6 +113,11 @@ const MODE_LABELS = { A: '策划案分析', B: '行为路径', C: '信息架构'
 
 // LZ-String 压缩库（内联，用于分享链接）
 var LZString = { compressToEncodedURIComponent, decompressFromEncodedURIComponent, ... };
+
+// 引用网络相关（v3.0 新增）
+const FINGERPRINT_STORAGE_KEY = 'ux_design_editor_fingerprints';
+let refIndex = {};         // 运行时反向索引（不持久化）
+let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 ```
 
 ---
@@ -216,7 +233,7 @@ var LZString = { compressToEncodedURIComponent, decompressFromEncodedURIComponen
 
 | 优先级 | 功能 | 说明 |
 |-------|------|------|
-| P3-1 | 模式间数据引用 | 模式D交互稿引用模式B路径编号 |
+| ~~P3-1~~ | ~~模式间数据引用~~ | ✅ **已完成 v3.0** — D→B、D→C、B→A 完整引用网络 |
 | P3-2 | 批注导出 | 导出 Markdown/JSON 时包含批注 |
 | P3-3 | 数据版本控制 | 支持保存/切换多个版本快照 |
 | P3-4 | 主题切换 | 支持亮色/暗色主题 |
@@ -298,6 +315,7 @@ var LZString = { compressToEncodedURIComponent, decompressFromEncodedURIComponen
     "id": "n2001", "title": "路径标题",
     "startPoint": "起点描述", "keyPoint": "体验关键点",
     "collapsed": false,
+    "refs": { "A": ["n1003"] },
     "stages": [{
       "id": "n2002", "title": "阶段标题",
       "actions": [{ "id": "n2003", "text": "用户操作步骤" }],
@@ -330,6 +348,7 @@ var LZString = { compressToEncodedURIComponent, decompressFromEncodedURIComponen
 {
   "D": [{
     "id": "n4001", "specName": "交互说明名称", "collapsed": false,
+    "refs": { "B": ["n2001"], "C": ["n3001"] },
     "visible": [{ "id": "n4002", "text": "可见层条目" }],
     "interactions": [{ "id": "n4003", "text": "交互层条目" }],
     "boundaries": [{
@@ -351,3 +370,4 @@ var LZString = { compressToEncodedURIComponent, decompressFromEncodedURIComponen
 | v2.1 | 2026-03-25 | 空状态引导页、模块级JSON导出（全部/仅修改）、Toast移至顶部、导入快照对比机制 |
 | v2.2 | 2026-03-25 | 🔗 分享链接功能（LZ-String压缩 + URL hash），支持带数据分享给他人 |
 | v2.3 | 2026-03-25 | 控件移至TAB行右侧、导出菜单合并、GitHub Pages部署、Git自动推送规则 |
+| v3.0 | 2026-03-25 | 🔗 引用网络系统：D→B/D→C/B→A 三条引用链路、双向导航、变更检测、覆盖率报告 |
