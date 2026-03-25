@@ -1,6 +1,6 @@
 # UX 设计交互编辑器 — 项目续接文档
 
-> **文档版本**：v2.2（2026-03-25 更新）  
+> **文档版本**：v2.3（2026-03-25 更新）  
 > **用途**：在新对话中快速恢复项目上下文，确保迭代连续性
 
 ---
@@ -18,10 +18,13 @@
 
 | 文件路径 | 说明 | 状态 |
 |---------|------|------|
-| `f:\codemake\ux-design-editor.html` | 统一交互编辑器（主文件） | ✅ 已完成 v2.0 |
+| `f:\codemake\ux-design-editor.html` | 统一交互编辑器（主文件） | ✅ 已完成 v2.3 |
 | `f:\codemake\.codemaker\skills\ux-design.md` | UX设计 Skill 指令 | ✅ 已更新（含JSON输出） |
 | `f:\codemake\PROJECT_RESUME.md` | 本文档 | ✅ 当前文件 |
 | `f:\codemake\behavior-path-editor.html` | 早期原型（仅模式B） | 🔒 已废弃 |
+| `f:\codemake\index.html` | 部署入口（跳转到编辑器） | ✅ |
+| `f:\codemake\.codemaker\rules` | 项目规则（自动保存+推送） | ✅ |
+| `f:\codemake\.gitignore` | Git 忽略配置 | ✅ |
 
 ---
 
@@ -123,8 +126,33 @@ var LZString = { compressToEncodedURIComponent, decompressFromEncodedURIComponen
 - **关键函数**：`generateShareLink()`, `copyShareLink()`, `loadFromShareLink()`
 - **依赖库**：LZ-String（MIT License，内联压缩版）
 
-### 3.0.4 Toast 提示位置
+### 3.0.4 控件布局调整（v2.3）
+- **标题栏**：仅保留标题 + 🔗 分享链接 + 🗑️ 清除缓存
+- **TAB 行**：左侧为 ABCD 四个 Tab，右侧为操作控件（已保存 / ↩↪ / 📥 导入 / 📤 导出 ▾）
+- **导出菜单合并**：原"导出 MD"独立按钮合并进"📤 导出 ▾"下拉菜单，三个选项：导出该模块修改部分JSON / 导出全部JSON / 导出MarkDown
+- TAB 行 `position:sticky;top:43px` 保持置顶
+
+### 3.0.5 Toast 提示位置
 - 从页面底部移至**顶部居中**，边距 20px
+
+---
+
+## 三（续）、部署信息
+
+### 部署方式
+- **平台**：GitHub Pages
+- **仓库**：[https://github.com/BINGO-CC/UX-Design-Swit](https://github.com/BINGO-CC/UX-Design-Swit)
+- **网页地址**：[https://bingo-cc.github.io/UX-Design-Swit/](https://bingo-cc.github.io/UX-Design-Swit/)
+- **分支**：`main`，根目录 `/`
+- **入口**：`index.html`（自动跳转到 `ux-design-editor.html`）
+
+### Git 配置
+- Git 路径：`"C:\Program Files\Git\cmd\git.exe"`
+- 远程地址：`https://github.com/BINGO-CC/UX-Design-Swit.git`
+- 本地目录：`f:\codemake`
+
+### 更新流程
+代码修改后执行：`git add -A` → `git commit` → `git push`，GitHub Pages 1-2 分钟内自动更新
 
 ---
 
@@ -322,3 +350,4 @@ var LZString = { compressToEncodedURIComponent, decompressFromEncodedURIComponen
 | v2.0 | 2026-03-25 | 新增拖拽排序、批注、LocalStorage、完整数据填充、Skill JSON输出 |
 | v2.1 | 2026-03-25 | 空状态引导页、模块级JSON导出（全部/仅修改）、Toast移至顶部、导入快照对比机制 |
 | v2.2 | 2026-03-25 | 🔗 分享链接功能（LZ-String压缩 + URL hash），支持带数据分享给他人 |
+| v2.3 | 2026-03-25 | 控件移至TAB行右侧、导出菜单合并、GitHub Pages部署、Git自动推送规则 |
