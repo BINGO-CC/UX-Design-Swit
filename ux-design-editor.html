@@ -15,15 +15,22 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;}
 
-/* Toolbar */
+/* Toolbar (Title bar) */
 .toolbar{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;}
 .toolbar h1{font-size:15px;font-weight:600;margin-right:auto;}
 .toolbar button{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;transition:all .15s;}
 .toolbar button:hover{background:var(--accent);border-color:var(--accent);}
-.toolbar button.primary{background:var(--accent);border-color:var(--accent);}
 .toolbar .sep{width:1px;height:22px;background:var(--border);}
-.undo-redo{display:flex;gap:4px;}
-.undo-redo button{padding:5px 9px;font-size:14px;}
+
+/* Tab bar with actions */
+.tab-bar{display:flex;align-items:center;background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;position:sticky;top:43px;z-index:99;}
+.tab-bar .tabs-left{display:flex;flex:1;}
+.tab-bar .actions-right{display:flex;align-items:center;gap:8px;padding:6px 0;}
+.tab-bar .actions-right button{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:12px;transition:all .15s;white-space:nowrap;}
+.tab-bar .actions-right button:hover{background:var(--accent);border-color:var(--accent);}
+.tab-bar .actions-right .sep{width:1px;height:20px;background:var(--border);}
+.undo-redo{display:flex;gap:3px;}
+.undo-redo button{padding:4px 8px;font-size:13px;}
 .undo-redo button:disabled{opacity:.3;cursor:not-allowed;}
 .undo-redo button:disabled:hover{background:var(--surface2);border-color:var(--border);}
 
@@ -38,7 +45,6 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 .dropdown.open .dropdown-menu{display:block;}
 
 /* Mode Tabs */
-.mode-tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;}
 .mode-tab{padding:10px 20px;cursor:pointer;font-size:14px;color:var(--text2);border-bottom:2px solid transparent;transition:all .15s;}
 .mode-tab:hover{color:var(--text);}
 .mode-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
@@ -182,34 +188,38 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 
 <div class="toolbar">
   <h1>🎨 UX 设计交互编辑器</h1>
-  <div class="storage-status" id="storageStatus" title="数据自动保存到浏览器">
-    <span class="storage-dot"></span>
-    <span>已保存</span>
-  </div>
-  <div class="undo-redo">
-    <button id="undoBtn" disabled title="撤销 Ctrl+Z">↩</button>
-    <button id="redoBtn" disabled title="重做 Ctrl+Y">↪</button>
-  </div>
-  <div class="sep"></div>
-  <button id="importBtn">📥 导入 JSON</button>
-  <button id="exportMdBtn">导出 MD</button>
-  <div class="dropdown" id="exportJsonDropdown">
-    <button id="exportJsonBtn">📤 导出 JSON ▾</button>
-    <div class="dropdown-menu" id="exportJsonMenu">
-      <button onclick="exportJsonModDiff()">导出该模块修改内容</button>
-      <button onclick="exportJsonModFull()">导出该模块全部JSON</button>
-    </div>
-  </div>
   <div class="sep"></div>
   <button id="shareLinkBtn" title="生成可分享的链接">🔗 分享链接</button>
   <button id="clearStorageBtn" title="清除本地存储数据">🗑️ 清除缓存</button>
 </div>
 
-<div class="mode-tabs">
-  <div class="mode-tab active" data-mode="A">A 策划案分析</div>
-  <div class="mode-tab" data-mode="B">B 行为路径</div>
-  <div class="mode-tab" data-mode="C">C 信息架构</div>
-  <div class="mode-tab" data-mode="D">D 交互稿</div>
+<div class="tab-bar">
+  <div class="tabs-left">
+    <div class="mode-tab active" data-mode="A">A 策划案分析</div>
+    <div class="mode-tab" data-mode="B">B 行为路径</div>
+    <div class="mode-tab" data-mode="C">C 信息架构</div>
+    <div class="mode-tab" data-mode="D">D 交互稿</div>
+  </div>
+  <div class="actions-right">
+    <div class="storage-status" id="storageStatus" title="数据自动保存到浏览器">
+      <span class="storage-dot"></span>
+      <span>已保存</span>
+    </div>
+    <div class="undo-redo">
+      <button id="undoBtn" disabled title="撤销 Ctrl+Z">↩</button>
+      <button id="redoBtn" disabled title="重做 Ctrl+Y">↪</button>
+    </div>
+    <div class="sep"></div>
+    <button id="importBtn">📥 导入</button>
+    <div class="dropdown" id="exportJsonDropdown">
+      <button id="exportJsonBtn">📤 导出 ▾</button>
+      <div class="dropdown-menu" id="exportJsonMenu">
+        <button onclick="exportJsonModDiff()">导出该模块修改内容</button>
+        <button onclick="exportJsonModFull()">导出该模块全部JSON</button>
+        <button onclick="exportMd()">导出 Markdown</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="container">
@@ -1859,7 +1869,6 @@ function loadFromShareLink() {
 document.getElementById('undoBtn').onclick = undo;
 document.getElementById('redoBtn').onclick = redo;
 document.getElementById('importBtn').onclick = importJSON;
-document.getElementById('exportMdBtn').onclick = exportMd;
 document.getElementById('exportJsonBtn').onclick = toggleExportDropdown;
 document.addEventListener('click', () => closeExportDropdown());
 document.getElementById('shareLinkBtn').onclick = generateShareLink;
