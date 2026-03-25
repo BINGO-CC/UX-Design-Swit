@@ -1,0 +1,1900 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UX 设计交互编辑器</title>
+<style>
+:root {
+  --bg:#0f1117; --surface:#1a1d27; --surface2:#232735;
+  --border:#2e3345; --text:#e4e6ed; --text2:#9498a8;
+  --accent:#6c8cff; --accent2:#4a6adf;
+  --green:#34d399; --orange:#fb923c; --red:#f87171;
+  --yellow:#fbbf24; --purple:#a78bfa; --radius:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;}
+
+/* Toolbar */
+.toolbar{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;}
+.toolbar h1{font-size:15px;font-weight:600;margin-right:auto;}
+.toolbar button{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;transition:all .15s;}
+.toolbar button:hover{background:var(--accent);border-color:var(--accent);}
+.toolbar button.primary{background:var(--accent);border-color:var(--accent);}
+.toolbar .sep{width:1px;height:22px;background:var(--border);}
+.undo-redo{display:flex;gap:4px;}
+.undo-redo button{padding:5px 9px;font-size:14px;}
+.undo-redo button:disabled{opacity:.3;cursor:not-allowed;}
+.undo-redo button:disabled:hover{background:var(--surface2);border-color:var(--border);}
+
+/* Dropdown */
+.dropdown{position:relative;display:inline-block;}
+.dropdown-menu{display:none;position:absolute;top:100%;right:0;margin-top:4px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:200;min-width:200px;overflow:hidden;}
+.dropdown-menu button{display:block;width:100%;padding:10px 16px;border:none;background:transparent;color:var(--text);font-size:13px;text-align:left;cursor:pointer;transition:all .15s;}
+.dropdown-menu button:hover{background:var(--accent);color:#fff;}
+.dropdown-menu button.disabled{opacity:.35;cursor:not-allowed;}
+.dropdown-menu button.disabled:hover{background:transparent;color:var(--text);}
+.dropdown-menu button:not(:last-child){border-bottom:1px solid var(--border);}
+.dropdown.open .dropdown-menu{display:block;}
+
+/* Mode Tabs */
+.mode-tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;}
+.mode-tab{padding:10px 20px;cursor:pointer;font-size:14px;color:var(--text2);border-bottom:2px solid transparent;transition:all .15s;}
+.mode-tab:hover{color:var(--text);}
+.mode-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+
+/* Container */
+.container{max-width:960px;margin:0 auto;padding:20px;}
+.mode-panel{display:none;}
+.mode-panel.active{display:block;}
+
+/* Editable */
+.editable{cursor:text;padding:2px 4px;border-radius:4px;transition:all .15s;outline:none;min-height:1.6em;}
+.editable:hover{background:rgba(108,140,255,.1);}
+.editable:focus{background:rgba(108,140,255,.15);box-shadow:0 0 0 2px var(--accent);}
+
+/* Card */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;}
+.card-header{padding:14px 18px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px;}
+.card-header .drag-handle{color:var(--text2);font-size:16px;cursor:grab;user-select:none;padding-top:2px;}
+.card-header .info{flex:1;}
+.card-header .title{font-size:15px;font-weight:600;color:var(--accent);}
+.card-header .meta{font-size:13px;color:var(--text2);margin-top:3px;}
+.card-header .actions{display:flex;gap:5px;}
+.card-header .actions button{background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:15px;padding:3px 5px;border-radius:4px;}
+.card-header .actions button:hover{background:var(--surface);color:var(--text);}
+.card-body{padding:0 18px 14px;}
+.card-body.collapsed{display:none;}
+
+/* Stage (Mode B) */
+.stage{margin-top:14px;border-left:3px solid var(--accent);padding-left:14px;position:relative;}
+.stage-header{display:flex;align-items:center;gap:7px;margin-bottom:7px;}
+.stage-header .stage-title{font-weight:600;font-size:14px;flex:1;}
+.stage-header button{background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;}
+.stage-header button:hover{background:var(--surface2);color:var(--text);}
+
+/* Action/Feedback blocks */
+.action-block,.feedback-block{margin:7px 0;padding:9px 12px;border-radius:6px;font-size:14px;}
+.action-block{background:rgba(108,140,255,.08);border:1px solid rgba(108,140,255,.2);}
+.feedback-block{background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);}
+.block-label{font-size:12px;font-weight:600;margin-bottom:5px;display:flex;align-items:center;gap:5px;}
+.action-block .block-label{color:var(--accent);}
+.feedback-block .block-label{color:var(--green);}
+
+/* Step items */
+.step-list{list-style:none;}
+.step-item{display:flex;align-items:flex-start;gap:7px;padding:2px 0;}
+.step-item .step-num{color:var(--text2);font-size:13px;min-width:18px;text-align:right;padding-top:1px;}
+.step-item .step-drag{cursor:grab;color:var(--text2);font-size:11px;padding-top:3px;user-select:none;}
+.step-item .step-content{flex:1;}
+.step-item .step-del{background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;opacity:0;transition:opacity .15s;}
+.step-item:hover .step-del{opacity:1;}
+.step-item .step-del:hover{color:var(--red);}
+
+/* Branch */
+.branch{margin:7px 0;padding:9px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);}
+.branch-header{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+.branch-header .branch-title{font-weight:600;font-size:13px;color:var(--orange);flex:1;}
+.branch-header button{background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;}
+.branch-header button:hover{color:var(--red);}
+.branch-item{display:flex;gap:5px;padding:2px 0;font-size:14px;}
+.branch-item .bullet{color:var(--text2);min-width:14px;}
+
+/* Tree node (Mode C) */
+.tree-node{margin-left:20px;border-left:1px dashed var(--border);padding-left:12px;margin-top:6px;}
+.tree-node.root{margin-left:0;border-left:none;padding-left:0;}
+.node-row{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:4px;transition:background .1s;}
+.node-row:hover{background:var(--surface2);}
+.node-icon{font-size:14px;min-width:20px;text-align:center;}
+.node-label{flex:1;font-size:14px;}
+.node-note{font-size:12px;color:var(--text2);font-style:italic;}
+.node-actions button{background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;padding:2px 4px;opacity:0;transition:opacity .1s;}
+.node-row:hover .node-actions button{opacity:1;}
+.node-actions button:hover{color:var(--accent);}
+
+/* Spec section (Mode D) */
+.spec-section{margin-top:14px;border-radius:6px;overflow:hidden;}
+.spec-section-header{padding:10px 14px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:7px;cursor:pointer;}
+.spec-section-header.visible{background:rgba(108,140,255,.12);color:var(--accent);border:1px solid rgba(108,140,255,.2);border-radius:6px 6px 0 0;}
+.spec-section-header.interact{background:rgba(52,211,153,.12);color:var(--green);border:1px solid rgba(52,211,153,.2);border-radius:6px 6px 0 0;}
+.spec-section-header.boundary{background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.2);border-radius:6px 6px 0 0;}
+.spec-section-body{padding:10px 14px;border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;background:var(--surface);}
+
+/* Module card (Mode A) */
+.module-priority{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;}
+.module-priority.high{background:rgba(248,113,113,.15);color:var(--red);}
+.module-priority.mid{background:rgba(251,191,36,.15);color:var(--yellow);}
+.module-priority.low{background:rgba(52,211,153,.15);color:var(--green);}
+
+/* Add btn */
+.add-btn{display:flex;align-items:center;gap:5px;padding:5px 10px;margin-top:7px;background:transparent;border:1px dashed var(--border);border-radius:6px;color:var(--text2);cursor:pointer;font-size:13px;transition:all .15s;width:100%;}
+.add-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(108,140,255,.05);}
+
+/* Annotation */
+.anno{display:inline-flex;align-items:center;gap:3px;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);border-radius:4px;padding:1px 7px;font-size:11px;color:var(--yellow);margin-left:6px;cursor:pointer;}
+.anno-btn{background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;padding:2px 4px;opacity:0;transition:opacity .1s;}
+.step-item:hover .anno-btn,.node-row:hover .anno-btn,.card-header:hover .anno-btn{opacity:1;}
+.anno-btn:hover{color:var(--yellow);}
+.anno-input{background:var(--bg);border:1px solid var(--yellow);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--text);width:150px;outline:none;}
+
+/* Drag & Drop */
+.dragging{opacity:.5;transform:scale(.98);}
+.drag-over{border:2px dashed var(--accent) !important;background:rgba(108,140,255,.05) !important;}
+.drag-handle{cursor:grab;user-select:none;}
+.drag-handle:active{cursor:grabbing;}
+
+/* Storage indicator */
+.storage-status{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px;}
+.storage-dot{width:6px;height:6px;border-radius:50%;background:var(--green);}
+.storage-dot.unsaved{background:var(--orange);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+
+/* Context menu */
+.ctx-menu{position:fixed;z-index:200;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,.5);}
+.ctx-menu button{display:flex;align-items:center;gap:7px;width:100%;padding:7px 11px;background:none;border:none;color:var(--text);cursor:pointer;font-size:13px;border-radius:4px;text-align:left;}
+.ctx-menu button:hover{background:var(--accent);}
+.ctx-menu button.danger{color:var(--red);}
+.ctx-menu button.danger:hover{background:rgba(248,113,113,.15);}
+
+/* Empty State */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;color:var(--text2);}
+.empty-state .empty-icon{font-size:72px;margin-bottom:20px;opacity:.6;filter:grayscale(.3);}
+.empty-state .empty-text{font-size:15px;font-weight:500;color:var(--text2);text-align:center;line-height:1.8;}
+.empty-state .empty-action{color:var(--accent);font-weight:600;cursor:pointer;padding:6px 16px;border-radius:6px;transition:all .15s;display:inline-block;margin-top:4px;}
+.empty-state .empty-action:hover{background:rgba(108,140,255,.15);text-decoration:underline;}
+
+/* Toast */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);padding:8px 18px;border-radius:8px;font-size:13px;z-index:300;box-shadow:0 4px 12px rgba(0,0,0,.3);transition:all .3s;opacity:0;pointer-events:none;}
+.toast.show{opacity:1;}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:250;display:flex;align-items:center;justify-content:center;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;width:90%;max-width:640px;max-height:80vh;overflow-y:auto;}
+.modal h2{font-size:15px;margin-bottom:14px;}
+.modal pre{background:var(--bg);padding:14px;border-radius:8px;font-size:12px;overflow-x:auto;white-space:pre-wrap;max-height:45vh;}
+.modal textarea{width:100%;height:200px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:12px;font-size:12px;font-family:monospace;resize:vertical;}
+.modal .m-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:14px;}
+.modal button{padding:7px 14px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;}
+.modal button.primary{background:var(--accent);border-color:var(--accent);}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>🎨 UX 设计交互编辑器</h1>
+  <div class="storage-status" id="storageStatus" title="数据自动保存到浏览器">
+    <span class="storage-dot"></span>
+    <span>已保存</span>
+  </div>
+  <div class="undo-redo">
+    <button id="undoBtn" disabled title="撤销 Ctrl+Z">↩</button>
+    <button id="redoBtn" disabled title="重做 Ctrl+Y">↪</button>
+  </div>
+  <div class="sep"></div>
+  <button id="importBtn">📥 导入 JSON</button>
+  <button id="exportMdBtn">导出 MD</button>
+  <div class="dropdown" id="exportJsonDropdown">
+    <button id="exportJsonBtn">📤 导出 JSON ▾</button>
+    <div class="dropdown-menu" id="exportJsonMenu">
+      <button onclick="exportJsonModDiff()">导出该模块修改内容</button>
+      <button onclick="exportJsonModFull()">导出该模块全部JSON</button>
+    </div>
+  </div>
+  <div class="sep"></div>
+  <button id="shareLinkBtn" title="生成可分享的链接">🔗 分享链接</button>
+  <button id="clearStorageBtn" title="清除本地存储数据">🗑️ 清除缓存</button>
+</div>
+
+<div class="mode-tabs">
+  <div class="mode-tab active" data-mode="A">A 策划案分析</div>
+  <div class="mode-tab" data-mode="B">B 行为路径</div>
+  <div class="mode-tab" data-mode="C">C 信息架构</div>
+  <div class="mode-tab" data-mode="D">D 交互稿</div>
+</div>
+
+<div class="container">
+  <div id="panelA" class="mode-panel active"></div>
+  <div id="panelB" class="mode-panel"></div>
+  <div id="panelC" class="mode-panel"></div>
+  <div id="panelD" class="mode-panel"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ====== Core Utils ======
+let uid = 1000;
+function nid() { return 'n' + (uid++); }
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ====== State ======
+let store = { A: {}, B: [], C: [], D: [] };
+let importSnapshot = { A: {}, B: [], C: [], D: [] }; // 导入时的快照，用于对比修改
+let annotations = {}; // { nodeId: "批注内容" }
+let hist = [], hIdx = -1, activeMode = 'A';
+const STORAGE_KEY = 'ux_design_editor_data';
+const ANNO_STORAGE_KEY = 'ux_design_editor_annotations';
+const SNAPSHOT_STORAGE_KEY = 'ux_design_editor_snapshot';
+
+// ====== LocalStorage ======
+function saveToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    localStorage.setItem(ANNO_STORAGE_KEY, JSON.stringify(annotations));
+    updateStorageStatus(true);
+  } catch (e) {
+    console.error('LocalStorage save failed:', e);
+    updateStorageStatus(false);
+  }
+}
+
+function loadFromStorage() {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    const annoData = localStorage.getItem(ANNO_STORAGE_KEY);
+    if (data) {
+      const parsed = JSON.parse(data);
+      if (parsed.A || parsed.B || parsed.C || parsed.D) {
+        store = parsed;
+        // 确保所有模式数据存在
+        if (!store.A) store.A = {};
+        if (!store.B) store.B = [];
+        if (!store.C) store.C = [];
+        if (!store.D) store.D = [];
+        return true;
+      }
+    }
+    if (annoData) {
+      annotations = JSON.parse(annoData);
+    }
+  } catch (e) {
+    console.error('LocalStorage load failed:', e);
+  }
+  return false;
+}
+
+function clearStorage() {
+  if (confirm('确定要清除所有本地缓存数据吗？')) {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(ANNO_STORAGE_KEY);
+    localStorage.removeItem(SNAPSHOT_STORAGE_KEY);
+    annotations = {};
+    store = { A: {}, B: [], C: [], D: [] };
+    importSnapshot = { A: {}, B: [], C: [], D: [] };
+    hist = []; hIdx = -1;
+    save(); renderAll();
+    toast('已清除缓存');
+  }
+}
+
+function updateStorageStatus(saved) {
+  const el = document.getElementById('storageStatus');
+  const dot = el.querySelector('.storage-dot');
+  const text = el.querySelector('span:last-child');
+  if (saved) {
+    dot.classList.remove('unsaved');
+    text.textContent = '已保存';
+  } else {
+    dot.classList.add('unsaved');
+    text.textContent = '未保存';
+  }
+}
+
+// ====== History ======
+function save() {
+  const snap = JSON.stringify(store);
+  hist = hist.slice(0, hIdx + 1);
+  hist.push(snap);
+  if (hist.length > 80) hist.shift();
+  hIdx = hist.length - 1;
+  updHist();
+  saveToStorage(); // 同步到 LocalStorage
+}
+function undo() {
+  if (hIdx <= 0) return;
+  hIdx--;
+  store = JSON.parse(hist[hIdx]);
+  renderAll(); updHist(); toast('已撤销');
+}
+function redo() {
+  if (hIdx >= hist.length - 1) return;
+  hIdx++;
+  store = JSON.parse(hist[hIdx]);
+  renderAll(); updHist(); toast('已重做');
+}
+function updHist() {
+  document.getElementById('undoBtn').disabled = hIdx <= 0;
+  document.getElementById('redoBtn').disabled = hIdx >= hist.length - 1;
+}
+
+// ====== Tab Switch ======
+function switchMode(mode) {
+  activeMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.mode === mode);
+  });
+  document.querySelectorAll('.mode-panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'panel' + mode);
+  });
+}
+
+// ====== Editable Binding ======
+function bindEdit() {
+  document.querySelectorAll('.editable').forEach(el => {
+    el.onblur = onBlur;
+    el.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.target.blur(); } };
+  });
+}
+
+// ====== Context Menu ======
+let ctxEl = null;
+function closeCtx() { if (ctxEl) { ctxEl.remove(); ctxEl = null; } }
+document.addEventListener('click', closeCtx);
+function showCtx(e, html) {
+  e.stopPropagation(); closeCtx();
+  const m = document.createElement('div');
+  m.className = 'ctx-menu';
+  m.style.left = e.clientX + 'px';
+  m.style.top = e.clientY + 'px';
+  m.innerHTML = html;
+  document.body.appendChild(m);
+  ctxEl = m;
+  const r = m.getBoundingClientRect();
+  if (r.right > innerWidth) m.style.left = (innerWidth - r.width - 8) + 'px';
+  if (r.bottom > innerHeight) m.style.top = (innerHeight - r.height - 8) + 'px';
+}
+
+// ====== Render All ======
+function renderAll() { renderA(); renderB(); renderC(); renderD(); bindEdit(); bindDragDrop(); }
+
+// ====== Annotations ======
+function renderAnno(id) {
+  const anno = annotations[id];
+  if (anno) {
+    return `<span class="anno" onclick="editAnno('${id}')" title="${esc(anno)}">💬 ${esc(anno.length > 15 ? anno.slice(0,15)+'...' : anno)}</span>`;
+  }
+  return `<button class="anno-btn" onclick="addAnno('${id}')" title="添加批注">💬</button>`;
+}
+
+function addAnno(id) {
+  const text = prompt('添加批注（留空则取消）：', '');
+  if (text !== null && text.trim()) {
+    annotations[id] = text.trim();
+    saveToStorage();
+    renderAll();
+    toast('已添加批注');
+  }
+}
+
+function editAnno(id) {
+  const current = annotations[id] || '';
+  const text = prompt('编辑批注（留空则删除）：', current);
+  if (text === null) return;
+  if (text.trim()) {
+    annotations[id] = text.trim();
+    toast('已更新批注');
+  } else {
+    delete annotations[id];
+    toast('已删除批注');
+  }
+  saveToStorage();
+  renderAll();
+}
+
+// ====== Drag & Drop ======
+let dragData = null;
+
+function bindDragDrop() {
+  // 模式 B 路径拖拽
+  document.querySelectorAll('#panelB .card[data-path]').forEach((card, idx) => {
+    card.draggable = true;
+    card.ondragstart = e => {
+      dragData = { type: 'b-path', idx };
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    };
+    card.ondragend = () => { card.classList.remove('dragging'); dragData = null; };
+    card.ondragover = e => { e.preventDefault(); if (dragData?.type === 'b-path') card.classList.add('drag-over'); };
+    card.ondragleave = () => card.classList.remove('drag-over');
+    card.ondrop = e => {
+      e.preventDefault(); card.classList.remove('drag-over');
+      if (dragData?.type === 'b-path' && dragData.idx !== idx) {
+        const item = store.B.splice(dragData.idx, 1)[0];
+        store.B.splice(idx, 0, item);
+        save(); renderAll(); toast('已调整顺序');
+      }
+    };
+  });
+
+  // 模式 B 阶段拖拽
+  document.querySelectorAll('#panelB .stage[data-stage]').forEach(stage => {
+    const pid = stage.dataset.path;
+    const sid = stage.dataset.stage;
+    const path = bFindP(pid);
+    if (!path) return;
+    const stageIdx = path.stages.findIndex(s => s.id === sid);
+    
+    stage.draggable = true;
+    stage.ondragstart = e => {
+      e.stopPropagation();
+      dragData = { type: 'b-stage', pid, stageIdx };
+      stage.classList.add('dragging');
+    };
+    stage.ondragend = () => { stage.classList.remove('dragging'); dragData = null; };
+    stage.ondragover = e => { e.preventDefault(); e.stopPropagation(); if (dragData?.type === 'b-stage' && dragData.pid === pid) stage.classList.add('drag-over'); };
+    stage.ondragleave = () => stage.classList.remove('drag-over');
+    stage.ondrop = e => {
+      e.preventDefault(); e.stopPropagation(); stage.classList.remove('drag-over');
+      if (dragData?.type === 'b-stage' && dragData.pid === pid && dragData.stageIdx !== stageIdx) {
+        const item = path.stages.splice(dragData.stageIdx, 1)[0];
+        path.stages.splice(stageIdx, 0, item);
+        save(); renderAll(); toast('已调整阶段顺序');
+      }
+    };
+  });
+
+  // 模式 C 页面拖拽
+  document.querySelectorAll('#panelC .card').forEach((card, idx) => {
+    const pageId = card.querySelector('[data-f="c-page"]')?.dataset.i;
+    if (!pageId) return;
+    card.draggable = true;
+    card.ondragstart = e => {
+      dragData = { type: 'c-page', idx };
+      card.classList.add('dragging');
+    };
+    card.ondragend = () => { card.classList.remove('dragging'); dragData = null; };
+    card.ondragover = e => { e.preventDefault(); if (dragData?.type === 'c-page') card.classList.add('drag-over'); };
+    card.ondragleave = () => card.classList.remove('drag-over');
+    card.ondrop = e => {
+      e.preventDefault(); card.classList.remove('drag-over');
+      if (dragData?.type === 'c-page' && dragData.idx !== idx) {
+        const item = store.C.splice(dragData.idx, 1)[0];
+        store.C.splice(idx, 0, item);
+        save(); renderAll(); toast('已调整顺序');
+      }
+    };
+  });
+
+  // 模式 D 交互稿拖拽
+  document.querySelectorAll('#panelD .card').forEach((card, idx) => {
+    const specId = card.querySelector('[data-f="d-name"]')?.dataset.i;
+    if (!specId) return;
+    card.draggable = true;
+    card.ondragstart = e => {
+      dragData = { type: 'd-spec', idx };
+      card.classList.add('dragging');
+    };
+    card.ondragend = () => { card.classList.remove('dragging'); dragData = null; };
+    card.ondragover = e => { e.preventDefault(); if (dragData?.type === 'd-spec') card.classList.add('drag-over'); };
+    card.ondragleave = () => card.classList.remove('drag-over');
+    card.ondrop = e => {
+      e.preventDefault(); card.classList.remove('drag-over');
+      if (dragData?.type === 'd-spec' && dragData.idx !== idx) {
+        const item = store.D.splice(dragData.idx, 1)[0];
+        store.D.splice(idx, 0, item);
+        save(); renderAll(); toast('已调整顺序');
+      }
+    };
+  });
+
+  // 模式 A 模块拖拽
+  document.querySelectorAll('#panelA .card[data-mod]').forEach((card, idx) => {
+    card.draggable = true;
+    card.ondragstart = e => {
+      dragData = { type: 'a-mod', idx };
+      card.classList.add('dragging');
+    };
+    card.ondragend = () => { card.classList.remove('dragging'); dragData = null; };
+    card.ondragover = e => { e.preventDefault(); if (dragData?.type === 'a-mod') card.classList.add('drag-over'); };
+    card.ondragleave = () => card.classList.remove('drag-over');
+    card.ondrop = e => {
+      e.preventDefault(); card.classList.remove('drag-over');
+      if (dragData?.type === 'a-mod' && dragData.idx !== idx) {
+        const item = store.A.modules.splice(dragData.idx, 1)[0];
+        store.A.modules.splice(idx, 0, item);
+        save(); renderAll(); toast('已调整模块顺序');
+      }
+    };
+  });
+}
+
+// ============================================================
+// MODE A: 策划案分析
+// ============================================================
+function initA() {
+  store.A = {
+    goals: {
+      main: [
+        { id: nid(), text: '打破"升级→加点→解锁"的线性循环，将科技获取与SOC核心玩法深度绑定' },
+        { id: nid(), text: '在科技成长过程中制造体验跳变，通过"科技等级→科技强化"提供质变感受' }
+      ],
+      hidden: [
+        { id: nid(), text: '向后兼容：新规则需与当前线上逻辑共存' },
+        { id: nid(), text: '多赛季新鲜感：文明遗产道具在剧本流转时清除' },
+        { id: nid(), text: '社交/经济循环：文明遗产支持玩家间交易' }
+      ]
+    },
+    modules: [
+      {
+        id: nid(), name: '文明遗产投放与标识', priority: 'high', collapsed: false,
+        features: [
+          { id: nid(), text: '大世界投放带"文明遗产"词缀的成品道具/设施' },
+          { id: nid(), text: '采集/战斗掉落时设置文明遗产标记属性' },
+          { id: nid(), text: '专属角标ICON和特殊TIPS属性' }
+        ],
+        suggestions: [
+          { id: nid(), text: '首次获得某类文明遗产时增加发现动效+简要提示', reason: '帮助建立"遗产→科技"心智模型' },
+          { id: nid(), text: '背包/储藏箱提供文明遗产独立筛选标签', reason: '避免在大量物资中被淹没' }
+        ]
+      },
+      {
+        id: nid(), name: '科技研究台 — 逆向研究', priority: 'high', collapsed: false,
+        features: [
+          { id: nid(), text: '放入文明遗产道具进行逆向研究（消耗材料+时间）' },
+          { id: nid(), text: '未解锁科技：必定解锁对应科技，概率获得额外半成品' },
+          { id: nid(), text: '已解锁科技：获得科技碎片+基础材料，重复拆解收益递减' },
+          { id: nid(), text: '支持批量逆向研究（最多5个，独立计时）' }
+        ],
+        suggestions: [
+          { id: nid(), text: '研究前预览：展示将解锁的科技名称或预期碎片收益', reason: '避免玩家盲目消耗' },
+          { id: nid(), text: '批量研究进度管理：进度条+完成标记+一键领取', reason: '减少逐个操作的繁琐' }
+        ]
+      },
+      {
+        id: nid(), name: '科技研究台 — 科技发明', priority: 'high', collapsed: false,
+        features: [
+          { id: nid(), text: '投入最多9种材料，产物由材料类型/数量/科技等级决定' },
+          { id: nid(), text: '三级瀑布判定：成品→残次品→二次发明→最终失败' },
+          { id: nid(), text: '发明成功概率 = 基础概率 × 材料数量权重 × 科技等级权重 × 修正参数' }
+        ],
+        suggestions: [
+          { id: nid(), text: '实时概率预览：投入材料后展示可能产物列表和概率', reason: '降低黑箱感，提高使用意愿' },
+          { id: nid(), text: '发明历史记录：记录材料组合和产出结果', reason: '支持玩家迭代试错' }
+        ]
+      },
+      {
+        id: nid(), name: '科技等级与科技强化', priority: 'mid', collapsed: false,
+        features: [
+          { id: nid(), text: '每解锁N个科技→科技等级提升1级' },
+          { id: nid(), text: '升级奖励：科技强化机会 + 一次性奖励' },
+          { id: nid(), text: '手动选择已解锁科技进行定向强化' }
+        ],
+        suggestions: [
+          { id: nid(), text: '升级进度持续可见：常驻展示距下次升级还需X个科技', reason: '让成长感持续可感知' },
+          { id: nid(), text: '升级时全屏级庆祝演出', reason: '核心"体验跳变"载体需要仪式感' }
+        ]
+      }
+    ]
+  };
+}
+
+function isStoreEmpty() {
+  const aEmpty = !store.A.goals || (!store.A.goals.main?.length && !store.A.goals.hidden?.length && !store.A.modules?.length);
+  const bEmpty = !store.B || store.B.length === 0;
+  const cEmpty = !store.C || store.C.length === 0;
+  const dEmpty = !store.D || store.D.length === 0;
+  return aEmpty && bEmpty && cEmpty && dEmpty;
+}
+
+function renderEmptyState() {
+  return `<div class="empty-state">
+    <div class="empty-icon">📭</div>
+    <div class="empty-text">暂无数据<br><span class="empty-action" onclick="importJSON()">点击此处 📥 导入 JSON</span></div>
+  </div>`;
+}
+
+function renderA() {
+  const A = store.A;
+  const el = document.getElementById('panelA');
+  if (!A.goals || (!A.goals.main?.length && !A.goals.hidden?.length && !A.modules?.length)) {
+    el.innerHTML = renderEmptyState();
+    return;
+  }
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="info"><div class="title">🎯 核心目标拆解</div></div>
+      </div>
+      <div class="card-body">
+        <div style="margin-top:10px;font-size:13px;font-weight:600;color:var(--accent);">主目标</div>
+        <ul class="step-list">${A.goals.main.map((g,i) => `
+          <li class="step-item">
+            <span class="step-num">${i+1}.</span>
+            <span class="step-content editable" contenteditable="true" data-f="a-main" data-i="${g.id}">${esc(g.text)}</span>
+            <button class="step-del" onclick="aDelGoal('main','${g.id}')">✕</button>
+          </li>`).join('')}
+        </ul>
+        <button class="add-btn" onclick="aAddGoal('main')">+ 新增主目标</button>
+        <div style="margin-top:12px;font-size:13px;font-weight:600;color:var(--purple);">隐性需求</div>
+        <ul class="step-list">${A.goals.hidden.map((g,i) => `
+          <li class="step-item">
+            <span class="step-num">•</span>
+            <span class="step-content editable" contenteditable="true" data-f="a-hidden" data-i="${g.id}">${esc(g.text)}</span>
+            <button class="step-del" onclick="aDelGoal('hidden','${g.id}')">✕</button>
+          </li>`).join('')}
+        </ul>
+        <button class="add-btn" onclick="aAddGoal('hidden')">+ 新增隐性需求</button>
+      </div>
+    </div>
+    <div style="font-size:15px;font-weight:600;margin:16px 0 10px;">🧩 功能模块拆解与优化建议</div>
+    ${A.modules.map(m => renderModule(m)).join('')}
+    <button class="add-btn" onclick="aAddModule()" style="margin-top:12px;">+ 新增功能模块</button>
+  `;
+}
+
+function renderModule(m) {
+  const pCls = m.priority === 'high' ? 'high' : m.priority === 'mid' ? 'mid' : 'low';
+  const pLabel = m.priority === 'high' ? '高' : m.priority === 'mid' ? '中' : '低';
+  return `<div class="card" data-mod="${m.id}">
+    <div class="card-header">
+      <span class="drag-handle">⠿</span>
+      <div class="info">
+        <div class="title editable" contenteditable="true" data-f="a-modname" data-i="${m.id}">${esc(m.name)}</div>
+        <div class="meta">优先级：<span class="module-priority ${pCls}" onclick="aCyclePriority('${m.id}')" style="cursor:pointer" title="点击切换">${pLabel}</span></div>
+      </div>
+      <div class="actions">
+        <button onclick="aToggleMod('${m.id}')">${m.collapsed ? '▶' : '▼'}</button>
+        <button class="danger" style="color:var(--red)" onclick="if(confirm('删除该模块？'))aDelMod('${m.id}')">🗑</button>
+      </div>
+    </div>
+    <div class="card-body ${m.collapsed ? 'collapsed' : ''}">
+      <div style="margin-top:10px;font-size:13px;font-weight:600;">包含功能</div>
+      <ul class="step-list">${m.features.map((f,i) => `
+        <li class="step-item">
+          <span class="step-num">${i+1}.</span>
+          <span class="step-content editable" contenteditable="true" data-f="a-feat" data-i="${f.id}" data-mod="${m.id}">${esc(f.text)}</span>
+          <button class="step-del" onclick="aDelFeat('${m.id}','${f.id}')">✕</button>
+        </li>`).join('')}
+      </ul>
+      <button class="add-btn" onclick="aAddFeat('${m.id}')">+ 新增功能项</button>
+      <div style="margin-top:12px;font-size:13px;font-weight:600;color:var(--green);">✨ UX 补充建议</div>
+      ${m.suggestions.map(s => `
+        <div style="margin:5px 0;padding:7px 10px;border-radius:5px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.15);">
+          <div class="editable" contenteditable="true" data-f="a-sug" data-i="${s.id}" data-mod="${m.id}">${esc(s.text)}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:3px;">依据：<span class="editable" contenteditable="true" data-f="a-sugr" data-i="${s.id}" data-mod="${m.id}">${esc(s.reason)}</span>
+            <button class="step-del" onclick="aDelSug('${m.id}','${s.id}')" style="opacity:.5;font-size:12px;background:none;border:none;color:var(--text2);cursor:pointer;margin-left:6px;">✕</button>
+          </div>
+        </div>`).join('')}
+      <button class="add-btn" onclick="aAddSug('${m.id}')">+ 新增建议</button>
+    </div>
+  </div>`;
+}
+
+// Mode A operations
+function aAddGoal(type) { store.A.goals[type].push({id:nid(),text:'请填写'}); save(); renderAll(); toast('已新增'); }
+function aDelGoal(type,id) { store.A.goals[type] = store.A.goals[type].filter(g=>g.id!==id); save(); renderAll(); toast('已删除'); }
+function aAddModule() {
+  store.A.modules.push({id:nid(),name:'新模块',priority:'mid',collapsed:false,
+    features:[{id:nid(),text:'请填写功能'}],suggestions:[]});
+  save(); renderAll(); toast('已新增模块');
+}
+function aDelMod(id) { store.A.modules = store.A.modules.filter(m=>m.id!==id); save(); renderAll(); toast('已删除模块'); }
+function aToggleMod(id) { const m = store.A.modules.find(x=>x.id===id); if(m) m.collapsed=!m.collapsed; renderAll(); }
+function aCyclePriority(id) {
+  const m = store.A.modules.find(x=>x.id===id); if(!m) return;
+  m.priority = m.priority==='high'?'mid':m.priority==='mid'?'low':'high';
+  save(); renderAll(); toast('优先级已切换');
+}
+function aAddFeat(mid) { const m=store.A.modules.find(x=>x.id===mid); if(m){m.features.push({id:nid(),text:'请填写'});save();renderAll();toast('已新增');} }
+function aDelFeat(mid,fid) { const m=store.A.modules.find(x=>x.id===mid); if(m){m.features=m.features.filter(f=>f.id!==fid);save();renderAll();toast('已删除');} }
+function aAddSug(mid) { const m=store.A.modules.find(x=>x.id===mid); if(m){m.suggestions.push({id:nid(),text:'请填写建议',reason:'请填写依据'});save();renderAll();toast('已新增');} }
+function aDelSug(mid,sid) { const m=store.A.modules.find(x=>x.id===mid); if(m){m.suggestions=m.suggestions.filter(s=>s.id!==sid);save();renderAll();toast('已删除');} }
+
+// ============================================================
+// MODE B: 行为路径
+// ============================================================
+function initB() {
+  store.B = [
+    {
+      id:nid(),title:'核心行为路径 1：文明遗产获取',
+      startPoint:'玩家在大世界进行探索/战斗活动',
+      keyPoint:'让玩家在常规SOC行为中"自然发现"文明遗产，建立"遗产→科技"的心智关联',
+      collapsed:false,
+      stages:[
+        {id:nid(),title:'大世界活动中获得文明遗产',
+          actions:[{id:nid(),text:'探索聚落 / 采集资源 / 击败敌人'}],
+          feedbacks:[
+            {id:nid(),text:'掉落结算：命中投放规则表的道具自动附加"文明遗产"标记属性'},
+            {id:nid(),text:'视觉标识：带有文明遗产标记的道具显示专属角标ICON'},
+            {id:nid(),text:'拾取提示：屏幕上方出现提示条："获得文明遗产 — [道具名称]"'}
+          ],
+          branches:[]},
+        {id:nid(),title:'首次获得某类文明遗产（补充建议）',
+          actions:[{id:nid(),text:'首次拾取某个从未获得过的文明遗产道具'}],
+          feedbacks:[
+            {id:nid(),text:'发现动效：道具图标短暂放大 + 光效闪烁'},
+            {id:nid(),text:'Toast提示"可在科技研究台进行逆向研究，解锁[对应科技名称]"'},
+            {id:nid(),text:'背包标记：道具归入"文明遗产"筛选标签下'}
+          ],
+          branches:[]}
+      ]
+    },
+    {
+      id:nid(),title:'核心行为路径 2：逆向研究（单个）',
+      startPoint:'玩家拥有文明遗产道具，前往科技研究台',
+      keyPoint:'研究前信息透明→研究中有仪式感演出→研究后结果清晰有惊喜',
+      collapsed:false,
+      stages:[
+        {id:nid(),title:'进入科技研究台 — 选择逆向研究功能',
+          actions:[{id:nid(),text:'交互科技研究台设施'},{id:nid(),text:'在功能选择界面点击「逆向研究」Tab'}],
+          feedbacks:[{id:nid(),text:'打开逆向研究面板，展示研究槽位（最多5个）及状态'},{id:nid(),text:'若背包/储藏箱中有文明遗产道具，显示可用数量提示'}],
+          branches:[]},
+        {id:nid(),title:'放入文明遗产道具',
+          actions:[{id:nid(),text:'点击空闲槽位'},{id:nid(),text:'在道具选择列表中选择一个文明遗产道具'}],
+          feedbacks:[],
+          branches:[
+            {id:nid(),label:'分支A：对应科技未解锁',items:[
+              {id:nid(),text:'预览：展示"逆向研究将解锁：[科技名称]"'},
+              {id:nid(),text:'额外提示："有概率获得额外半成品道具"'},
+              {id:nid(),text:'消耗展示：所需额外材料 + 研究时间'}
+            ]},
+            {id:nid(),label:'分支B：对应科技已解锁',items:[
+              {id:nid(),text:'预览：展示"预计获得：科技碎片×N"'},
+              {id:nid(),text:'衰减提示：显示"当前为第X次研究，收益已降低"'}
+            ]}
+          ]},
+        {id:nid(),title:'研究完成 — 领取结果',
+          actions:[{id:nid(),text:'研究倒计时结束后，点击「领取」按钮'}],
+          feedbacks:[],
+          branches:[
+            {id:nid(),label:'分支A：科技解锁成功 ✅',items:[
+              {id:nid(),text:'全屏级解锁动效 — 科技图标从道具中"浮现"并点亮'},
+              {id:nid(),text:'展示"已掌握：[科技名称]"+ 科技效果详情'},
+              {id:nid(),text:'科技等级进度条增长动画'}
+            ]},
+            {id:nid(),label:'分支B：获得科技碎片 📦',items:[
+              {id:nid(),text:'轻量结算动效 — 碎片/材料图标飞入背包'},
+              {id:nid(),text:'展示累计拆解次数、下次预期收益'}
+            ]}
+          ]}
+      ]
+    },
+    {
+      id:nid(),title:'核心行为路径 3：逆向研究（批量）',
+      startPoint:'玩家拥有多个文明遗产道具，希望批量处理',
+      keyPoint:'批量操作效率优先，同时保留单个操作的关键信息反馈',
+      collapsed:true,
+      stages:[
+        {id:nid(),title:'进入批量研究模式',
+          actions:[{id:nid(),text:'在逆向研究面板点击「批量研究」按钮'}],
+          feedbacks:[{id:nid(),text:'切换至批量选择界面，展示所有可研究的文明遗产道具列表'},{id:nid(),text:'列表按"未解锁科技优先"排序'}],
+          branches:[]},
+        {id:nid(),title:'选择多个道具并开始研究',
+          actions:[{id:nid(),text:'勾选最多5个文明遗产道具'},{id:nid(),text:'点击「开始批量研究」按钮'}],
+          feedbacks:[{id:nid(),text:'展示批量研究预览：每个道具的预期产出汇总'},{id:nid(),text:'显示总消耗材料和总研究时间'}],
+          branches:[]},
+        {id:nid(),title:'批量研究进行中',
+          actions:[{id:nid(),text:'等待或执行其他游戏活动'}],
+          feedbacks:[{id:nid(),text:'研究槽位显示独立进度条'},{id:nid(),text:'单个完成时显示轻量Toast提示'}],
+          branches:[]},
+        {id:nid(),title:'一键领取全部结果',
+          actions:[{id:nid(),text:'点击「一键领取」按钮'}],
+          feedbacks:[{id:nid(),text:'汇总结算面板：展示本批次解锁的科技列表 + 获得的碎片/材料汇总'},{id:nid(),text:'科技等级进度条增长动画（如有升级则触发升级演出）'}],
+          branches:[]}
+      ]
+    },
+    {
+      id:nid(),title:'核心行为路径 4：科技发明',
+      startPoint:'玩家拥有基础材料，希望尝试发明新科技',
+      keyPoint:'材料投入→概率预览→结果惊喜/容错，让"试错"变成"探索乐趣"',
+      collapsed:true,
+      stages:[
+        {id:nid(),title:'进入科技发明界面',
+          actions:[{id:nid(),text:'在科技研究台点击「科技发明」Tab'}],
+          feedbacks:[{id:nid(),text:'展示科技发明界面：3×3材料投入区 + 产物预览区'},{id:nid(),text:'展示当前科技等级对发明概率的加成'}],
+          branches:[]},
+        {id:nid(),title:'投入材料',
+          actions:[{id:nid(),text:'点击材料槽位'},{id:nid(),text:'从背包选择材料投入（同种材料不可重复）'}],
+          feedbacks:[{id:nid(),text:'实时更新产物预览列表'},{id:nid(),text:'显示各产物的成功概率（按概率降序）'},{id:nid(),text:'显示"接近发现"提示（如概率≥80%）'}],
+          branches:[]},
+        {id:nid(),title:'开始发明',
+          actions:[{id:nid(),text:'点击「开始发明」按钮'}],
+          feedbacks:[{id:nid(),text:'发明演出动效：材料融合→光效闪烁→结果揭晓'}],
+          branches:[
+            {id:nid(),label:'分支A：发明成功 ✅',items:[
+              {id:nid(),text:'全屏级成功动效'},
+              {id:nid(),text:'展示"发明成功：[科技名称]"'},
+              {id:nid(),text:'记录配方到"发明记录"中'}
+            ]},
+            {id:nid(),label:'分支B：获得残次品 📦',items:[
+              {id:nid(),text:'展示"发明结果：残次品×N"'},
+              {id:nid(),text:'提示"残次品可用于二次发明"'}
+            ]},
+            {id:nid(),label:'分支C：发明失败 ❌',items:[
+              {id:nid(),text:'展示"发明失败，材料已消耗"'},
+              {id:nid(),text:'提示"建议尝试调整材料组合"'}
+            ]}
+          ]}
+      ]
+    },
+    {
+      id:nid(),title:'核心行为路径 5：科技等级提升',
+      startPoint:'玩家持续解锁科技，累计解锁数达到升级阈值',
+      keyPoint:'升级是核心"体验跳变"时刻，需要仪式感演出 + 奖励明确展示',
+      collapsed:true,
+      stages:[
+        {id:nid(),title:'触发科技等级提升',
+          actions:[{id:nid(),text:'解锁第N个科技（达到升级阈值）'}],
+          feedbacks:[{id:nid(),text:'全屏级升级演出：等级数字放大→金色光效→新等级展示'},{id:nid(),text:'展示升级奖励：科技强化机会×N + 一次性奖励道具'}],
+          branches:[]},
+        {id:nid(),title:'领取升级奖励',
+          actions:[{id:nid(),text:'点击「领取奖励」按钮'}],
+          feedbacks:[{id:nid(),text:'奖励道具飞入背包动效'},{id:nid(),text:'显示"已获得科技强化机会×N"'},{id:nid(),text:'提示"可在科技主界面使用强化机会"'}],
+          branches:[]}
+      ]
+    },
+    {
+      id:nid(),title:'核心行为路径 6：科技碎片加点（科技强化）',
+      startPoint:'玩家拥有科技强化机会，希望强化已解锁的科技',
+      keyPoint:'强化选择需要策略深度，但操作流程要简洁',
+      collapsed:true,
+      stages:[
+        {id:nid(),title:'进入科技强化界面',
+          actions:[{id:nid(),text:'在科技主界面点击「科技强化」入口'}],
+          feedbacks:[{id:nid(),text:'展示已解锁科技列表（按类型/等级分组）'},{id:nid(),text:'显示可用强化机会数量'},{id:nid(),text:'每个科技显示当前强化等级和下一级效果预览'}],
+          branches:[]},
+        {id:nid(),title:'选择科技并强化',
+          actions:[{id:nid(),text:'点击目标科技卡片'},{id:nid(),text:'在详情面板点击「强化」按钮'}],
+          feedbacks:[{id:nid(),text:'强化成功动效：科技图标发光→等级+1'},{id:nid(),text:'展示强化后的效果数值变化'},{id:nid(),text:'剩余强化机会数量更新'}],
+          branches:[
+            {id:nid(),label:'分支：已达满级',items:[
+              {id:nid(),text:'强化按钮置灰'},
+              {id:nid(),text:'显示"已达最高等级"'}
+            ]}
+          ]}
+      ]
+    },
+    {
+      id:nid(),title:'核心行为路径 7：拆解台特殊分支（文明遗产拦截）',
+      startPoint:'玩家在拆解台尝试拆解文明遗产道具',
+      keyPoint:'防止玩家误操作损失稀有道具，同时提供便捷的流程跳转',
+      collapsed:true,
+      stages:[
+        {id:nid(),title:'尝试拆解文明遗产道具',
+          actions:[{id:nid(),text:'在拆解台选中文明遗产道具'},{id:nid(),text:'点击「拆解」按钮'}],
+          feedbacks:[{id:nid(),text:'弹出拦截弹窗："该道具为文明遗产，建议前往科技研究台进行逆向研究"'}],
+          branches:[
+            {id:nid(),label:'分支A：选择跳转',items:[
+              {id:nid(),text:'点击「前往研究台」'},
+              {id:nid(),text:'自动打开科技研究台界面，并预选该道具'}
+            ]},
+            {id:nid(),label:'分支B：坚持拆解',items:[
+              {id:nid(),text:'点击「仍要拆解」'},
+              {id:nid(),text:'二次确认弹窗："确定放弃逆向研究收益吗？"'},
+              {id:nid(),text:'确认后执行普通拆解流程'}
+            ]}
+          ]}
+      ]
+    }
+  ];
+}
+
+function renderB() {
+  const el = document.getElementById('panelB');
+  if (!store.B || store.B.length === 0) {
+    el.innerHTML = renderEmptyState();
+    return;
+  }
+  el.innerHTML = store.B.map((path,pi) => `
+    <div class="card" data-path="${path.id}" draggable="true">
+      <div class="card-header">
+        <span class="drag-handle">⠿</span>
+        <div class="info">
+          <div class="title editable" contenteditable="true" data-f="b-title" data-i="${path.id}">${esc(path.title)}${renderAnno(path.id)}</div>
+          <div class="meta">【起点】<span class="editable" contenteditable="true" data-f="b-start" data-i="${path.id}">${esc(path.startPoint)}</span></div>
+          <div class="meta">【体验关键点】<span class="editable" contenteditable="true" data-f="b-key" data-i="${path.id}">${esc(path.keyPoint)}</span></div>
+        </div>
+        <div class="actions">
+          <button onclick="bToggle('${path.id}')">${path.collapsed?'▶':'▼'}</button>
+          <button onclick="showCtx(event,bCtxPath('${path.id}'))">⋯</button>
+        </div>
+      </div>
+      <div class="card-body ${path.collapsed?'collapsed':''}">
+        ${path.stages.map((s,si)=>renderBStage(path.id,s,si)).join('')}
+        <button class="add-btn" onclick="bAddStage('${path.id}')">+ 新增阶段</button>
+      </div>
+    </div>`).join('') +
+    '<button class="add-btn" onclick="bAddPath()" style="margin-top:12px;">+ 新增路径</button>';
+}
+
+function renderBStage(pid,stage,si) {
+  return `<div class="stage" data-stage="${stage.id}" data-path="${pid}">
+    <div class="stage-header">
+      <span style="font-size:13px;cursor:grab;color:var(--text2);">⠿</span>
+      <span style="font-size:16px;">🌊</span>
+      <span class="stage-title">阶段 ${si+1}：<span class="editable" contenteditable="true" data-f="b-stitle" data-i="${stage.id}" data-p="${pid}">${esc(stage.title)}</span></span>
+      <button onclick="showCtx(event,bCtxStage('${pid}','${stage.id}'))">⋯</button>
+    </div>
+    <div class="action-block">
+      <div class="block-label">👤 用户操作</div>
+      <ul class="step-list">${stage.actions.map((a,i)=>`
+        <li class="step-item"><span class="step-num">${i+1}.</span>
+          <span class="step-content editable" contenteditable="true" data-f="b-step" data-i="${a.id}" data-s="${stage.id}" data-p="${pid}" data-t="actions">${esc(a.text)}</span>
+          <button class="step-del" onclick="bDelStep('${pid}','${stage.id}','actions','${a.id}')">✕</button>
+        </li>`).join('')}
+      </ul>
+      <button class="add-btn" onclick="bAddStep('${pid}','${stage.id}','actions')">+ 新增操作</button>
+    </div>
+    <div style="text-align:center;color:var(--text2);font-size:16px;margin:3px 0;">│<br>▼</div>
+    <div class="feedback-block">
+      <div class="block-label">💻 系统反馈</div>
+      <ul class="step-list">${stage.feedbacks.map(f=>`
+        <li class="step-item"><span class="step-num">•</span>
+          <span class="step-content editable" contenteditable="true" data-f="b-step" data-i="${f.id}" data-s="${stage.id}" data-p="${pid}" data-t="feedbacks">${esc(f.text)}</span>
+          <button class="step-del" onclick="bDelStep('${pid}','${stage.id}','feedbacks','${f.id}')">✕</button>
+        </li>`).join('')}
+      </ul>
+      <button class="add-btn" onclick="bAddStep('${pid}','${stage.id}','feedbacks')">+ 新增反馈</button>
+    </div>
+    ${stage.branches.map(b=>renderBBranch(pid,stage.id,b)).join('')}
+    <button class="add-btn" onclick="bAddBranch('${pid}','${stage.id}')">+ 新增分支</button>
+  </div>`;
+}
+
+function renderBBranch(pid,sid,b) {
+  return `<div class="branch"><div class="branch-header">
+    <span style="color:var(--orange);">👉</span>
+    <span class="branch-title editable" contenteditable="true" data-f="b-blabel" data-i="${b.id}" data-s="${sid}" data-p="${pid}">${esc(b.label)}</span>
+    <button onclick="bDelBranch('${pid}','${sid}','${b.id}')">✕</button>
+  </div>
+  ${b.items.map(it=>`<div class="branch-item"><span class="bullet">•</span>
+    <span class="editable" contenteditable="true" style="flex:1" data-f="b-bitem" data-i="${it.id}" data-b="${b.id}" data-s="${sid}" data-p="${pid}">${esc(it.text)}</span>
+    <button class="step-del" onclick="bDelBItem('${pid}','${sid}','${b.id}','${it.id}')" style="opacity:.4;font-size:11px;background:none;border:none;color:var(--text2);cursor:pointer;">✕</button>
+  </div>`).join('')}
+  <button class="add-btn" onclick="bAddBItem('${pid}','${sid}','${b.id}')">+ 新增分支项</button>
+  </div>`;
+}
+
+// Mode B helpers
+function bFindP(id){return store.B.find(p=>p.id===id);}
+function bFindS(pid,sid){const p=bFindP(pid);return p?p.stages.find(s=>s.id===sid):null;}
+function bToggle(id){const p=bFindP(id);if(p)p.collapsed=!p.collapsed;renderAll();}
+function bAddPath(){store.B.push({id:nid(),title:'新行为路径',startPoint:'请填写起点',keyPoint:'请填写关键点',collapsed:false,stages:[{id:nid(),title:'新阶段',actions:[{id:nid(),text:'请填写'}],feedbacks:[{id:nid(),text:'请填写'}],branches:[]}]});save();renderAll();toast('已新增路径');}
+function bDelPath(id){store.B=store.B.filter(p=>p.id!==id);save();renderAll();toast('已删除');}
+function bAddStage(pid){const p=bFindP(pid);if(p){p.stages.push({id:nid(),title:'新阶段',actions:[{id:nid(),text:'请填写'}],feedbacks:[{id:nid(),text:'请填写'}],branches:[]});save();renderAll();toast('已新增');}}
+function bDelStage(pid,sid){const p=bFindP(pid);if(p){p.stages=p.stages.filter(s=>s.id!==sid);save();renderAll();toast('已删除');}}
+function bAddStep(pid,sid,type){const s=bFindS(pid,sid);if(s){s[type].push({id:nid(),text:'请填写'});save();renderAll();toast('已新增');}}
+function bDelStep(pid,sid,type,id){const s=bFindS(pid,sid);if(s){s[type]=s[type].filter(x=>x.id!==id);save();renderAll();toast('已删除');}}
+function bAddBranch(pid,sid){const s=bFindS(pid,sid);if(s){s.branches.push({id:nid(),label:'新分支：条件',items:[{id:nid(),text:'请填写'}]});save();renderAll();toast('已新增');}}
+function bDelBranch(pid,sid,bid){const s=bFindS(pid,sid);if(s){s.branches=s.branches.filter(b=>b.id!==bid);save();renderAll();toast('已删除');}}
+function bAddBItem(pid,sid,bid){const s=bFindS(pid,sid);const b=s?.branches.find(x=>x.id===bid);if(b){b.items.push({id:nid(),text:'请填写'});save();renderAll();toast('已新增');}}
+function bDelBItem(pid,sid,bid,iid){const s=bFindS(pid,sid);const b=s?.branches.find(x=>x.id===bid);if(b){b.items=b.items.filter(x=>x.id!==iid);save();renderAll();toast('已删除');}}
+function bCtxPath(id){return `<button onclick="bDelPath('${id}');closeCtx();" class="danger">🗑 删除路径</button>`;}
+function bCtxStage(pid,sid){return `<button onclick="bDelStage('${pid}','${sid}');closeCtx();" class="danger">🗑 删除阶段</button>`;}
+
+// ============================================================
+// MODE C: 信息架构
+// ============================================================
+function initC() {
+  store.C = [
+    { id:nid(), pageName:'科技研究台 — 主界面', collapsed:false,
+      nodes:[
+        {id:nid(),icon:'📌',label:'常驻信息区',note:'顶部',children:[
+          {id:nid(),icon:'',label:'科技等级 + 等级进度条',note:'影响发明概率，需常驻可见',children:[]},
+          {id:nid(),icon:'',label:'科技碎片余额',note:'通用货币，多处需要参考',children:[]},
+          {id:nid(),icon:'',label:'未使用强化机会提示（角标）',note:'避免玩家遗忘',children:[]}
+        ]},
+        {id:nid(),icon:'🗂️',label:'功能Tab切换区',note:'顶部下方',children:[
+          {id:nid(),icon:'',label:'Tab1: 逆向研究（默认选中）',note:'主要解锁手段',children:[]},
+          {id:nid(),icon:'',label:'Tab2: 科技发明',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🔲',label:'内容区',note:'根据Tab切换展示子页面',children:[]}
+      ]
+    },
+    { id:nid(), pageName:'逆向研究子页面', collapsed:true,
+      nodes:[
+        {id:nid(),icon:'🗂️',label:'研究槽位区',note:'最多5个槽位',children:[
+          {id:nid(),icon:'',label:'槽位状态：空闲 / 研究中 / 已完成',note:'',children:[]},
+          {id:nid(),icon:'',label:'进度条（研究中状态）',note:'',children:[]},
+          {id:nid(),icon:'',label:'预期产出预览',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'📌',label:'可用道具提示',note:'',children:[
+          {id:nid(),icon:'',label:'背包中文明遗产数量',note:'',children:[]},
+          {id:nid(),icon:'',label:'储藏箱中文明遗产数量',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🕹️',label:'操作区',note:'底部',children:[
+          {id:nid(),icon:'',label:'「批量研究」按钮',note:'',children:[]},
+          {id:nid(),icon:'',label:'「一键领取」按钮',note:'有完成项时高亮',children:[]}
+        ]}
+      ]
+    },
+    { id:nid(), pageName:'道具选择列表', collapsed:true,
+      nodes:[
+        {id:nid(),icon:'📌',label:'筛选/排序区',note:'顶部',children:[
+          {id:nid(),icon:'',label:'数据来源切换：背包 / 储藏箱',note:'',children:[]},
+          {id:nid(),icon:'',label:'排序方式：品质 / 获取时间 / 对应科技',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🗂️',label:'道具列表区',note:'',children:[
+          {id:nid(),icon:'',label:'道具卡片：图标 + 名称 + 文明遗产角标',note:'',children:[]},
+          {id:nid(),icon:'',label:'对应科技预览（悬停/长按）',note:'',children:[]},
+          {id:nid(),icon:'',label:'已解锁/未解锁状态标识',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🕹️',label:'操作区',note:'',children:[
+          {id:nid(),icon:'',label:'「确认选择」按钮',note:'',children:[]},
+          {id:nid(),icon:'',label:'「取消」按钮',note:'',children:[]}
+        ]}
+      ]
+    },
+    { id:nid(), pageName:'研究结果面板', collapsed:true,
+      nodes:[
+        {id:nid(),icon:'🗂️',label:'结果展示区',note:'',children:[
+          {id:nid(),icon:'',label:'科技图标 + 名称（解锁成功时）',note:'',children:[]},
+          {id:nid(),icon:'',label:'碎片/材料图标 + 数量（拆解时）',note:'',children:[]},
+          {id:nid(),icon:'',label:'科技效果详情',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'📌',label:'进度关联展示',note:'',children:[
+          {id:nid(),icon:'',label:'科技等级进度条变化',note:'',children:[]},
+          {id:nid(),icon:'',label:'距下次升级还需X个科技',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🕹️',label:'操作区',note:'',children:[
+          {id:nid(),icon:'',label:'「继续研究」按钮',note:'快捷返回',children:[]},
+          {id:nid(),icon:'',label:'「查看科技」按钮',note:'跳转科技详情',children:[]},
+          {id:nid(),icon:'',label:'「关闭」按钮',note:'',children:[]}
+        ]}
+      ]
+    },
+    { id:nid(), pageName:'科技发明子页面', collapsed:true,
+      nodes:[
+        {id:nid(),icon:'🗂️',label:'材料投入区（3×3九宫格）',note:'左侧/上方',children:[
+          {id:nid(),icon:'',label:'9个材料槽位',note:'同种材料不可重复',children:[]},
+          {id:nid(),icon:'',label:'投入汇总：已投入种类数 + 预计时间',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🗂️',label:'产物预览区',note:'右侧/下方',children:[
+          {id:nid(),icon:'',label:'可能产物列表（按概率降序）',note:'实时计算',children:[]},
+          {id:nid(),icon:'',label:'"接近发现"提示区',note:'可配置开关',children:[]},
+          {id:nid(),icon:'',label:'综合概率说明',note:'≥100%绿色 / <100%橙色',children:[]}
+        ]},
+        {id:nid(),icon:'🕹️',label:'操作区',note:'底部',children:[
+          {id:nid(),icon:'',label:'「开始发明」按钮',note:'至少投入1种材料可点击',children:[]},
+          {id:nid(),icon:'',label:'「快捷配方」入口',note:'',children:[]},
+          {id:nid(),icon:'',label:'「发明记录」入口',note:'',children:[]}
+        ]}
+      ]
+    },
+    { id:nid(), pageName:'发明结果面板', collapsed:true,
+      nodes:[
+        {id:nid(),icon:'🗂️',label:'结果展示区',note:'',children:[
+          {id:nid(),icon:'',label:'成功：科技图标 + 名称 + 效果',note:'',children:[]},
+          {id:nid(),icon:'',label:'残次品：残次品图标 + 数量 + 用途提示',note:'',children:[]},
+          {id:nid(),icon:'',label:'失败：失败提示 + 建议',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'📌',label:'配方记录提示',note:'成功时显示',children:[
+          {id:nid(),icon:'',label:'本次配方已记录',note:'',children:[]},
+          {id:nid(),icon:'',label:'查看发明记录入口',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🕹️',label:'操作区',note:'',children:[
+          {id:nid(),icon:'',label:'「再次发明」按钮',note:'保留上次材料',children:[]},
+          {id:nid(),icon:'',label:'「返回」按钮',note:'',children:[]}
+        ]}
+      ]
+    },
+    { id:nid(), pageName:'科技主界面', collapsed:true,
+      nodes:[
+        {id:nid(),icon:'📌',label:'科技等级与进度区',note:'顶部',children:[
+          {id:nid(),icon:'',label:'当前科技等级',note:'',children:[]},
+          {id:nid(),icon:'',label:'进度条：已解锁/下一等级所需',note:'',children:[]},
+          {id:nid(),icon:'',label:'升级预览：下一等级奖励',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🗂️',label:'科技列表区',note:'',children:[
+          {id:nid(),icon:'',label:'分类Tab：全部 / 工具 / 建筑 / 装备',note:'',children:[]},
+          {id:nid(),icon:'',label:'科技卡片：图标 + 名称 + 强化等级',note:'',children:[]},
+          {id:nid(),icon:'',label:'状态标识：已解锁 / 未解锁 / 可强化',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🕹️',label:'快捷入口区',note:'底部',children:[
+          {id:nid(),icon:'',label:'「前往研究台」按钮',note:'',children:[]},
+          {id:nid(),icon:'',label:'「科技强化」按钮',note:'有机会时角标提示',children:[]}
+        ]}
+      ]
+    },
+    { id:nid(), pageName:'科技强化界面', collapsed:true,
+      nodes:[
+        {id:nid(),icon:'📌',label:'强化机会展示',note:'顶部',children:[
+          {id:nid(),icon:'',label:'可用强化机会×N',note:'',children:[]},
+          {id:nid(),icon:'',label:'来源说明：科技升级获得',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🗂️',label:'可强化科技列表',note:'',children:[
+          {id:nid(),icon:'',label:'已解锁科技（按类型/强化等级分组）',note:'',children:[]},
+          {id:nid(),icon:'',label:'当前等级 / 满级标识',note:'',children:[]},
+          {id:nid(),icon:'',label:'下一级效果预览',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🗂️',label:'强化详情面板（选中后）',note:'',children:[
+          {id:nid(),icon:'',label:'科技完整信息',note:'',children:[]},
+          {id:nid(),icon:'',label:'各等级效果对比',note:'',children:[]},
+          {id:nid(),icon:'',label:'「强化」按钮',note:'满级时置灰',children:[]}
+        ]}
+      ]
+    },
+    { id:nid(), pageName:'拆解台拦截弹窗', collapsed:true,
+      nodes:[
+        {id:nid(),icon:'📌',label:'警告信息区',note:'',children:[
+          {id:nid(),icon:'',label:'警告图标 + 文案',note:'该道具为文明遗产',children:[]},
+          {id:nid(),icon:'',label:'建议说明',note:'建议前往科技研究台',children:[]},
+          {id:nid(),icon:'',label:'逆向研究收益预览',note:'可获得的科技/碎片',children:[]}
+        ]},
+        {id:nid(),icon:'🕹️',label:'操作区',note:'',children:[
+          {id:nid(),icon:'',label:'「前往研究台」按钮',note:'主要引导',children:[]},
+          {id:nid(),icon:'',label:'「仍要拆解」按钮',note:'次要选项，需二次确认',children:[]},
+          {id:nid(),icon:'',label:'「取消」按钮',note:'',children:[]}
+        ]}
+      ]
+    }
+  ];
+}
+
+function renderC() {
+  const el = document.getElementById('panelC');
+  if (!store.C || store.C.length === 0) {
+    el.innerHTML = renderEmptyState();
+    return;
+  }
+  el.innerHTML = store.C.map(page => `
+    <div class="card">
+      <div class="card-header">
+        <span class="drag-handle">⠿</span>
+        <div class="info">
+          <div class="title">🏗️ <span class="editable" contenteditable="true" data-f="c-page" data-i="${page.id}">${esc(page.pageName)}</span></div>
+        </div>
+        <div class="actions">
+          <button onclick="cToggle('${page.id}')">${page.collapsed?'▶':'▼'}</button>
+          <button class="danger" style="color:var(--red)" onclick="if(confirm('删除？'))cDelPage('${page.id}')">🗑</button>
+        </div>
+      </div>
+      <div class="card-body ${page.collapsed?'collapsed':''}">
+        <div class="tree-node root">${page.nodes.map(n=>renderCNode(page.id,n)).join('')}</div>
+        <button class="add-btn" onclick="cAddNode('${page.id}',null)">+ 新增根节点</button>
+      </div>
+    </div>`).join('') +
+    '<button class="add-btn" onclick="cAddPage()" style="margin-top:12px;">+ 新增页面架构</button>';
+}
+
+function renderCNode(pageId,node,depth) {
+  depth = depth||0;
+  return `<div class="tree-node" style="${depth===0?'margin-left:0;':''}">
+    <div class="node-row">
+      <span class="node-icon">${node.icon||'├─'}</span>
+      <span class="node-label editable" contenteditable="true" data-f="c-label" data-i="${node.id}" data-pg="${pageId}">${esc(node.label)}</span>
+      ${node.note?`<span class="node-note">(${esc(node.note)})</span>`:''}
+      <span class="node-actions">
+        <button onclick="cAddNode('${pageId}','${node.id}')" title="添加子节点">＋</button>
+        <button onclick="cEditNote('${pageId}','${node.id}')" title="编辑备注">📝</button>
+        <button onclick="cDelNode('${pageId}','${node.id}')" title="删除" style="color:var(--red)">✕</button>
+      </span>
+    </div>
+    ${(node.children||[]).map(c=>renderCNode(pageId,c,depth+1)).join('')}
+  </div>`;
+}
+
+// Mode C helpers
+function cFindPage(id){return store.C.find(p=>p.id===id);}
+function cFindNode(nodes,id){
+  for(const n of nodes){if(n.id===id)return n;const r=cFindNode(n.children||[],id);if(r)return r;}return null;
+}
+function cFindParent(nodes,id){
+  for(const n of nodes){if((n.children||[]).some(c=>c.id===id))return n;const r=cFindParent(n.children||[],id);if(r)return r;}return null;
+}
+function cToggle(id){const p=cFindPage(id);if(p)p.collapsed=!p.collapsed;renderAll();}
+function cAddPage(){store.C.push({id:nid(),pageName:'新页面',collapsed:false,nodes:[{id:nid(),icon:'📌',label:'新区域',note:'',children:[]}]});save();renderAll();toast('已新增');}
+function cDelPage(id){store.C=store.C.filter(p=>p.id!==id);save();renderAll();toast('已删除');}
+function cAddNode(pgId,parentId){
+  const pg=cFindPage(pgId);if(!pg)return;
+  const newNode={id:nid(),icon:'',label:'新节点',note:'',children:[]};
+  if(!parentId){pg.nodes.push(newNode);}
+  else{const p=cFindNode(pg.nodes,parentId);if(p){if(!p.children)p.children=[];p.children.push(newNode);}}
+  save();renderAll();toast('已新增');
+}
+function cDelNode(pgId,nodeId){
+  const pg=cFindPage(pgId);if(!pg)return;
+  function del(arr){return arr.filter(n=>{if(n.id===nodeId)return false;n.children=del(n.children||[]);return true;});}
+  pg.nodes=del(pg.nodes);save();renderAll();toast('已删除');
+}
+function cEditNote(pgId,nodeId){
+  const pg=cFindPage(pgId);if(!pg)return;
+  const n=cFindNode(pg.nodes,nodeId);if(!n)return;
+  const v=prompt('编辑设计依据/备注：',n.note||'');
+  if(v===null)return;n.note=v;save();renderAll();toast('已更新');
+}
+
+// ============================================================
+// MODE D: 交互稿
+// ============================================================
+function initD() {
+  store.D = [
+    { id:nid(), specName:'科技研究台 — 主界面', collapsed:false,
+      visible:[
+        {id:nid(),text:'页面布局：全屏界面，纵向三段式（顶部信息栏 | Tab切换栏 | 内容区）'},
+        {id:nid(),text:'科技等级进度条：进度不足时灰色填充，满时金色脉动'},
+        {id:nid(),text:'强化机会角标：无可用机会时隐藏；有机会时红色数字角标'},
+        {id:nid(),text:'Tab按钮：选中态高亮+下划线；未选中态默认色'}
+      ],
+      interactions:[
+        {id:nid(),text:'点击「逆向研究」Tab ➔ 内容区切换至逆向研究子页面'},
+        {id:nid(),text:'点击「科技发明」Tab ➔ 内容区切换至科技发明子页面'},
+        {id:nid(),text:'点击强化机会角标 ➔ 弹出气泡提示，点击跳转强化界面'},
+        {id:nid(),text:'点击科技等级区域 ➔ 展开等级详情悬浮卡片'}
+      ],
+      boundaries:[
+        {id:nid(),type:'设施被破坏',trigger:'耐久为0或被攻击',feedback:'Toast提示"研究台已损坏，请先修复"',recovery:'提示修复所需材料'},
+        {id:nid(),type:'首次打开引导',trigger:'玩家首次交互研究台',feedback:'新手引导蒙层，高亮Tab',recovery:'按序引导'}
+      ]
+    },
+    { id:nid(), specName:'逆向研究子页面', collapsed:true,
+      visible:[
+        {id:nid(),text:'研究槽位：5个槽位横向排列，空闲态显示"+"图标'},
+        {id:nid(),text:'研究中槽位：显示道具图标 + 进度条 + 剩余时间'},
+        {id:nid(),text:'已完成槽位：道具图标发光 + "完成"标识'},
+        {id:nid(),text:'可用道具提示：背包/储藏箱中文明遗产数量'}
+      ],
+      interactions:[
+        {id:nid(),text:'点击空闲槽位 ➔ 打开道具选择列表'},
+        {id:nid(),text:'点击研究中槽位 ➔ 展示详细进度和预期产出'},
+        {id:nid(),text:'点击已完成槽位 ➔ 弹出研究结果面板'},
+        {id:nid(),text:'点击「批量研究」 ➔ 切换至批量选择模式'},
+        {id:nid(),text:'点击「一键领取」 ➔ 依次弹出所有完成项的结果'}
+      ],
+      boundaries:[
+        {id:nid(),type:'槽位已满',trigger:'5个槽位均在研究中',feedback:'新增槽位按钮置灰 + Toast提示',recovery:'等待或加速完成'},
+        {id:nid(),type:'无可用道具',trigger:'背包和储藏箱均无文明遗产',feedback:'提示"暂无可研究道具"',recovery:'引导获取途径'}
+      ]
+    },
+    { id:nid(), specName:'道具选择列表', collapsed:true,
+      visible:[
+        {id:nid(),text:'列表区：道具卡片网格布局（2-3列）'},
+        {id:nid(),text:'道具卡片：图标 + 名称 + 文明遗产角标 + 对应科技状态'},
+        {id:nid(),text:'筛选区：数据来源Tab（背包/储藏箱）+ 排序下拉'},
+        {id:nid(),text:'选中态：边框高亮 + 勾选图标'}
+      ],
+      interactions:[
+        {id:nid(),text:'点击道具卡片 ➔ 选中该道具，显示选中态'},
+        {id:nid(),text:'长按/悬停道具 ➔ 展示对应科技预览气泡'},
+        {id:nid(),text:'切换数据来源Tab ➔ 列表刷新'},
+        {id:nid(),text:'点击「确认选择」 ➔ 返回逆向研究页，道具放入槽位'}
+      ],
+      boundaries:[
+        {id:nid(),type:'列表为空',trigger:'当前来源无文明遗产',feedback:'空状态插画 + 引导文案',recovery:'提示切换来源或获取方式'},
+        {id:nid(),type:'道具数量过多',trigger:'列表项 > 50',feedback:'启用分页或虚拟滚动',recovery:'使用筛选功能'}
+      ]
+    },
+    { id:nid(), specName:'研究结果面板', collapsed:true,
+      visible:[
+        {id:nid(),text:'结果展示：科技图标居中放大 + 名称 + 效果描述'},
+        {id:nid(),text:'解锁动效：科技图标从道具中浮现 + 点亮动画'},
+        {id:nid(),text:'碎片结算：碎片图标 + 数量 + 飞入背包动效'},
+        {id:nid(),text:'进度关联：科技等级进度条增长动画'}
+      ],
+      interactions:[
+        {id:nid(),text:'动效播放完毕 ➔ 展示操作按钮'},
+        {id:nid(),text:'点击「继续研究」 ➔ 关闭面板，返回逆向研究页'},
+        {id:nid(),text:'点击「查看科技」 ➔ 跳转科技详情页'},
+        {id:nid(),text:'点击面板外区域 ➔ 关闭面板'}
+      ],
+      boundaries:[
+        {id:nid(),type:'科技升级触发',trigger:'本次解锁导致等级提升',feedback:'衔接升级演出，结果面板后置',recovery:'升级演出完成后展示结果'},
+        {id:nid(),type:'网络异常',trigger:'领取时断网',feedback:'重试按钮 + 提示',recovery:'重连后重新领取'}
+      ]
+    },
+    { id:nid(), specName:'科技发明子页面', collapsed:true,
+      visible:[
+        {id:nid(),text:'材料投入区：3×3九宫格，空槽位显示"+"'},
+        {id:nid(),text:'已投入槽位：显示材料图标 + 数量，可点击移除'},
+        {id:nid(),text:'产物预览区：可能产物列表（按概率降序）+ 概率百分比'},
+        {id:nid(),text:'概率指示：≥100%显示绿色"必定成功"，<100%橙色警示'}
+      ],
+      interactions:[
+        {id:nid(),text:'点击材料槽位 ➔ 打开材料选择列表'},
+        {id:nid(),text:'点击已投入材料 ➔ 移除该材料，更新预览'},
+        {id:nid(),text:'材料变化时 ➔ 实时更新产物预览和概率'},
+        {id:nid(),text:'点击「开始发明」 ➔ 播放发明动效，展示结果'},
+        {id:nid(),text:'点击「快捷配方」 ➔ 弹出配方列表，点击自动填充'}
+      ],
+      boundaries:[
+        {id:nid(),type:'材料不足',trigger:'材料数量为0',feedback:'材料卡片置灰 + 数量标红',recovery:'提示获取途径'},
+        {id:nid(),type:'同种材料重复',trigger:'尝试投入已存在材料',feedback:'Toast提示"同种材料不可重复"',recovery:'选择其他材料'}
+      ]
+    },
+    { id:nid(), specName:'发明结果面板', collapsed:true,
+      visible:[
+        {id:nid(),text:'成功态：科技图标居中 + 金色光效 + "发明成功"'},
+        {id:nid(),text:'残次品态：残次品图标 + 数量 + 用途提示'},
+        {id:nid(),text:'失败态：灰色图标 + "发明失败" + 建议文案'},
+        {id:nid(),text:'配方记录提示：成功时显示"已记录配方"'}
+      ],
+      interactions:[
+        {id:nid(),text:'点击「再次发明」 ➔ 返回发明页，保留上次材料配置'},
+        {id:nid(),text:'点击「返回」 ➔ 清空材料，返回发明页'},
+        {id:nid(),text:'点击「查看配方记录」 ➔ 跳转配方列表'}
+      ],
+      boundaries:[
+        {id:nid(),type:'连续失败',trigger:'连续失败3次',feedback:'额外安慰提示 + 建议调整',recovery:'提供配方参考入口'},
+        {id:nid(),type:'首次成功',trigger:'玩家首次发明成功',feedback:'额外庆祝动效 + 成就提示',recovery:'引导查看科技详情'}
+      ]
+    },
+    { id:nid(), specName:'科技主界面', collapsed:true,
+      visible:[
+        {id:nid(),text:'页面布局：顶部进度区 + 科技列表区 + 底部快捷入口'},
+        {id:nid(),text:'科技等级：大字号显示 + 进度条 + 下一级预览'},
+        {id:nid(),text:'科技卡片：图标 + 名称 + 强化等级星星 + 状态标识'},
+        {id:nid(),text:'分类Tab：全部/工具/建筑/装备，选中态高亮'}
+      ],
+      interactions:[
+        {id:nid(),text:'点击科技卡片 ➔ 展开科技详情面板'},
+        {id:nid(),text:'切换分类Tab ➔ 列表筛选刷新'},
+        {id:nid(),text:'点击「前往研究台」 ➔ 跳转科技研究台'},
+        {id:nid(),text:'点击「科技强化」 ➔ 跳转科技强化界面'}
+      ],
+      boundaries:[
+        {id:nid(),type:'无已解锁科技',trigger:'新玩家首次进入',feedback:'空状态 + 引导文案',recovery:'引导前往研究台'},
+        {id:nid(),type:'科技数量过多',trigger:'已解锁 > 30',feedback:'启用搜索功能',recovery:'支持关键词搜索'}
+      ]
+    },
+    { id:nid(), specName:'科技强化界面', collapsed:true,
+      visible:[
+        {id:nid(),text:'强化机会展示：大字号数字 + 来源说明'},
+        {id:nid(),text:'科技列表：按类型/强化等级分组展示'},
+        {id:nid(),text:'科技卡片：当前等级 + 下一级效果预览'},
+        {id:nid(),text:'满级标识：金色"MAX"角标'}
+      ],
+      interactions:[
+        {id:nid(),text:'点击科技卡片 ➔ 展开强化详情面板'},
+        {id:nid(),text:'点击「强化」按钮 ➔ 播放强化动效，等级+1'},
+        {id:nid(),text:'强化成功 ➔ 更新卡片等级，机会数-1'}
+      ],
+      boundaries:[
+        {id:nid(),type:'无强化机会',trigger:'机会数为0',feedback:'提示"暂无强化机会"',recovery:'引导科技升级获取'},
+        {id:nid(),type:'科技已满级',trigger:'点击满级科技',feedback:'按钮置灰 + 满级提示',recovery:'引导强化其他科技'}
+      ]
+    },
+    { id:nid(), specName:'科技等级升级演出', collapsed:true,
+      visible:[
+        {id:nid(),text:'全屏遮罩：深色半透明背景'},
+        {id:nid(),text:'等级数字动效：旧数字→新数字，放大+金色光效'},
+        {id:nid(),text:'奖励展示：强化机会图标 + 一次性奖励道具'},
+        {id:nid(),text:'庆祝粒子：金色粒子飘落'}
+      ],
+      interactions:[
+        {id:nid(),text:'动效播放完毕 ➔ 展示「领取奖励」按钮'},
+        {id:nid(),text:'点击「领取奖励」 ➔ 奖励飞入背包，关闭演出'},
+        {id:nid(),text:'点击空白区域 ➔ 跳过动效，直接展示结果'}
+      ],
+      boundaries:[
+        {id:nid(),type:'连续升级',trigger:'单次操作触发多次升级',feedback:'合并演出，累计展示',recovery:'一次性展示所有奖励'},
+        {id:nid(),type:'动效加载失败',trigger:'资源加载异常',feedback:'降级为简化动效',recovery:'直接展示结果'}
+      ]
+    },
+    { id:nid(), specName:'拆解台拦截弹窗', collapsed:true,
+      visible:[
+        {id:nid(),text:'弹窗布局：警告图标 + 说明文案 + 收益预览 + 操作按钮'},
+        {id:nid(),text:'警告图标：橙色感叹号'},
+        {id:nid(),text:'收益预览：逆向研究可获得的科技/碎片预览'},
+        {id:nid(),text:'按钮组：「前往研究台」（主按钮）+ 「仍要拆解」（次按钮）'}
+      ],
+      interactions:[
+        {id:nid(),text:'点击「前往研究台」 ➔ 关闭弹窗，打开研究台并预选道具'},
+        {id:nid(),text:'点击「仍要拆解」 ➔ 弹出二次确认弹窗'},
+        {id:nid(),text:'二次确认「确定」 ➔ 执行拆解，返回拆解台'},
+        {id:nid(),text:'点击「取消」或弹窗外 ➔ 关闭弹窗，取消操作'}
+      ],
+      boundaries:[
+        {id:nid(),type:'批量拆解',trigger:'选中多个含文明遗产的道具',feedback:'逐个弹出拦截或合并提示',recovery:'支持"全部跳转"或"全部拆解"'},
+        {id:nid(),type:'用户设置跳过',trigger:'用户勾选"不再提示"',feedback:'记录用户偏好',recovery:'设置中可恢复提示'}
+      ]
+    }
+  ];
+}
+
+function renderD() {
+  const el = document.getElementById('panelD');
+  if (!store.D || store.D.length === 0) {
+    el.innerHTML = renderEmptyState();
+    return;
+  }
+  el.innerHTML = store.D.map(spec => `
+    <div class="card">
+      <div class="card-header">
+        <span class="drag-handle">⠿</span>
+        <div class="info">
+          <div class="title">📱 <span class="editable" contenteditable="true" data-f="d-name" data-i="${spec.id}">${esc(spec.specName)}</span></div>
+        </div>
+        <div class="actions">
+          <button onclick="dToggle('${spec.id}')">${spec.collapsed?'▶':'▼'}</button>
+          <button class="danger" style="color:var(--red)" onclick="if(confirm('删除？'))dDelSpec('${spec.id}')">🗑</button>
+        </div>
+      </div>
+      <div class="card-body ${spec.collapsed?'collapsed':''}">
+        <div class="spec-section">
+          <div class="spec-section-header visible">👁️ 可见层（默认状态与基础逻辑）</div>
+          <div class="spec-section-body">
+            <ul class="step-list">${spec.visible.map(v=>`
+              <li class="step-item"><span class="step-num">•</span>
+                <span class="step-content editable" contenteditable="true" data-f="d-vis" data-i="${v.id}" data-sp="${spec.id}">${esc(v.text)}</span>
+                <button class="step-del" onclick="dDelItem('${spec.id}','visible','${v.id}')">✕</button>
+              </li>`).join('')}
+            </ul>
+            <button class="add-btn" onclick="dAddItem('${spec.id}','visible')">+ 新增可见层条目</button>
+          </div>
+        </div>
+        <div class="spec-section">
+          <div class="spec-section-header interact">🔄 交互层（操作与反馈流）</div>
+          <div class="spec-section-body">
+            <ul class="step-list">${spec.interactions.map((it,i)=>`
+              <li class="step-item"><span class="step-num">${i+1}.</span>
+                <span class="step-content editable" contenteditable="true" data-f="d-int" data-i="${it.id}" data-sp="${spec.id}">${esc(it.text)}</span>
+                <button class="step-del" onclick="dDelItem('${spec.id}','interactions','${it.id}')">✕</button>
+              </li>`).join('')}
+            </ul>
+            <button class="add-btn" onclick="dAddItem('${spec.id}','interactions')">+ 新增交互条目</button>
+          </div>
+        </div>
+        <div class="spec-section">
+          <div class="spec-section-header boundary">⚠️ 边界层（异常与极限状态）</div>
+          <div class="spec-section-body">
+            ${spec.boundaries.map(b=>`
+              <div style="margin:6px 0;padding:8px 10px;border-radius:5px;border:1px solid rgba(248,113,113,.15);background:rgba(248,113,113,.04);">
+                <div style="font-weight:600;font-size:13px;color:var(--red);">
+                  <span class="editable" contenteditable="true" data-f="d-btype" data-i="${b.id}" data-sp="${spec.id}">${esc(b.type)}</span>
+                  <button class="step-del" onclick="dDelItem('${spec.id}','boundaries','${b.id}')" style="float:right;opacity:.5;font-size:11px;background:none;border:none;color:var(--text2);cursor:pointer;">✕</button>
+                </div>
+                <div style="font-size:13px;margin-top:3px;">触发：<span class="editable" contenteditable="true" data-f="d-btrig" data-i="${b.id}" data-sp="${spec.id}">${esc(b.trigger)}</span></div>
+                <div style="font-size:13px;margin-top:2px;">反馈：<span class="editable" contenteditable="true" data-f="d-bfeed" data-i="${b.id}" data-sp="${spec.id}">${esc(b.feedback)}</span></div>
+                <div style="font-size:13px;margin-top:2px;">恢复：<span class="editable" contenteditable="true" data-f="d-brec" data-i="${b.id}" data-sp="${spec.id}">${esc(b.recovery)}</span></div>
+              </div>`).join('')}
+            <button class="add-btn" onclick="dAddItem('${spec.id}','boundaries')">+ 新增边界条目</button>
+          </div>
+        </div>
+      </div>
+    </div>`).join('') +
+    '<button class="add-btn" onclick="dAddSpec()" style="margin-top:12px;">+ 新增交互说明</button>';
+}
+
+// Mode D helpers
+function dFindSpec(id){return store.D.find(s=>s.id===id);}
+function dToggle(id){const s=dFindSpec(id);if(s)s.collapsed=!s.collapsed;renderAll();}
+function dAddSpec(){store.D.push({id:nid(),specName:'新交互说明',collapsed:false,visible:[{id:nid(),text:'请填写'}],interactions:[{id:nid(),text:'请填写'}],boundaries:[]});save();renderAll();toast('已新增');}
+function dDelSpec(id){store.D=store.D.filter(s=>s.id!==id);save();renderAll();toast('已删除');}
+function dAddItem(spId,type){
+  const sp=dFindSpec(spId);if(!sp)return;
+  if(type==='boundaries')sp[type].push({id:nid(),type:'异常类型',trigger:'触发条件',feedback:'反馈内容',recovery:'恢复路径'});
+  else sp[type].push({id:nid(),text:'请填写'});
+  save();renderAll();toast('已新增');
+}
+function dDelItem(spId,type,id){const sp=dFindSpec(spId);if(!sp)return;sp[type]=sp[type].filter(x=>x.id!==id);save();renderAll();toast('已删除');}
+
+// ============================================================
+// onBlur — unified edit handler for all modes
+// ============================================================
+function onBlur(e) {
+  const el = e.target, ds = el.dataset, v = el.textContent.trim();
+  let ch = false;
+  const f = ds.f;
+  // Mode A
+  if (f === 'a-main' || f === 'a-hidden') {
+    const type = f === 'a-main' ? 'main' : 'hidden';
+    const g = store.A.goals[type].find(x => x.id === ds.i);
+    if (g && g.text !== v) { g.text = v; ch = true; }
+  } else if (f === 'a-modname') {
+    const m = store.A.modules.find(x => x.id === ds.i);
+    if (m && m.name !== v) { m.name = v; ch = true; }
+  } else if (f === 'a-feat') {
+    const m = store.A.modules.find(x => x.id === ds.mod);
+    const it = m?.features.find(x => x.id === ds.i);
+    if (it && it.text !== v) { it.text = v; ch = true; }
+  } else if (f === 'a-sug') {
+    const m = store.A.modules.find(x => x.id === ds.mod);
+    const s = m?.suggestions.find(x => x.id === ds.i);
+    if (s && s.text !== v) { s.text = v; ch = true; }
+  } else if (f === 'a-sugr') {
+    const m = store.A.modules.find(x => x.id === ds.mod);
+    const s = m?.suggestions.find(x => x.id === ds.i);
+    if (s && s.reason !== v) { s.reason = v; ch = true; }
+  }
+  // Mode B
+  else if (f === 'b-title') { const p = bFindP(ds.i); if (p && p.title !== v) { p.title = v; ch = true; } }
+  else if (f === 'b-start') { const p = bFindP(ds.i); if (p && p.startPoint !== v) { p.startPoint = v; ch = true; } }
+  else if (f === 'b-key') { const p = bFindP(ds.i); if (p && p.keyPoint !== v) { p.keyPoint = v; ch = true; } }
+  else if (f === 'b-stitle') { const s = bFindS(ds.p, ds.i); if (s && s.title !== v) { s.title = v; ch = true; } }
+  else if (f === 'b-step') {
+    const s = bFindS(ds.p, ds.s); const it = s?.[ds.t]?.find(x => x.id === ds.i);
+    if (it && it.text !== v) { it.text = v; ch = true; }
+  }
+  else if (f === 'b-blabel') {
+    const s = bFindS(ds.p, ds.s); const b = s?.branches.find(x => x.id === ds.i);
+    if (b && b.label !== v) { b.label = v; ch = true; }
+  }
+  else if (f === 'b-bitem') {
+    const s = bFindS(ds.p, ds.s); const b = s?.branches.find(x => x.id === ds.b);
+    const it = b?.items.find(x => x.id === ds.i);
+    if (it && it.text !== v) { it.text = v; ch = true; }
+  }
+  // Mode C
+  else if (f === 'c-page') { const pg = cFindPage(ds.i); if (pg && pg.pageName !== v) { pg.pageName = v; ch = true; } }
+  else if (f === 'c-label') {
+    const pg = cFindPage(ds.pg); const n = pg ? cFindNode(pg.nodes, ds.i) : null;
+    if (n && n.label !== v) { n.label = v; ch = true; }
+  }
+  // Mode D
+  else if (f === 'd-name') { const sp = dFindSpec(ds.i); if (sp && sp.specName !== v) { sp.specName = v; ch = true; } }
+  else if (f === 'd-vis') { const sp = dFindSpec(ds.sp); const it = sp?.visible.find(x => x.id === ds.i); if (it && it.text !== v) { it.text = v; ch = true; } }
+  else if (f === 'd-int') { const sp = dFindSpec(ds.sp); const it = sp?.interactions.find(x => x.id === ds.i); if (it && it.text !== v) { it.text = v; ch = true; } }
+  else if (f === 'd-btype') { const sp = dFindSpec(ds.sp); const b = sp?.boundaries.find(x => x.id === ds.i); if (b && b.type !== v) { b.type = v; ch = true; } }
+  else if (f === 'd-btrig') { const sp = dFindSpec(ds.sp); const b = sp?.boundaries.find(x => x.id === ds.i); if (b && b.trigger !== v) { b.trigger = v; ch = true; } }
+  else if (f === 'd-bfeed') { const sp = dFindSpec(ds.sp); const b = sp?.boundaries.find(x => x.id === ds.i); if (b && b.feedback !== v) { b.feedback = v; ch = true; } }
+  else if (f === 'd-brec') { const sp = dFindSpec(ds.sp); const b = sp?.boundaries.find(x => x.id === ds.i); if (b && b.recovery !== v) { b.recovery = v; ch = true; } }
+
+  if (ch) { save(); toast('已保存'); }
+}
+
+// ============================================================
+// Import / Export
+// ============================================================
+function importJSON() {
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `<div class="modal">
+    <h2>📥 导入 JSON 数据</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:10px;">粘贴 AI 输出的 JSON 数据，支持导入全部或单个模式的数据</p>
+    <textarea id="importArea" placeholder='粘贴 JSON 数据...'></textarea>
+    <div class="m-actions">
+      <button onclick="this.closest('.modal-overlay').remove()">取消</button>
+      <button class="primary" onclick="doImport()">导入</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+}
+
+function doImport() {
+  const ta = document.getElementById('importArea');
+  try {
+    const d = JSON.parse(ta.value);
+    if (d.A) store.A = d.A;
+    if (d.B) store.B = d.B;
+    if (d.C) store.C = d.C;
+    if (d.D) store.D = d.D;
+    // 保存导入快照用于后续对比
+    importSnapshot = JSON.parse(JSON.stringify(store));
+    try { localStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(importSnapshot)); } catch(e) {}
+    save(); renderAll();
+    ta.closest('.modal-overlay').remove();
+    toast('导入成功');
+  } catch (e) { toast('JSON 格式错误：' + e.message); }
+}
+
+function exportMd() {
+  let md = '# UX 设计文档\n\n';
+  // Mode A
+  md += '## A 策划案分析\n\n### 🎯 核心目标拆解\n**主目标**\n';
+  store.A.goals?.main?.forEach((g, i) => { md += `${i + 1}. ${g.text}\n`; });
+  md += '\n**隐性需求**\n';
+  store.A.goals?.hidden?.forEach(g => { md += `* ${g.text}\n`; });
+  md += '\n### 🧩 功能模块\n';
+  store.A.modules?.forEach(m => {
+    const p = m.priority === 'high' ? '高' : m.priority === 'mid' ? '中' : '低';
+    md += `\n#### ${m.name} (优先级：${p})\n**包含功能**\n`;
+    m.features.forEach((f, i) => { md += `${i + 1}. ${f.text}\n`; });
+    if (m.suggestions.length) {
+      md += '**✨ UX补充建议**\n';
+      m.suggestions.forEach(s => { md += `* \`${s.text}\`：${s.reason}\n`; });
+    }
+  });
+  // Mode B
+  md += '\n---\n\n## B 行为路径\n';
+  store.B.forEach(path => {
+    md += `\n### ${path.title}\n**【起点】** ${path.startPoint}\n**【体验关键点】** ${path.keyPoint}\n\n`;
+    path.stages.forEach((s, si) => {
+      md += `#### 🌊 阶段 ${si + 1}：${s.title}\n👤 **用户操作**\n`;
+      s.actions.forEach((a, i) => { md += `${i + 1}. ${a.text}\n`; });
+      md += '   │\n   ▼\n💻 **系统反馈**\n';
+      s.feedbacks.forEach(f => { md += `* ${f.text}\n`; });
+      s.branches.forEach(b => { md += `\n👉 **${b.label}**\n`; b.items.forEach(it => { md += `* ${it.text}\n`; }); });
+      md += '\n';
+    });
+  });
+  // Mode C
+  md += '\n---\n\n## C 信息架构\n';
+  store.C.forEach(pg => {
+    md += `\n### 🏗️ ${pg.pageName}\n\`\`\`\n`;
+    function printNode(n, indent) {
+      md += `${indent}${n.icon || '├─'} ${n.label}${n.note ? ' (' + n.note + ')' : ''}\n`;
+      (n.children || []).forEach(c => printNode(c, indent + '  '));
+    }
+    pg.nodes.forEach(n => printNode(n, ''));
+    md += '```\n';
+  });
+  // Mode D
+  md += '\n---\n\n## D 交互稿\n';
+  store.D.forEach(sp => {
+    md += `\n### 📱 ${sp.specName}\n#### 👁️ 可见层\n`;
+    sp.visible.forEach(v => { md += `* ${v.text}\n`; });
+    md += '#### 🔄 交互层\n';
+    sp.interactions.forEach((it, i) => { md += `${i + 1}. ${it.text}\n`; });
+    md += '#### ⚠️ 边界层\n';
+    sp.boundaries.forEach(b => { md += `* **${b.type}**：触发 — ${b.trigger}；反馈 — ${b.feedback}；恢复 — ${b.recovery}\n`; });
+  });
+  showExportModal('导出 Markdown', md, 'md');
+}
+
+function exportJson() {
+  showExportModal('导出 JSON', JSON.stringify(store, null, 2), 'json');
+}
+
+// ====== 模块级导出 ======
+const MODE_LABELS = { A: '策划案分析', B: '行为路径', C: '信息架构', D: '交互稿' };
+
+function exportJsonModFull() {
+  closeExportDropdown();
+  const m = activeMode;
+  const data = {};
+  data[m] = store[m];
+  showExportModal(`导出 ${MODE_LABELS[m]} 全部 JSON`, JSON.stringify(data, null, 2), 'json');
+}
+
+function exportJsonModDiff() {
+  closeExportDropdown();
+  const m = activeMode;
+  const current = JSON.stringify(store[m]);
+  const snapshot = JSON.stringify(importSnapshot[m] || (m === 'A' ? {} : []));
+
+  if (current === snapshot) {
+    toast('该模块无修改内容');
+    return;
+  }
+
+  // 使用 diff 对比产出变更数据
+  const diffResult = computeDiff(store[m], importSnapshot[m] || (m === 'A' ? {} : []), m);
+  const data = {};
+  data[m] = diffResult;
+  showExportModal(`导出 ${MODE_LABELS[m]} 修改内容`, JSON.stringify(data, null, 2), 'json');
+}
+
+function computeDiff(current, original, mode) {
+  // 对于数组类型 (B/C/D)，找出新增和修改的项
+  if (Array.isArray(current)) {
+    const origMap = {};
+    (original || []).forEach(item => { if (item.id) origMap[item.id] = JSON.stringify(item); });
+    const changed = [];
+    current.forEach(item => {
+      if (!item.id || !origMap[item.id]) {
+        // 新增的项
+        changed.push({ ...item, _diff: 'added' });
+      } else if (origMap[item.id] !== JSON.stringify(item)) {
+        // 修改过的项
+        changed.push({ ...item, _diff: 'modified' });
+      }
+    });
+    // 检测删除的项
+    const curIds = new Set(current.map(item => item.id));
+    (original || []).forEach(item => {
+      if (item.id && !curIds.has(item.id)) {
+        changed.push({ id: item.id, _diff: 'deleted', _original: item });
+      }
+    });
+    return changed;
+  }
+
+  // 对于对象类型 (A)，逐字段对比
+  if (typeof current === 'object' && current !== null) {
+    const result = {};
+    const allKeys = new Set([...Object.keys(current || {}), ...Object.keys(original || {})]);
+    allKeys.forEach(key => {
+      const curVal = JSON.stringify(current[key]);
+      const origVal = JSON.stringify((original || {})[key]);
+      if (curVal !== origVal) {
+        result[key] = current[key];
+      }
+    });
+    if (Object.keys(result).length === 0) return current;
+    return result;
+  }
+
+  return current;
+}
+
+// ====== 导出下拉菜单 ======
+function isModuleDirty() {
+  const m = activeMode;
+  const current = JSON.stringify(store[m]);
+  const snapshot = JSON.stringify(importSnapshot[m] || (m === 'A' ? {} : []));
+  return current !== snapshot;
+}
+
+function toggleExportDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('exportJsonDropdown');
+  // 更新差异导出按钮状态
+  const diffBtn = dd.querySelector('.dropdown-menu button:first-child');
+  if (isModuleDirty()) {
+    diffBtn.classList.remove('disabled');
+    diffBtn.onclick = exportJsonModDiff;
+  } else {
+    diffBtn.classList.add('disabled');
+    diffBtn.onclick = () => { toast('当前未存在任何修改'); };
+  }
+  dd.classList.toggle('open');
+}
+function closeExportDropdown() {
+  document.getElementById('exportJsonDropdown').classList.remove('open');
+}
+
+function showExportModal(title, content, ext) {
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `<div class="modal">
+    <h2>${title}</h2>
+    <pre>${esc(content)}</pre>
+    <div class="m-actions">
+      <button onclick="this.closest('.modal-overlay').remove()">关闭</button>
+      <button class="primary" onclick="navigator.clipboard.writeText(this.closest('.modal').querySelector('pre').textContent).then(()=>toast('已复制'))">复制</button>
+      <button class="primary" onclick="dlFile(this,'${ext}')">下载</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+}
+
+function dlFile(btn, ext) {
+  const text = btn.closest('.modal').querySelector('pre').textContent;
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `UX设计_${new Date().toISOString().slice(0, 10)}.${ext}`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('已下载');
+}
+
+// ============================================================
+// Keyboard Shortcuts
+// ============================================================
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+});
+
+// ====== LZ-String 压缩库（MIT License）======
+var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",n="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$",e={};function t(r,o,n){var e,t,i={},a={},s="",c="",u="",l=2,p=3,f=2,d="",h=0,g=0;for(t=0;t<r.length;t++)if(s=r.charAt(t),Object.prototype.hasOwnProperty.call(i,s)||(i[s]=p++,a[s]=!0),c=u+s,Object.prototype.hasOwnProperty.call(i,c))u=c;else{if(Object.prototype.hasOwnProperty.call(a,u)){if(u.charCodeAt(0)<256){for(e=0;e<f;e++)h<<=1,15==g?(g=0,d+=o(h),h=0):g++;for(e=0,t2=u.charCodeAt(0);e<8;e++)h=h<<1|1&t2,15==g?(g=0,d+=o(h),h=0):g++,t2>>=1}else{for(e=0,t2=1;e<f;e++)h=h<<1|t2,15==g?(g=0,d+=o(h),h=0):g++,t2=0;for(e=0,t2=u.charCodeAt(0);e<16;e++)h=h<<1|1&t2,15==g?(g=0,d+=o(h),h=0):g++,t2>>=1}0==--l&&(l=Math.pow(2,f),f++),delete a[u]}else for(e=0,t2=i[u];e<f;e++)h=h<<1|1&t2,15==g?(g=0,d+=o(h),h=0):g++,t2>>=1;0==--l&&(l=Math.pow(2,f),f++),i[c]=p++,u=String(s)}if(""!==u){if(Object.prototype.hasOwnProperty.call(a,u)){if(u.charCodeAt(0)<256){for(e=0;e<f;e++)h<<=1,15==g?(g=0,d+=o(h),h=0):g++;for(e=0,t2=u.charCodeAt(0);e<8;e++)h=h<<1|1&t2,15==g?(g=0,d+=o(h),h=0):g++,t2>>=1}else{for(e=0,t2=1;e<f;e++)h=h<<1|t2,15==g?(g=0,d+=o(h),h=0):g++,t2=0;for(e=0,t2=u.charCodeAt(0);e<16;e++)h=h<<1|1&t2,15==g?(g=0,d+=o(h),h=0):g++,t2>>=1}0==--l&&(l=Math.pow(2,f),f++),delete a[u]}else for(e=0,t2=i[u];e<f;e++)h=h<<1|1&t2,15==g?(g=0,d+=o(h),h=0):g++,t2>>=1;0==--l&&(l=Math.pow(2,f),f++)}for(e=0,t2=2;e<f;e++)h=h<<1|1&t2,15==g?(g=0,d+=o(h),h=0):g++,t2>>=1;for(;;){if(h<<=1,15==g){d+=o(h);break}g++}return d}function i(r,o,n){var e,t,i=[],a=4,s=4,c=3,u="",l=[],p={val:n(0),position:o,index:1};for(e=0;e<3;e++)i[e]=e;for(t=0,e=Math.pow(2,2);e!=t;)a=p.val&p.position,p.position>>=1,0==p.position&&(p.position=o,p.val=n(p.index++)),t|=(a>0?1:0)*e,e>>=1;switch(t){case 0:for(t=0,e=Math.pow(2,8);e!=t;)a=p.val&p.position,p.position>>=1,0==p.position&&(p.position=o,p.val=n(p.index++)),t|=(a>0?1:0)*e,e>>=1;u=r(t);break;case 1:for(t=0,e=Math.pow(2,16);e!=t;)a=p.val&p.position,p.position>>=1,0==p.position&&(p.position=o,p.val=n(p.index++)),t|=(a>0?1:0)*e,e>>=1;u=r(t);break;case 2:return""}for(i[3]=u,l=[u];;){if(p.index>n.length)return"";for(t=0,e=Math.pow(2,c);e!=t;)a=p.val&p.position,p.position>>=1,0==p.position&&(p.position=o,p.val=n(p.index++)),t|=(a>0?1:0)*e,e>>=1;switch(t){case 0:for(t=0,e=Math.pow(2,8);e!=t;)a=p.val&p.position,p.position>>=1,0==p.position&&(p.position=o,p.val=n(p.index++)),t|=(a>0?1:0)*e,e>>=1;i[s++]=r(t),t=s-1,--a||(a=Math.pow(2,c),c++);break;case 1:for(t=0,e=Math.pow(2,16);e!=t;)a=p.val&p.position,p.position>>=1,0==p.position&&(p.position=o,p.val=n(p.index++)),t|=(a>0?1:0)*e,e>>=1;i[s++]=r(t),t=s-1,--a||(a=Math.pow(2,c),c++);break;case 2:return l.join("")}if(void 0===i[t])return null;u=i[t]?i[t]:l[l.length-1]+l[l.length-1].charAt(0),l.push(u),i[s++]=l[l.length-2]+u.charAt(0),--a||(a=Math.pow(2,c),c++)}}return e.compressToEncodedURIComponent=function(r){return null==r?"":""==r?n.charAt(0):t(r,6,function(r){return n.charAt(r)})},e.decompressFromEncodedURIComponent=function(r){return null==r?"":""==r?null:("+"===r.charAt(0)&&(r=" "+r.substr(1)),i(String.fromCharCode,32,function(o){return function(r,o){if(!e[r]){e[r]={};for(var n=0;n<r.length;n++)e[r][r.charAt(n)]=n}return e[r][o]}(n,r.charAt(o))}))},e.compressToBase64=function(n){if(null==n)return"";var e=t(n,6,function(n){return o.charAt(n)});switch(e.length%4){default:case 0:return e;case 1:return e+"===";case 2:return e+"==";case 3:return e+"="}},e.decompressFromBase64=function(n){return null==n?"":""==n?null:i(r,32,function(r){return function(r,n){if(!e[r]){e[r]={};for(var t=0;t<r.length;t++)e[r][r.charAt(t)]=t}return e[r][n]}(o,n.charAt(r))})},e.compress=function(r){return t(r,16,function(o){return String.fromCharCode(o)})},e.decompress=function(o){return null==o?"":""==o?null:i(r,32768,function(r){return o.charCodeAt(r)})},e}();
+
+// ====== 分享链接 ======
+function generateShareLink() {
+  if (isStoreEmpty()) {
+    toast('当前无数据，请先导入 JSON');
+    return;
+  }
+  const json = JSON.stringify(store);
+  const compressed = LZString.compressToEncodedURIComponent(json);
+  const url = location.origin + location.pathname + '#data=' + compressed;
+
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `<div class="modal">
+    <h2>🔗 分享链接</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:10px;">对方打开链接后将自动加载你的数据，之后各自编辑互不影响</p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">📊 数据大小：原始 ${(json.length/1024).toFixed(1)}KB → 压缩后 ${(compressed.length/1024).toFixed(1)}KB</p>
+    <textarea id="shareLinkArea" readonly style="word-break:break-all;font-size:12px;height:100px;">${esc(url)}</textarea>
+    <div class="m-actions">
+      <button onclick="this.closest('.modal-overlay').remove()">关闭</button>
+      <button class="primary" onclick="copyShareLink()">📋 复制链接</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  document.getElementById('shareLinkArea').select();
+}
+
+function copyShareLink() {
+  const ta = document.getElementById('shareLinkArea');
+  navigator.clipboard.writeText(ta.value).then(() => toast('链接已复制到剪贴板'));
+}
+
+function loadFromShareLink() {
+  const hash = location.hash;
+  if (!hash || !hash.startsWith('#data=')) return false;
+  try {
+    const compressed = hash.substring(6);
+    const json = LZString.decompressFromEncodedURIComponent(compressed);
+    if (!json) return false;
+    const data = JSON.parse(json);
+    if (!data.A && !data.B && !data.C && !data.D) return false;
+
+    // 检查是否已有本地数据
+    const hasLocal = localStorage.getItem(STORAGE_KEY);
+    if (hasLocal) {
+      if (!confirm('检测到分享数据，是否加载？\n（将覆盖当前本地数据）')) {
+        // 用户拒绝，清除 URL hash
+        history.replaceState(null, '', location.pathname);
+        return false;
+      }
+    }
+
+    // 加载分享数据
+    if (data.A) store.A = data.A;
+    if (data.B) store.B = data.B;
+    if (data.C) store.C = data.C;
+    if (data.D) store.D = data.D;
+    // 同时作为导入快照
+    importSnapshot = JSON.parse(JSON.stringify(store));
+    try { localStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(importSnapshot)); } catch(e) {}
+    // 清除 URL hash，避免刷新重复加载
+    history.replaceState(null, '', location.pathname);
+    return true;
+  } catch (e) {
+    console.error('Share link parse failed:', e);
+    return false;
+  }
+}
+
+// ============================================================
+// Init
+// ============================================================
+document.getElementById('undoBtn').onclick = undo;
+document.getElementById('redoBtn').onclick = redo;
+document.getElementById('importBtn').onclick = importJSON;
+document.getElementById('exportMdBtn').onclick = exportMd;
+document.getElementById('exportJsonBtn').onclick = toggleExportDropdown;
+document.addEventListener('click', () => closeExportDropdown());
+document.getElementById('shareLinkBtn').onclick = generateShareLink;
+document.getElementById('clearStorageBtn').onclick = clearStorage;
+document.querySelectorAll('.mode-tab').forEach(t => {
+  t.onclick = () => switchMode(t.dataset.mode);
+});
+
+// 优先检测分享链接
+const sharedLoaded = loadFromShareLink();
+
+if (!sharedLoaded) {
+  // 尝试从 LocalStorage 加载，如果没有则保持空状态等待导入
+  if (!loadFromStorage()) {
+    // 首次进入，保持空状态
+    store = { A: {}, B: [], C: [], D: [] };
+  }
+}
+
+// 加载导入快照
+try {
+  const snapData = localStorage.getItem(SNAPSHOT_STORAGE_KEY);
+  if (snapData) importSnapshot = JSON.parse(snapData);
+} catch(e) {}
+
+save();
+renderAll();
+
+if (sharedLoaded) {
+  toast('已加载分享数据，可自由编辑');
+} else if (isStoreEmpty()) {
+  toast('欢迎使用，请导入 JSON 数据');
+} else {
+  toast('数据已加载');
+}
+</script>
+</body>
+</html>

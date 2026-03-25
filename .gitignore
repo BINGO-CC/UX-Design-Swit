@@ -1,0 +1,13 @@
+# 依赖和系统文件
+node_modules/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 编辑器临时文件
+*.swp
+*.swo
+*~
+
+# 废弃文件（不需要部署）
+behavior-path-editor.html

@@ -1,0 +1,599 @@
+// ... existing code ...
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>科技2.0 - 科技研究台 DEMO</title>
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --panel-bg: #1e1e24;
+            --panel-border: #33333c;
+            --primary: #e67e22;
+            --primary-hover: #d35400;
+            --text-main: #ecf0f1;
+            --text-sub: #95a5a6;
+            --tag-unlocked: #e74c3c; /* 未解锁，高价值警示色 */
+            --tag-locked: #2ecc71;   /* 已解锁，安全色 */
+            --tag-decay: #7f8c8d;    /* 衰减，置灰 */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            user-select: none;
+        }
+
+        .window {
+            width: 1000px;
+            height: 650px;
+            background-color: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 20px 30px;
+            background: linear-gradient(to bottom, #2a2a32, var(--panel-bg));
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            color: var(--text-sub);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            font-weight: bold;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .panel {
+            background-color: #18181d;
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-title {
+            font-size: 14px;
+            color: var(--text-sub);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        /* 列表样式 */
+        .item-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .item {
+            background-color: #22222a;
+            border: 1px solid #333;
+            padding: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .item:hover {
+            background-color: #2a2a35;
+            border-color: var(--primary);
+        }
+
+        .item-name {
+            font-size: 14px;
+        }
+
+        .tag {
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+
+        .tag.unlocked { background-color: rgba(231, 76, 60, 0.2); color: var(--tag-unlocked); border: 1px solid var(--tag-unlocked); }
+        .tag.locked { background-color: rgba(46, 204, 113, 0.2); color: var(--tag-locked); border: 1px solid var(--tag-locked); }
+        .tag.decay { background-color: rgba(127, 140, 141, 0.2); color: var(--tag-decay); border: 1px solid var(--tag-decay); }
+
+        /* 槽位样式 */
+        .slots-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .slot {
+            background-color: #1a1a20;
+            border: 2px dashed #444;
+            border-radius: 6px;
+            height: 80px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slot.filled {
+            border-style: solid;
+            border-color: #555;
+            background-color: #22222a;
+        }
+
+        .slot-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 2;
+        }
+
+        .slot-actions {
+            z-index: 2;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .btn:hover { background-color: var(--primary-hover); }
+        .btn.cancel { background-color: transparent; border: 1px solid var(--text-sub); color: var(--text-sub); }
+        .btn.cancel:hover { background-color: rgba(255,255,255,0.1); }
+        .btn.claim { background-color: var(--tag-locked); }
+        .btn.claim:hover { background-color: #27ae60; }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 1s linear;
+            z-index: 1;
+        }
+
+        /* 发明九宫格 */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .grid-slot {
+            aspect-ratio: 1;
+            background-color: #1a1a20;
+            border: 1px solid #444;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-sub);
+            cursor: pointer;
+        }
+        .grid-slot.filled {
+            background-color: #2a2a35;
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .prediction-panel {
+            background-color: rgba(230, 126, 34, 0.1);
+            border: 1px solid rgba(230, 126, 34, 0.3);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .prediction-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .prediction-row:last-child { margin-bottom: 0; }
+        .val-high { color: var(--tag-locked); font-weight: bold; }
+        .val-low { color: var(--tag-unlocked); font-weight: bold; }
+
+        /* 弹窗 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 4px;
+            border: 1px solid var(--primary);
+            z-index: 1000;
+            display: none;
+            animation: fadeInOut 3s forwards;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; top: 0; }
+            10% { opacity: 1; top: 20px; }
+            90% { opacity: 1; top: 20px; }
+            100% { opacity: 0; top: 0; }
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="toast" class="toast">提示信息</div>
+
+    <div class="window">
+        <div class="header">
+            <h1>科技研究台</h1>
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('reverse')">逆向研究</div>
+                <div class="tab" onclick="switchTab('invent')">科技发明</div>
+            </div>
+        </div>
+
+        <!-- 逆向研究 面板 -->
+        <div id="tab-reverse" class="content">
+            <div class="panel" style="flex: 1;">
+                <div class="panel-title">资产列表 (储藏箱 + 背包)</div>
+                <div class="item-list" id="inventory-list">
+                    <!-- JS 渲染 -->
+                </div>
+            </div>
+            <div class="panel" style="flex: 2;">
+                <div class="panel-title">研究队列 (支持批量，独立计时)</div>
+                <div class="slots-container" id="research-slots">
+                    <!-- JS 渲染 5个槽位 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 科技发明 面板 -->
+        <div id="tab-invent" class="content hidden">
+            <div class="panel" style="flex: 1;">
+                <div class="panel-title">基础材料库</div>
+                <div class="item-list" id="material-list">
+                    <!-- JS 渲染 -->
+                </div>
+            </div>
+            <div class="panel" style="flex: 1;">
+                <div class="panel-title">投入区 (最多9种)</div>
+                <div class="grid-container" id="invent-grid">
+                    <!-- JS 渲染 9个格子 -->
+                </div>
+                <div class="prediction-panel">
+                    <div class="prediction-row">
+                        <span>倾向类型：</span>
+                        <span id="pred-type" style="color: var(--text-sub)">暂无数据</span>
+                    </div>
+                    <div class="prediction-row">
+                        <span>成功率评估：</span>
+                        <span id="pred-rate" style="color: var(--text-sub)">请投入材料</span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button class="btn cancel" onclick="clearGrid()">清空</button>
+                    <button class="btn" id="btn-start-invent" onclick="startInvent()" disabled>开始发明</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 通用工具 ---
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            toast.style.animation = 'none';
+            setTimeout(() => { toast.style.animation = 'fadeInOut 3s forwards'; }, 10);
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-reverse').classList.add('hidden');
+            document.getElementById('tab-invent').classList.add('hidden');
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+        }
+
+        // --- 逆向研究逻辑 ---
+        const inventory = [
+            { id: 1, name: '初级工艺台 (文明遗产)', status: 'unlocked', statusText: '未解锁', time: 5 },
+            { id: 2, name: '蓝焰喷火器 (文明遗产)', status: 'unlocked', statusText: '未解锁', time: 8 },
+            { id: 3, name: '木制地基 (文明遗产)', status: 'locked', statusText: '已解锁', time: 3 },
+            { id: 4, name: '简易药膏 (文明遗产)', status: 'decay', statusText: '收益衰减', time: 2 },
+            { id: 5, name: '太阳能发电机 (文明遗产)', status: 'locked', statusText: '已解锁', time: 6 }
+        ];
+
+        let slots = [null, null, null, null, null]; // 5个槽位
+
+        function renderInventory() {
+            const list = document.getElementById('inventory-list');
+            list.innerHTML = '';
+            inventory.forEach((item, index) => {
+                list.innerHTML += `
+                    <div class="item" onclick="addToSlot(${index})">
+                        <span class="item-name">${item.name}</span>
+                        <span class="tag ${item.status}">${item.statusText}</span>
+                    </div>
+                `;
+            });
+        }
+
+        function renderSlots() {
+            const container = document.getElementById('research-slots');
+            container.innerHTML = '';
+            slots.forEach((slot, index) => {
+                if (!slot) {
+                    container.innerHTML += `<div class="slot"><span style="color: #555;">空闲槽位</span></div>`;
+                } else {
+                    let actionHtml = '';
+                    let progressHtml = '';
+                    
+                    if (slot.state === 'idle') {
+                        actionHtml = `
+                            <button class="btn cancel" onclick="cancelSlot(${index})">移除</button>
+                            <button class="btn" onclick="startResearch(${index})">开始研究</button>
+                        `;
+                    } else if (slot.state === 'researching') {
+                        actionHtml = `<button class="btn cancel" onclick="cancelSlot(${index})">取消 (${slot.timeLeft}s)</button>`;
+                        const percent = ((slot.totalTime - slot.timeLeft) / slot.totalTime) * 100;
+                        progressHtml = `<div class="progress-bar" style="width: ${percent}%"></div>`;
+                    } else if (slot.state === 'done') {
+                        actionHtml = `<button class="btn claim" onclick="claimSlot(${index})">领取成果</button>`;
+                        progressHtml = `<div class="progress-bar" style="width: 100%; background-color: var(--tag-locked)"></div>`;
+                    }
+
+                    container.innerHTML += `
+                        <div class="slot filled">
+                            <div class="slot-info">
+                                <span style="font-weight: bold; color: ${slot.item.status === 'unlocked' ? 'var(--tag-unlocked)' : 'white'}">${slot.item.name}</span>
+                                <span style="font-size: 12px; color: var(--text-sub)">预计耗时: ${slot.item.time}s</span>
+                            </div>
+                            <div class="slot-actions">${actionHtml}</div>
+                            ${progressHtml}
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        function addToSlot(invIndex) {
+            const emptyIndex = slots.findIndex(s => s === null);
+            if (emptyIndex === -1) {
+                showToast("研究队列已满！");
+                return;
+            }
+            const item = inventory.splice(invIndex, 1)[0];
+            slots[emptyIndex] = { item: item, state: 'idle', totalTime: item.time, timeLeft: item.time, timer: null };
+            renderInventory();
+            renderSlots();
+        }
+
+        function cancelSlot(slotIndex) {
+            const slot = slots[slotIndex];
+            if (slot.timer) clearInterval(slot.timer);
+            inventory.push(slot.item); // 退回背包
+            slots[slotIndex] = null;
+            renderInventory();
+            renderSlots();
+        }
+
+        function startResearch(slotIndex) {
+            const slot = slots[slotIndex];
+            slot.state = 'researching';
+            renderSlots();
+
+            slot.timer = setInterval(() => {
+                slot.timeLeft--;
+                if (slot.timeLeft <= 0) {
+                    clearInterval(slot.timer);
+                    slot.state = 'done';
+                }
+                renderSlots();
+            }, 1000);
+        }
+
+        function claimSlot(slotIndex) {
+            const slot = slots[slotIndex];
+            if (slot.item.status === 'unlocked') {
+                showToast(`🎉 逆向成功！解锁新科技：${slot.item.name.replace(' (文明遗产)', '')}`);
+            } else {
+                showToast(`📦 拆解完成！获得 科技碎片 x50`);
+            }
+            slots[slotIndex] = null;
+            renderSlots();
+        }
+
+        // --- 科技发明逻辑 ---
+        const materials = [
+            { id: 101, name: '铜锭', type: 'build' },
+            { id: 102, name: '机械零件', type: 'combat' },
+            { id: 103, name: '火药', type: 'combat' },
+            { id: 104, name: '纯净水', type: 'farm' },
+            { id: 105, name: '电子元件', type: 'build' }
+        ];
+        let grid = Array(9).fill(null);
+
+        function renderMaterials() {
+            const list = document.getElementById('material-list');
+            list.innerHTML = '';
+            materials.forEach((mat, index) => {
+                list.innerHTML += `
+                    <div class="item" onclick="addToGrid(${index})">
+                        <span class="item-name">${mat.name}</span>
+                        <span style="font-size: 12px; color: var(--text-sub)">点击添加</span>
+                    </div>
+                `;
+            });
+        }
+
+        function renderGrid() {
+            const container = document.getElementById('invent-grid');
+            container.innerHTML = '';
+            grid.forEach((item, index) => {
+                if (item) {
+                    container.innerHTML += `<div class="grid-slot filled" onclick="removeFromGrid(${index})">${item.name}</div>`;
+                } else {
+                    container.innerHTML += `<div class="grid-slot">空</div>`;
+                }
+            });
+            updatePrediction();
+        }
+
+        function addToGrid(matIndex) {
+            const emptyIndex = grid.findIndex(g => g === null);
+            if (emptyIndex === -1) {
+                showToast("投入区已满！");
+                return;
+            }
+            grid[emptyIndex] = materials[matIndex];
+            renderGrid();
+        }
+
+        function removeFromGrid(gridIndex) {
+            grid[gridIndex] = null;
+            renderGrid();
+        }
+
+        function clearGrid() {
+            grid = Array(9).fill(null);
+            renderGrid();
+        }
+
+        function updatePrediction() {
+            const filledCount = grid.filter(g => g !== null).length;
+            const btn = document.getElementById('btn-start-invent');
+            const typeEl = document.getElementById('pred-type');
+            const rateEl = document.getElementById('pred-rate');
+
+            if (filledCount === 0) {
+                btn.disabled = true;
+                typeEl.innerText = "暂无数据";
+                typeEl.style.color = "var(--text-sub)";
+                rateEl.innerText = "请投入材料";
+                rateEl.className = "";
+                return;
+            }
+
+            btn.disabled = false;
+            
+            // 简单模拟预测逻辑
+            const combatCount = grid.filter(g => g && g.type === 'combat').length;
+            if (combatCount > filledCount / 2) {
+                typeEl.innerText = "偏向：战斗类武器/防具";
+                typeEl.style.color = "white";
+            } else {
+                typeEl.innerText = "偏向：建造类设施";
+                typeEl.style.color = "white";
+            }
+
+            const rate = Math.min(100, filledCount * 15 + 10); // 模拟概率
+            if (rate >= 80) {
+                rateEl.innerText = `极高 (${rate}%)`;
+                rateEl.className = "val-high";
+            } else if (rate >= 50) {
+                rateEl.innerText = `中等 (${rate}%)`;
+                rateEl.className = "";
+                rateEl.style.color = "white";
+            } else {
+                rateEl.innerText = `极低 (${rate}%)`;
+                rateEl.className = "val-low";
+            }
+        }
+
+        function startInvent() {
+            const filledCount = grid.filter(g => g !== null).length;
+            const rate = Math.min(100, filledCount * 15 + 10);
+            
+            const btn = document.getElementById('btn-start-invent');
+            btn.disabled = true;
+            btn.innerText = "发明中...";
+
+            setTimeout(() => {
+                const roll = Math.random() * 100;
+                if (roll <= rate) {
+                    showToast("✨ 大成功！发明出【高级装备台】并解锁对应科技！");
+                } else if (roll <= rate + 20) {
+                    showToast("🔧 瑕疵！获得【残次品：破损的枪械】");
+                } else {
+                    showToast("💥 发明失败！材料已部分返还。");
+                }
+                clearGrid();
+                btn.innerText = "开始发明";
+            }, 1500);
+        }
+
+        // 初始化
+        renderInventory();
+        renderSlots();
+        renderMaterials();
+        renderGrid();
+
+    </script>
+</body>
+</html>
+// ... existing code ...
