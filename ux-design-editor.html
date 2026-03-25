@@ -2184,17 +2184,28 @@ function doImport() {
   const ta = document.getElementById('importArea');
   try {
     const d = JSON.parse(ta.value);
-    if (d.A) store.A = d.A;
-    if (d.B) store.B = d.B;
-    if (d.C) store.C = d.C;
-    if (d.D) store.D = d.D;
+    // 只有当导入数据有实质内容时才覆盖，避免空数组/空对象清除已有数据
+    const hasContent = {
+      A: d.A && (d.A.goals?.main?.length > 0 || d.A.goals?.hidden?.length > 0 || d.A.modules?.length > 0),
+      B: d.B && Array.isArray(d.B) && d.B.length > 0,
+      C: d.C && Array.isArray(d.C) && d.C.length > 0,
+      D: d.D && Array.isArray(d.D) && d.D.length > 0
+    };
+    if (hasContent.A) store.A = d.A;
+    if (hasContent.B) store.B = d.B;
+    if (hasContent.C) store.C = d.C;
+    if (hasContent.D) store.D = d.D;
     ensureRefs(); // 兼容无 refs 字段的旧数据
-    // 保存导入快照用于后续对比
-    importSnapshot = JSON.parse(JSON.stringify(store));
+    // 保存导入快照用于后续对比（仅记录实际导入的模式）
+    if (hasContent.A) importSnapshot.A = JSON.parse(JSON.stringify(store.A));
+    if (hasContent.B) importSnapshot.B = JSON.parse(JSON.stringify(store.B));
+    if (hasContent.C) importSnapshot.C = JSON.parse(JSON.stringify(store.C));
+    if (hasContent.D) importSnapshot.D = JSON.parse(JSON.stringify(store.D));
     try { localStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(importSnapshot)); } catch(e) {}
     save(); renderAll();
     ta.closest('.modal-overlay').remove();
-    toast('导入成功');
+    const imported = ['A','B','C','D'].filter(k => hasContent[k]);
+    toast(imported.length > 0 ? `导入成功（${imported.join('、')}）` : '导入的JSON中无有效数据');
   } catch (e) { toast('JSON 格式错误：' + e.message); }
 }
 
