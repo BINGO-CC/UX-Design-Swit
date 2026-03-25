@@ -242,6 +242,7 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
         <button onclick="exportJsonModDiff()">导出该模块修改部分JSON</button>
         <button onclick="exportJsonModFull()">导出全部JSON</button>
         <button onclick="exportMd()">导出MarkDown</button>
+        <button onclick="showCoverageReport()">📊 引用覆盖率报告</button>
       </div>
     </div>
   </div>
@@ -402,7 +403,11 @@ function renderRefTags(item, itemMode) {
         const changed = hasRefChanged(targetId, resolved.obj);
         const cls = changed ? 'ref-tag changed' : 'ref-tag';
         const prefix = changed ? '⚠️ ' : '';
-        tags.push(`<span class="${cls}" onclick="jumpToRef('${targetId}','${resolved.mode}')" title="${changed ? '内容已变更，点击查看' : '点击跳转'}">${prefix}<span class="ref-mode">${targetMode}:</span>${esc(resolved.label)}</span>`);
+        const onclick = changed
+          ? `showRefChangeDetail('${targetId}','${resolved.mode}','${esc(resolved.label).replace(/'/g,"\\&#39;")}')`
+          : `jumpToRef('${targetId}','${resolved.mode}')`;
+        const title = changed ? '内容已变更，点击查看详情' : '点击跳转';
+        tags.push(`<span class="${cls}" onclick="${onclick}" title="${title}">${prefix}<span class="ref-mode">${targetMode}:</span>${esc(resolved.label)}</span>`);
       }
     });
   });
@@ -564,6 +569,279 @@ function saveRefs(itemId, itemMode) {
   document.querySelector('.modal-overlay')?.remove();
   save(); renderAll();
   toast('引用关系已保存');
+}
+
+// ====== Phase 3: 变更详情弹窗 + 标记已读 ======
+
+/**
+ * 显示引用变更详情弹窗
+ */
+function showRefChangeDetail(targetId, targetMode, targetLabel) {
+  const resolved = resolveRefTarget(targetId);
+  if (!resolved) {
+    toast('引用目标已不存在');
+    return;
+  }
+
+  // 计算变更摘要
+  const changes = computeRefChangeSummary(targetId, resolved.obj, targetMode);
+
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `<div class="modal" style="max-width:500px;">
+    <h2>⚠️ 引用变更详情</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">
+      <strong style="color:var(--orange);">${targetMode}:${esc(resolved.label)}</strong> 的内容已发生变更
+    </p>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:14px;max-height:250px;overflow-y:auto;">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;">变更内容：</div>
+      ${changes.length > 0 ? changes.map(c => `
+        <div style="display:flex;gap:6px;align-items:flex-start;padding:4px 0;font-size:13px;border-bottom:1px solid var(--border);">
+          <span style="color:${c.color};font-size:14px;min-width:18px;">${c.icon}</span>
+          <span style="color:var(--text);flex:1;">${esc(c.text)}</span>
+        </div>
+      `).join('') : '<div style="font-size:13px;color:var(--text2);">内容结构已变更（详细差异请跳转查看）</div>'}
+    </div>
+    <div class="m-actions">
+      <button onclick="this.closest('.modal-overlay').remove()">关闭</button>
+      <button class="primary" onclick="this.closest('.modal-overlay').remove();jumpToRef('${targetId}','${targetMode}')">🔍 跳转查看</button>
+      <button class="primary" style="background:var(--green);border-color:var(--green);" onclick="ackRefChange('${targetId}','${targetMode}')">✅ 标记已读</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+}
+
+/**
+ * 计算引用变更摘要（对比指纹快照与当前内容的差异）
+ */
+function computeRefChangeSummary(targetId, targetObj, targetMode) {
+  const changes = [];
+  try {
+    if (targetMode === 'A') {
+      // A模块：对比 features / suggestions 数量
+      changes.push({ icon: '📝', text: `功能项数量: ${targetObj.features?.length || 0} 个`, color: 'var(--accent)' });
+      changes.push({ icon: '💡', text: `建议数量: ${targetObj.suggestions?.length || 0} 个`, color: 'var(--green)' });
+      changes.push({ icon: '🏷️', text: `优先级: ${targetObj.priority === 'high' ? '高' : targetObj.priority === 'mid' ? '中' : '低'}`, color: 'var(--yellow)' });
+    } else if (targetMode === 'B') {
+      // B路径：对比 stages 数量、起点、关键点
+      changes.push({ icon: '🌊', text: `阶段数量: ${targetObj.stages?.length || 0} 个`, color: 'var(--accent)' });
+      changes.push({ icon: '📍', text: `起点: ${targetObj.startPoint || '(空)'}`, color: 'var(--text2)' });
+      changes.push({ icon: '⭐', text: `体验关键点: ${targetObj.keyPoint || '(空)'}`, color: 'var(--text2)' });
+    } else if (targetMode === 'C') {
+      // C页面：对比根节点数量
+      const countNodes = (nodes) => { let c = nodes.length; nodes.forEach(n => { c += countNodes(n.children || []); }); return c; };
+      const total = countNodes(targetObj.nodes || []);
+      changes.push({ icon: '🌳', text: `节点总数: ${total} 个`, color: 'var(--accent)' });
+    }
+  } catch (e) {
+    changes.push({ icon: '❓', text: '无法解析变更详情', color: 'var(--text2)' });
+  }
+  return changes;
+}
+
+/**
+ * 标记变更已读（更新指纹）
+ */
+function ackRefChange(targetId, targetMode) {
+  const resolved = resolveRefTarget(targetId);
+  if (resolved) {
+    snapshotFingerprint(targetId, resolved.obj);
+  }
+  document.querySelector('.modal-overlay')?.remove();
+  renderAll();
+  toast('已标记为已读');
+}
+
+// ====== Phase 4: 覆盖率报告 ======
+
+/**
+ * 生成覆盖率报告数据
+ */
+function generateCoverageReport() {
+  const report = {
+    BA: { items: [], covered: 0, total: 0 },
+    DB: { items: [], covered: 0, total: 0 },
+    DC: { items: [], covered: 0, total: 0 },
+    orphans: []
+  };
+
+  // B→A 覆盖率
+  (store.B || []).forEach(path => {
+    const linked = path.refs?.A?.length > 0;
+    const targets = (path.refs?.A || []).map(id => {
+      const mod = store.A.modules?.find(m => m.id === id);
+      return mod ? mod.name : `(ID:${id} 未找到)`;
+    });
+    const changed = linked && (path.refs.A || []).some(id => {
+      const mod = store.A.modules?.find(m => m.id === id);
+      return mod && hasRefChanged(id, mod);
+    });
+    report.BA.items.push({ source: path.title, sourceId: path.id, linked, targets, changed });
+    report.BA.total++;
+    if (linked) report.BA.covered++;
+  });
+
+  // D→B 覆盖率
+  (store.D || []).forEach(spec => {
+    const linked = spec.refs?.B?.length > 0;
+    const targets = (spec.refs?.B || []).map(id => {
+      const p = (store.B || []).find(b => b.id === id);
+      return p ? p.title : `(ID:${id} 未找到)`;
+    });
+    report.DB.items.push({ source: spec.specName, sourceId: spec.id, linked, targets });
+    report.DB.total++;
+    if (linked) report.DB.covered++;
+  });
+
+  // D→C 覆盖率
+  (store.D || []).forEach(spec => {
+    const linked = spec.refs?.C?.length > 0;
+    const targets = (spec.refs?.C || []).map(id => {
+      const p = (store.C || []).find(c => c.id === id);
+      return p ? p.pageName : `(ID:${id} 未找到)`;
+    });
+    report.DC.items.push({ source: spec.specName, sourceId: spec.id, linked, targets });
+    report.DC.total++;
+    if (linked) report.DC.covered++;
+  });
+
+  // 孤立节点：A模块未被任何B引用
+  (store.A.modules || []).forEach(mod => {
+    if (!refIndex[mod.id] || refIndex[mod.id].length === 0) {
+      report.orphans.push({ id: mod.id, label: mod.name, mode: 'A', missing: '无B引用' });
+    }
+  });
+  // 孤立节点：B路径未被任何D引用
+  (store.B || []).forEach(path => {
+    if (!refIndex[path.id] || refIndex[path.id].length === 0) {
+      report.orphans.push({ id: path.id, label: path.title, mode: 'B', missing: '无D引用' });
+    }
+  });
+  // 孤立节点：C页面未被任何D引用
+  (store.C || []).forEach(page => {
+    if (!refIndex[page.id] || refIndex[page.id].length === 0) {
+      report.orphans.push({ id: page.id, label: page.pageName, mode: 'C', missing: '无D引用' });
+    }
+  });
+
+  return report;
+}
+
+/**
+ * 渲染进度条
+ */
+function renderProgressBar(covered, total) {
+  if (total === 0) return '<span style="color:var(--text2);font-size:12px;">无数据</span>';
+  const pct = Math.round((covered / total) * 100);
+  const color = pct === 100 ? 'var(--green)' : pct >= 60 ? 'var(--yellow)' : 'var(--red)';
+  return `<div style="display:flex;align-items:center;gap:8px;">
+    <div style="flex:1;height:8px;background:var(--surface);border-radius:4px;overflow:hidden;border:1px solid var(--border);">
+      <div style="width:${pct}%;height:100%;background:${color};border-radius:4px;transition:width .3s;"></div>
+    </div>
+    <span style="font-size:12px;font-weight:600;color:${color};min-width:70px;text-align:right;">${covered}/${total} (${pct}%)</span>
+  </div>`;
+}
+
+/**
+ * 打开覆盖率报告浮层
+ */
+function showCoverageReport() {
+  closeExportDropdown();
+  const report = generateCoverageReport();
+
+  const renderSection = (title, data, arrow) => {
+    if (data.total === 0) return `<div style="margin-bottom:18px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px;">${title}</div>
+      <div style="font-size:13px;color:var(--text2);padding:8px;">暂无数据</div>
+    </div>`;
+
+    return `<div style="margin-bottom:18px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px;">${title}</div>
+      ${renderProgressBar(data.covered, data.total)}
+      <div style="margin-top:8px;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;background:var(--bg);padding:4px;">
+        ${data.items.map(item => {
+          const icon = item.linked ? '✅' : '⚠️';
+          const targetStr = item.linked ? ` → ${item.targets.join(', ')}` : ' → <span style="color:var(--orange);">(未关联)</span>';
+          const changeStr = item.changed ? ' <span style="color:var(--orange);font-size:11px;">🔄已变更</span>' : '';
+          return `<div style="display:flex;align-items:flex-start;gap:6px;padding:5px 8px;font-size:13px;border-bottom:1px solid var(--border);">
+            <span style="min-width:20px;">${icon}</span>
+            <span style="flex:1;color:var(--text);">${esc(item.source)}${targetStr}${changeStr}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  };
+
+  const orphanSection = report.orphans.length > 0 ? `<div style="margin-bottom:18px;">
+    <div style="font-size:14px;font-weight:600;color:var(--red);margin-bottom:6px;">🔴 未被引用的孤立节点</div>
+    <div style="border:1px solid rgba(248,113,113,.3);border-radius:6px;background:rgba(248,113,113,.05);padding:4px;">
+      ${report.orphans.map(o => `<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;font-size:13px;border-bottom:1px solid var(--border);">
+        <span style="min-width:20px;font-weight:600;color:var(--text2);">${o.mode}</span>
+        <span style="flex:1;color:var(--text);">${esc(o.label)}</span>
+        <span style="font-size:11px;color:var(--orange);">${o.missing}</span>
+      </div>`).join('')}
+    </div>
+  </div>` : `<div style="margin-bottom:18px;">
+    <div style="font-size:14px;font-weight:600;color:var(--green);margin-bottom:6px;">✅ 无孤立节点</div>
+    <div style="font-size:13px;color:var(--text2);padding:8px;">所有模块/路径/页面均已被引用</div>
+  </div>`;
+
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `<div class="modal" style="max-width:600px;">
+    <h2>📊 引用覆盖率报告</h2>
+    <div style="max-height:65vh;overflow-y:auto;padding-right:8px;">
+      ${renderSection('B → A 覆盖率（行为路径 → 功能模块）', report.BA, '→')}
+      ${renderSection('D → B 覆盖率（交互稿 → 行为路径）', report.DB, '→')}
+      ${renderSection('D → C 覆盖率（交互稿 → 信息架构）', report.DC, '→')}
+      ${orphanSection}
+    </div>
+    <div class="m-actions">
+      <button onclick="this.closest('.modal-overlay').remove()">关闭</button>
+      <button class="primary" onclick="exportCoverageReportMd()">📋 导出报告 Markdown</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+}
+
+/**
+ * 导出覆盖率报告为 Markdown
+ */
+function exportCoverageReportMd() {
+  const report = generateCoverageReport();
+  let md = '# 📊 引用覆盖率报告\n\n';
+  md += `> 生成时间：${new Date().toLocaleString()}\n\n`;
+
+  const addSection = (title, data) => {
+    md += `## ${title}\n\n`;
+    if (data.total === 0) { md += '暂无数据\n\n'; return; }
+    const pct = Math.round((data.covered / data.total) * 100);
+    md += `**覆盖率：${data.covered}/${data.total} (${pct}%)**\n\n`;
+    data.items.forEach(item => {
+      const icon = item.linked ? '✅' : '⚠️';
+      const target = item.linked ? item.targets.join(', ') : '(未关联)';
+      const change = item.changed ? ' 🔄已变更' : '';
+      md += `- ${icon} ${item.source} → ${target}${change}\n`;
+    });
+    md += '\n';
+  };
+
+  addSection('B → A 覆盖率（行为路径 → 功能模块）', report.BA);
+  addSection('D → B 覆盖率（交互稿 → 行为路径）', report.DB);
+  addSection('D → C 覆盖率（交互稿 → 信息架构）', report.DC);
+
+  if (report.orphans.length > 0) {
+    md += '## 🔴 未被引用的孤立节点\n\n';
+    report.orphans.forEach(o => { md += `- **${o.mode}** ${o.label} — ${o.missing}\n`; });
+  } else {
+    md += '## ✅ 无孤立节点\n\n所有模块/路径/页面均已被引用。\n';
+  }
+
+  // 关闭覆盖率弹窗后显示导出弹窗
+  document.querySelector('.modal-overlay')?.remove();
+  showExportModal('📊 覆盖率报告 Markdown', md, 'md');
 }
 
 // ====== LocalStorage ======
