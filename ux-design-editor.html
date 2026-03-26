@@ -900,7 +900,7 @@ function clearStorage() {
       </p>
       <div class="m-actions">
         <button onclick="this.closest('.modal-overlay').remove()">取消</button>
-        <button class="primary" style="background:#e74c3c;border-color:#e74c3c;" onclick="doClearStorage();this.closest('.modal-overlay').remove()">确认清除</button>
+        <button class="primary" style="background:#e74c3c;border-color:#e74c3c;" onclick="this.closest('.modal-overlay').remove();doClearStorage()">确认清除</button>
       </div>
     </div>`;
   document.body.appendChild(ov);
