@@ -97,6 +97,14 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 .step-item:hover .step-del{opacity:1;}
 .step-item .step-del:hover{color:var(--red);}
 
+/* Feedback & Boundary wrapper (Mode B) */
+.fb-wrapper{margin:7px 0;border:1px solid rgba(168,85,247,.2);border-radius:6px;overflow:hidden;}
+.fb-wrapper-header{display:flex;align-items:center;gap:7px;padding:8px 12px;background:rgba(168,85,247,.08);cursor:pointer;user-select:none;font-size:13px;font-weight:600;color:var(--purple);}
+.fb-wrapper-header:hover{background:rgba(168,85,247,.13);}
+.fb-wrapper-header .fb-toggle{font-size:11px;transition:transform .2s;}
+.fb-wrapper-body{padding:4px 10px 10px;}
+.fb-wrapper-body.collapsed{display:none;}
+
 /* Branch */
 .branch{margin:7px 0;padding:9px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);}
 .branch-header{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
@@ -1552,19 +1560,28 @@ function renderBStage(pid,stage,si) {
       </ul>
       <button class="add-btn" onclick="bAddStep('${pid}','${stage.id}','actions')">+ 新增操作</button>
     </div>
-    <div style="text-align:center;color:var(--text2);font-size:16px;margin:3px 0;">│<br>▼</div>
-    <div class="feedback-block">
-      <div class="block-label">💻 系统反馈</div>
-      <ul class="step-list">${stage.feedbacks.map(f=>`
-        <li class="step-item"><span class="step-num">•</span>
-          <span class="step-content editable" contenteditable="true" data-f="b-step" data-i="${f.id}" data-s="${stage.id}" data-p="${pid}" data-t="feedbacks">${esc(f.text)}</span>
-          <button class="step-del" onclick="bDelStep('${pid}','${stage.id}','feedbacks','${f.id}')">✕</button>
-        </li>`).join('')}
-      </ul>
-      <button class="add-btn" onclick="bAddStep('${pid}','${stage.id}','feedbacks')">+ 新增反馈</button>
+    <div class="fb-wrapper">
+      <div class="fb-wrapper-header" onclick="bToggleFb('${pid}','${stage.id}')">
+        <span class="fb-toggle">${stage.fbCollapsed===false ? '▼' : '▶'}</span>
+        <span>🔄 反馈与边界条件</span>
+        <span style="font-weight:400;font-size:12px;color:var(--text2);margin-left:auto;">${stage.feedbacks.length} 条反馈 · ${stage.branches.length} 个分支</span>
+      </div>
+      <div class="fb-wrapper-body ${stage.fbCollapsed===false ? '' : 'collapsed'}">
+        <div style="text-align:center;color:var(--text2);font-size:16px;margin:3px 0;">│<br>▼</div>
+        <div class="feedback-block">
+          <div class="block-label">💻 系统反馈</div>
+          <ul class="step-list">${stage.feedbacks.map(f=>`
+            <li class="step-item"><span class="step-num">•</span>
+              <span class="step-content editable" contenteditable="true" data-f="b-step" data-i="${f.id}" data-s="${stage.id}" data-p="${pid}" data-t="feedbacks">${esc(f.text)}</span>
+              <button class="step-del" onclick="bDelStep('${pid}','${stage.id}','feedbacks','${f.id}')">✕</button>
+            </li>`).join('')}
+          </ul>
+          <button class="add-btn" onclick="bAddStep('${pid}','${stage.id}','feedbacks')">+ 新增反馈</button>
+        </div>
+        ${stage.branches.map(b=>renderBBranch(pid,stage.id,b)).join('')}
+        <button class="add-btn" onclick="bAddBranch('${pid}','${stage.id}')">+ 新增分支</button>
+      </div>
     </div>
-    ${stage.branches.map(b=>renderBBranch(pid,stage.id,b)).join('')}
-    <button class="add-btn" onclick="bAddBranch('${pid}','${stage.id}')">+ 新增分支</button>
   </div>`;
 }
 
@@ -1586,6 +1603,7 @@ function renderBBranch(pid,sid,b) {
 function bFindP(id){return store.B.find(p=>p.id===id);}
 function bFindS(pid,sid){const p=bFindP(pid);return p?p.stages.find(s=>s.id===sid):null;}
 function bToggle(id){const p=bFindP(id);if(p)p.collapsed=!p.collapsed;renderAll();}
+function bToggleFb(pid,sid){const s=bFindS(pid,sid);if(s){s.fbCollapsed=s.fbCollapsed===false?true:false;renderAll();}}
 function bAddPath(){store.B.push({id:nid(),title:'新行为路径',startPoint:'请填写起点',keyPoint:'请填写关键点',collapsed:false,stages:[{id:nid(),title:'新阶段',actions:[{id:nid(),text:'请填写'}],feedbacks:[{id:nid(),text:'请填写'}],branches:[]}]});save();renderAll();toast('已新增路径');}
 function bDelPath(id){store.B=store.B.filter(p=>p.id!==id);save();renderAll();toast('已删除');}
 function bAddStage(pid){const p=bFindP(pid);if(p){p.stages.push({id:nid(),title:'新阶段',actions:[{id:nid(),text:'请填写'}],feedbacks:[{id:nid(),text:'请填写'}],branches:[]});save();renderAll();toast('已新增');}}
