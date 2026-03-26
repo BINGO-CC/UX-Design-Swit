@@ -130,7 +130,7 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 ## 三、v2.1 新增功能详情
 
 ### 3.0.1 空状态引导
-- **触发条件**：首次进入（无 LocalStorage）或点击"清除缓存"
+- **触发条件**：首次进入（无 LocalStorage）或点击"清除数据"
 - **表现**：所有 TAB 显示 📭 大图标 + "点击此处 📥 导入 JSON"（可点击，触发导入弹窗）
 - **关键函数**：`isStoreEmpty()`, `renderEmptyState()`
 

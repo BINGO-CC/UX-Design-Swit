@@ -11,3 +11,6 @@ desktop.ini
 
 # 废弃文件（不需要部署）
 behavior-path-editor.html
+
+# CodeMaker MCP 配置（含敏感信息，不提交到 Git）
+.codemaker/mcp.json

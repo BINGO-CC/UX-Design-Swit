@@ -223,7 +223,7 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
   <h1>🎨 UX 设计交互编辑器</h1>
   <div class="sep"></div>
   <button id="shareLinkBtn" title="分享：导出/导入 .uxshare 文件">🔗 分享</button>
-  <button id="clearStorageBtn" title="清除本地存储数据">🗑️ 清除缓存</button>
+  <button id="clearStorageBtn" title="清除所有本地数据">🗑️ 清除数据</button>
 </div>
 
 <div class="tab-bar">
@@ -890,21 +890,36 @@ function loadFromStorage() {
 }
 
 function clearStorage() {
-  if (confirm('确定要清除所有本地缓存数据吗？')) {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(ANNO_STORAGE_KEY);
-    localStorage.removeItem(SNAPSHOT_STORAGE_KEY);
-    localStorage.removeItem(FINGERPRINT_STORAGE_KEY);
-    localStorage.removeItem(SHARE_CODE_STORAGE_KEY);
-    annotations = {};
-    refFingerprints = {};
-    refIndex = {};
-    store = { A: {}, B: [], C: [], D: [] };
-    importSnapshot = { A: {}, B: [], C: [], D: [] };
-    hist = []; hIdx = -1;
-    save(); renderAll();
-    toast('已清除缓存');
-  }
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `
+    <div class="modal" style="max-width:400px;">
+      <h2>🗑️ 清除数据</h2>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;margin:0 0 18px;">
+        此操作将清除<strong style="color:var(--text);">四个模式（A/B/C/D）下的所有数据</strong>，包括批注、引用关系、导入快照等，且<strong style="color:#e74c3c;">无法撤销</strong>。<br>确定要继续吗？
+      </p>
+      <div class="m-actions">
+        <button onclick="this.closest('.modal-overlay').remove()">取消</button>
+        <button class="primary" style="background:#e74c3c;border-color:#e74c3c;" onclick="doClearStorage();this.closest('.modal-overlay').remove()">确认清除</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+function doClearStorage() {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(ANNO_STORAGE_KEY);
+  localStorage.removeItem(SNAPSHOT_STORAGE_KEY);
+  localStorage.removeItem(FINGERPRINT_STORAGE_KEY);
+  localStorage.removeItem(SHARE_CODE_STORAGE_KEY);
+  annotations = {};
+  refFingerprints = {};
+  refIndex = {};
+  store = { A: {}, B: [], C: [], D: [] };
+  importSnapshot = { A: {}, B: [], C: [], D: [] };
+  hist = []; hIdx = -1;
+  save(); renderAll();
+  toast('已清除所有数据');
 }
 
 function updateStorageStatus(saved) {
