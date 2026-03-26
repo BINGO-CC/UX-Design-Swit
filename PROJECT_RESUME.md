@@ -1,6 +1,6 @@
 # UX 设计交互编辑器 — 项目续接文档
 
-> **文档版本**：v3.1（2026-03-26 更新）  
+> **文档版本**：v3.2（2026-03-26 更新）  
 > **用途**：在新对话中快速恢复项目上下文，确保迭代连续性
 
 ---
@@ -78,6 +78,7 @@ const ANNO_STORAGE_KEY = 'ux_design_editor_annotations';
 | **引用** | 覆盖率报告 Markdown 导出 | `exportCoverageReportMd()` |
 | **UI** | 四模式 Tab 切换 | `switchMode()` |
 | **UI** | 卡片折叠/展开 | `collapsed` 属性 |
+| **UI** | 模式B阶段"反馈与边界条件"折叠 | `fbCollapsed` 属性 + `.fb-wrapper` |
 | **UI** | 优先级切换（模式A） | `aCyclePriority()` |
 | **UI** | 存储状态指示 | 工具栏绿色圆点 |
 | **UI** | 空状态引导 | 📭 图标 + 可点击导入链接 |
@@ -86,7 +87,7 @@ const ANNO_STORAGE_KEY = 'ux_design_editor_annotations';
 ### 2.3 代码结构（ux-design-editor.html）
 
 ```
-行 1-195:    CSS 样式（含引用标签、覆盖率报告、高亮动画、下拉菜单样式）
+行 1-202:    CSS 样式（含引用标签、覆盖率报告、高亮动画、下拉菜单、反馈与边界条件折叠容器样式）
 行 196-260:  HTML 结构（工具栏含下拉导出菜单+覆盖率入口 + Tab + 容器）
 行 261-390:  核心工具函数 + 引用网络数据层（refs/refIndex/fingerprint/ensureRefs/resolveRefTarget）
 行 390-570:  引用UI层（renderRefTags/renderBackRefTags/jumpToRef/openRefModal/saveRefs）
@@ -95,7 +96,7 @@ const ANNO_STORAGE_KEY = 'ux_design_editor_annotations';
 行 845-920:  LocalStorage + History + Tab切换 + 编辑绑定
 行 920-960:  批注 + 拖拽排序
 行 960-1040: 空状态判断 + 模式 A 渲染（含反向引用标签）
-行 1040-1260:模式 B 渲染（含🔗按钮+引用标签+反向引用标签）
+行 1040-1280:模式 B 渲染（含🔗按钮+引用标签+反向引用标签+反馈与边界条件折叠容器）
 行 1260-1510:模式 C 渲染（含data-page属性+反向引用标签）
 行 1510-1820:模式 D 渲染（含🔗按钮+引用标签+data-spec属性）
 行 1820-1930:onBlur 统一编辑处理
@@ -168,6 +169,16 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 - **问题**：内联的 LZ-String 压缩版存在未声明变量 `t2` 的 bug，导致分享功能静默失败
 - **修复**：替换为官方 v1.5.0 完整版
 - TAB 行 `position:sticky;top:43px` 保持置顶
+
+### 3.0.7 模式B"反馈与边界条件"折叠容器（v3.2）
+- **改动位置**：`renderBStage()` 函数
+- **表现**：每个阶段中"💻 系统反馈"和"👉 分支条件"被包裹在"🔄 反馈与边界条件"父级容器中
+- **默认状态**：收起（`fbCollapsed` 未设置或为 `true` 时收起）
+- **标题栏信息**：显示统计（N 条反馈 · N 个分支），点击可折叠/展开
+- **视觉风格**：紫色主题边框 + 背景色，与现有 action-block / feedback-block 风格统一
+- **新增 CSS 类**：`.fb-wrapper` / `.fb-wrapper-header` / `.fb-wrapper-body`
+- **新增函数**：`bToggleFb(pid, sid)` — 切换折叠状态
+- **数据字段**：`stage.fbCollapsed`（可选，undefined/true = 收起，false = 展开）
 
 ### 3.0.5 Toast 提示位置
 - 从页面底部移至**顶部居中**，边距 20px
@@ -394,3 +405,4 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 | v3.0.1 | 2026-03-26 | 修复导入覆盖bug + LZ-String库替换为官方v1.5.0 |
 | v3.1 | 2026-03-26 | 分享重构为文件模式(.uxshare)：导出下载/点击导入/全局拖拽/自动格式检测 |
 | v3.1.1 | 2026-03-26 | 分享面板精简（移除导入区）、勾选单模式导出时自动填充模式名为文件名 |
+| v3.2 | 2026-03-26 | 模式B阶段新增"🔄 反馈与边界条件"可折叠父级容器（默认收起），包裹系统反馈+分支条件 |
