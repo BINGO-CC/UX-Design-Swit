@@ -41,7 +41,7 @@ let store = {
   },
   B: [{ id, title, startPoint, keyPoint, refs: { A: [...] }, stages: [...] }],
   C: [{ id, pageName, nodes: [{ id, icon, label, note, children: [...] }] }],
-  D: [{ id, specName, refs: { B: [...], C: [...] }, visible: [...], interactions: [...], boundaries: [...] }]
+  D: [{ id, specName, refs: { B: [...], C: [...] }, visible: [...], boundaries: [...] }]
 };
 
 // 批注存储（独立于主数据）
@@ -376,21 +376,21 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 }
 ```
 
-### 模式D（交互稿）
+### 模式D（交互稿 · 静态规格层）
 ```json
 {
   "D": [{
-    "id": "n4001", "specName": "交互说明名称", "collapsed": false,
+    "id": "n4001", "specName": "交互说明名称（对应模块名）", "collapsed": false,
     "refs": { "B": ["n2001"], "C": ["n3001"] },
-    "visible": [{ "id": "n4002", "text": "可见层条目" }],
-    "interactions": [{ "id": "n4003", "text": "交互层条目" }],
+    "visible": [{ "id": "n4002", "text": "界面规格条目（布局 / 元素状态枚举 / 数据规则）" }],
     "boundaries": [{
-      "id": "n4004", "type": "异常类型",
-      "trigger": "触发条件", "feedback": "反馈内容", "recovery": "恢复路径"
+      "id": "n4003", "type": "系统侧被动异常类型（如：接口超时 / 数据为空 / 配置缺失）",
+      "trigger": "系统侧触发条件（非用户操作）", "feedback": "降级展示 / Toast / 骨架屏", "recovery": "重试 / 兜底文案 / 客服介入"
     }]
   }]
 }
 ```
+> ⚠️ 模式 D 不含 `interactions` 字段，操作与反馈流已由模式 B 的 `stages.feedbacks + branches` 承载。
 
 ---
 
@@ -410,3 +410,4 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 | v3.2 | 2026-03-26 | 模式B阶段新增"🔄 反馈与边界条件"可折叠父级容器（默认收起），包裹系统反馈+分支条件 |
 | v3.2.1 | 2026-03-26 | 工具栏"清除缓存"改为"清除数据"，新增二次确认弹窗（覆盖A/B/C/D四模式全部数据） |
 | v3.2.2 | 2026-03-26 | 拖拽热区精准化：仅 ⠿ drag-handle 图标响应拖动，非该区域不触发；新增 `bindHandleDrag()` 工具函数统一管理五个拖拽场景 |
+| v3.3 | 2026-03-26 | 模式D结构重构：删除交互层（`interactions[]`），改为「界面规格」+「系统边界」两层结构，与 UX设计 Skill B+D 整合模式对齐 |

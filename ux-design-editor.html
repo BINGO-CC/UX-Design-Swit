@@ -2086,7 +2086,7 @@ function renderD() {
       </div>
       <div class="card-body ${spec.collapsed?'collapsed':''}">
         <div class="spec-section">
-          <div class="spec-section-header visible">👁️ 可见层（默认状态与基础逻辑）</div>
+          <div class="spec-section-header visible">👁️ 界面规格（布局 / 元素状态 / 数据规则）</div>
           <div class="spec-section-body">
             <ul class="step-list">${spec.visible.map(v=>`
               <li class="step-item"><span class="step-num">•</span>
@@ -2094,23 +2094,11 @@ function renderD() {
                 <button class="step-del" onclick="dDelItem('${spec.id}','visible','${v.id}')">✕</button>
               </li>`).join('')}
             </ul>
-            <button class="add-btn" onclick="dAddItem('${spec.id}','visible')">+ 新增可见层条目</button>
+            <button class="add-btn" onclick="dAddItem('${spec.id}','visible')">+ 新增界面规格条目</button>
           </div>
         </div>
         <div class="spec-section">
-          <div class="spec-section-header interact">🔄 交互层（操作与反馈流）</div>
-          <div class="spec-section-body">
-            <ul class="step-list">${spec.interactions.map((it,i)=>`
-              <li class="step-item"><span class="step-num">${i+1}.</span>
-                <span class="step-content editable" contenteditable="true" data-f="d-int" data-i="${it.id}" data-sp="${spec.id}">${esc(it.text)}</span>
-                <button class="step-del" onclick="dDelItem('${spec.id}','interactions','${it.id}')">✕</button>
-              </li>`).join('')}
-            </ul>
-            <button class="add-btn" onclick="dAddItem('${spec.id}','interactions')">+ 新增交互条目</button>
-          </div>
-        </div>
-        <div class="spec-section">
-          <div class="spec-section-header boundary">⚠️ 边界层（异常与极限状态）</div>
+          <div class="spec-section-header boundary">⚠️ 系统边界（接口异常 / 数据为空 / 配置缺失）</div>
           <div class="spec-section-body">
             ${spec.boundaries.map(b=>`
               <div style="margin:6px 0;padding:8px 10px;border-radius:5px;border:1px solid rgba(248,113,113,.15);background:rgba(248,113,113,.04);">
@@ -2133,7 +2121,7 @@ function renderD() {
 // Mode D helpers
 function dFindSpec(id){return store.D.find(s=>s.id===id);}
 function dToggle(id){const s=dFindSpec(id);if(s)s.collapsed=!s.collapsed;renderAll();}
-function dAddSpec(){store.D.push({id:nid(),specName:'新交互说明',collapsed:false,visible:[{id:nid(),text:'请填写'}],interactions:[{id:nid(),text:'请填写'}],boundaries:[]});save();renderAll();toast('已新增');}
+function dAddSpec(){store.D.push({id:nid(),specName:'新交互说明',collapsed:false,visible:[{id:nid(),text:'请填写'}],boundaries:[]});save();renderAll();toast('已新增');}
 function dDelSpec(id){store.D=store.D.filter(s=>s.id!==id);save();renderAll();toast('已删除');}
 function dAddItem(spId,type){
   const sp=dFindSpec(spId);if(!sp)return;
@@ -2198,7 +2186,6 @@ function onBlur(e) {
   // Mode D
   else if (f === 'd-name') { const sp = dFindSpec(ds.i); if (sp && sp.specName !== v) { sp.specName = v; ch = true; } }
   else if (f === 'd-vis') { const sp = dFindSpec(ds.sp); const it = sp?.visible.find(x => x.id === ds.i); if (it && it.text !== v) { it.text = v; ch = true; } }
-  else if (f === 'd-int') { const sp = dFindSpec(ds.sp); const it = sp?.interactions.find(x => x.id === ds.i); if (it && it.text !== v) { it.text = v; ch = true; } }
   else if (f === 'd-btype') { const sp = dFindSpec(ds.sp); const b = sp?.boundaries.find(x => x.id === ds.i); if (b && b.type !== v) { b.type = v; ch = true; } }
   else if (f === 'd-btrig') { const sp = dFindSpec(ds.sp); const b = sp?.boundaries.find(x => x.id === ds.i); if (b && b.trigger !== v) { b.trigger = v; ch = true; } }
   else if (f === 'd-bfeed') { const sp = dFindSpec(ds.sp); const b = sp?.boundaries.find(x => x.id === ds.i); if (b && b.feedback !== v) { b.feedback = v; ch = true; } }
