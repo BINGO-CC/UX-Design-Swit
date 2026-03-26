@@ -1,6 +1,6 @@
 # UX 设计交互编辑器 — 项目续接文档
 
-> **文档版本**：v3.0（2026-03-25 更新）  
+> **文档版本**：v3.1（2026-03-26 更新）  
 > **用途**：在新对话中快速恢复项目上下文，确保迭代连续性
 
 ---
@@ -18,7 +18,7 @@
 
 | 文件路径 | 说明 | 状态 |
 |---------|------|------|
-| `f:\codemake\ux-design-editor.html` | 统一交互编辑器（主文件） | ✅ 已完成 v3.0 |
+| `f:\codemake\ux-design-editor.html` | 统一交互编辑器（主文件） | ✅ 已完成 v3.1 |
 | `f:\codemake\.codemaker\skills\ux-design.md` | UX设计 Skill 指令 | ✅ 已更新（含JSON输出） |
 | `f:\codemake\PROJECT_RESUME.md` | 本文档 | ✅ 当前文件 |
 | `f:\codemake\behavior-path-editor.html` | 早期原型（仅模式B） | 🔒 已废弃 |
@@ -39,9 +39,9 @@ let store = {
     goals: { main: [...], hidden: [...] },
     modules: [{ id, name, priority, features: [...], suggestions: [...] }]
   },
-  B: [{ id, title, startPoint, keyPoint, stages: [...] }],
+  B: [{ id, title, startPoint, keyPoint, refs: { A: [...] }, stages: [...] }],
   C: [{ id, pageName, nodes: [{ id, icon, label, note, children: [...] }] }],
-  D: [{ id, specName, visible: [...], interactions: [...], boundaries: [...] }]
+  D: [{ id, specName, refs: { B: [...], C: [...] }, visible: [...], interactions: [...], boundaries: [...] }]
 };
 
 // 批注存储（独立于主数据）
@@ -65,7 +65,9 @@ const ANNO_STORAGE_KEY = 'ux_design_editor_annotations';
 | **导入导出** | JSON 导入/导出 | `JSON.parse/stringify` |
 | **导入导出** | JSON 模块级导出（全部/仅修改） | 下拉菜单 + `importSnapshot` 对比 |
 | **导入导出** | Markdown 导出 | 自定义格式化函数 |
-| **分享** | 🔗 生成分享链接（URL 携带压缩数据） | LZ-String 压缩 + URL hash |
+| **分享** | 🔗 分享文件导出（下载 .uxshare 文件） | LZ-String 压缩 + Blob 下载 |
+| **分享** | 📥 分享文件导入（点击选择 + 全局拖拽） | FileReader + 自动格式检测 |
+| **分享** | 兼容旧版 URL hash 分享链接 | `loadFromShareLink()` |
 | **引用** | 模式间数据引用（D→B、D→C、B→A） | `refs` 字段 + `refIndex` 反向索引 |
 | **引用** | 引用管理浮层（🔗按钮 + checkbox选择） | `openRefModal()` + `saveRefs()` |
 | **引用** | 正向引用标签（可点击跳转） | `renderRefTags()` + `jumpToRef()` |
@@ -84,7 +86,7 @@ const ANNO_STORAGE_KEY = 'ux_design_editor_annotations';
 ### 2.3 代码结构（ux-design-editor.html）
 
 ```
-行 1-195:    CSS 样式（含引用标签、覆盖率报告、下拉菜单样式）
+行 1-195:    CSS 样式（含引用标签、覆盖率报告、高亮动画、下拉菜单样式）
 行 196-260:  HTML 结构（工具栏含下拉导出菜单+覆盖率入口 + Tab + 容器）
 行 261-390:  核心工具函数 + 引用网络数据层（refs/refIndex/fingerprint/ensureRefs/resolveRefTarget）
 行 390-570:  引用UI层（renderRefTags/renderBackRefTags/jumpToRef/openRefModal/saveRefs）
@@ -97,8 +99,10 @@ const ANNO_STORAGE_KEY = 'ux_design_editor_annotations';
 行 1260-1510:模式 C 渲染（含data-page属性+反向引用标签）
 行 1510-1820:模式 D 渲染（含🔗按钮+引用标签+data-spec属性）
 行 1820-1930:onBlur 统一编辑处理
-行 1930-2120:导入/导出功能（含模块级导出、diff对比、下拉菜单）
-行 2120-2200:初始化逻辑（含快照加载+fingerprint加载+ensureRefs）
+行 1930-2120:导入/导出功能（含模块级导出、diff对比、下拉菜单、有实质内容才覆盖逻辑）
+行 2120-2200:LZ-String 官方 v1.5.0 库
+行 2200-2410:分享文件系统（openShareCodeManager/doExportShareFile/handleShareFileSelect/loadShareFileContent/applyShareData）
+行 2410-2500:兼容旧版URL hash分享链接 + 初始化逻辑（含fingerprint加载+ensureRefs+全局拖拽监听）
 ```
 
 ### 2.4 关键新增数据结构
@@ -111,8 +115,8 @@ const SNAPSHOT_STORAGE_KEY = 'ux_design_editor_snapshot';
 // 模式标签映射
 const MODE_LABELS = { A: '策划案分析', B: '行为路径', C: '信息架构', D: '交互稿' };
 
-// LZ-String 压缩库（内联，用于分享链接）
-var LZString = { compressToEncodedURIComponent, decompressFromEncodedURIComponent, ... };
+// LZ-String 官方 v1.5.0（MIT License，内联完整版）
+var LZString = { compress, decompress, compressToBase64, decompressFromBase64, compressToEncodedURIComponent, decompressFromEncodedURIComponent, ... };
 
 // 引用网络相关（v3.0 新增）
 const FINGERPRINT_STORAGE_KEY = 'ux_design_editor_fingerprints';
@@ -135,18 +139,34 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 - **选项2 — 导出该模块全部JSON**：导出当前 TAB 的完整数据
 - **关键函数**：`exportJsonModDiff()`, `exportJsonModFull()`, `computeDiff()`, `isModuleDirty()`, `toggleExportDropdown()`
 
-### 3.0.3 分享链接功能
-- **入口**：工具栏"🔗 分享链接"按钮
-- **原理**：使用 LZ-String 将 `store` 压缩为 URL-safe 字符串，拼接到 URL hash 中
-- **打开流程**：对方打开链接 → 自动解压加载数据 → 存入各自 LocalStorage → 清除 URL hash
-- **冲突处理**：若本地已有数据，弹窗询问是否覆盖
-- **关键函数**：`generateShareLink()`, `copyShareLink()`, `loadFromShareLink()`
-- **依赖库**：LZ-String（MIT License，内联压缩版）
+### 3.0.3 分享文件功能（v3.1 重构）
+- **入口**：工具栏"🔗 分享"按钮
+- **导出方式**：下载 .uxshare 文件（LZ-String compressToBase64 压缩）
+  - 可自定义文件名（留空以日期自动命名）
+  - 可选仅导出当前模式
+  - 文件内含 `_format: 'uxshare'`, `_version: '1.0'`, `_created`, `_modes`, `data` 元信息
+- **导入方式**（三种）：
+  1. 点击分享面板中的文件选择区域
+  2. **全局拖拽**：直接拖 .uxshare / .json 文件到页面任何位置
+  3. 兼容旧版 URL hash 分享链接（`#data=` 格式）
+- **格式兼容**：自动检测压缩 .uxshare / 纯 JSON / 旧版 URL hash 三种格式
+- **安全覆盖**：使用"有实质内容才覆盖"逻辑，空数组不会清除已有数据
+- **关键函数**：`openShareCodeManager()`, `doExportShareFile()`, `handleShareFileSelect()`, `loadShareFileContent()`, `applyShareData()`, `loadFromShareLink()`
+- **依赖库**：LZ-String 官方 v1.5.0（MIT License，内联完整版）
 
 ### 3.0.4 控件布局调整（v2.3）
-- **标题栏**：仅保留标题 + 🔗 分享链接 + 🗑️ 清除缓存
+- **标题栏**：仅保留标题 + 🔗 分享 + 🗑️ 清除缓存
 - **TAB 行**：左侧为 ABCD 四个 Tab，右侧为操作控件（已保存 / ↩↪ / 📥 导入 / 📤 导出 ▾）
-- **导出菜单合并**：原"导出 MD"独立按钮合并进"📤 导出 ▾"下拉菜单，三个选项：导出该模块修改部分JSON / 导出全部JSON / 导出MarkDown
+- **导出菜单合并**：原"导出 MD"独立按钮合并进"📤 导出 ▾"下拉菜单，四个选项：导出该模块修改部分JSON / 导出全部JSON / 导出MarkDown / 📊 引用覆盖率报告
+
+### 3.0.5 导入修复（v3.0）
+- **问题**：导入只含部分模式的 JSON 时，空数组 `[]`（truthy）会覆盖已有数据
+- **修复**：改为检查"有实质内容"（A 检查 goals/modules 非空，B/C/D 检查数组长度 > 0）才覆盖
+- **增强**：导入快照改为增量更新，Toast 显示具体导入了哪些模式
+
+### 3.0.6 LZ-String 库修复（v3.0）
+- **问题**：内联的 LZ-String 压缩版存在未声明变量 `t2` 的 bug，导致分享功能静默失败
+- **修复**：替换为官方 v1.5.0 完整版
 - TAB 行 `position:sticky;top:43px` 保持置顶
 
 ### 3.0.5 Toast 提示位置
@@ -233,7 +253,7 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 
 | 优先级 | 功能 | 说明 |
 |-------|------|------|
-| ~~P3-1~~ | ~~模式间数据引用~~ | ✅ **已完成 v3.0** — D→B、D→C、B→A 完整引用网络 |
+| ~~P3-1~~ | ~~模式间数据引用~~ | ✅ **已完成 v3.0** — D→B、D→C、B→A 完整引用网络+变更检测+覆盖率报告 |
 | P3-2 | 批注导出 | 导出 Markdown/JSON 时包含批注 |
 | P3-3 | 数据版本控制 | 支持保存/切换多个版本快照 |
 | P3-4 | 主题切换 | 支持亮色/暗色主题 |
@@ -371,3 +391,5 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 | v2.2 | 2026-03-25 | 🔗 分享链接功能（LZ-String压缩 + URL hash），支持带数据分享给他人 |
 | v2.3 | 2026-03-25 | 控件移至TAB行右侧、导出菜单合并、GitHub Pages部署、Git自动推送规则 |
 | v3.0 | 2026-03-25 | 🔗 引用网络系统：D→B/D→C/B→A 三条引用链路、双向导航、变更检测、覆盖率报告 |
+| v3.0.1 | 2026-03-26 | 修复导入覆盖bug + LZ-String库替换为官方v1.5.0 |
+| v3.1 | 2026-03-26 | 分享重构为文件模式(.uxshare)：导出下载/点击导入/全局拖拽/自动格式检测 |
