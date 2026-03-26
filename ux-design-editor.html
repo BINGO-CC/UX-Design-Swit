@@ -214,7 +214,7 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 <div class="toolbar">
   <h1>🎨 UX 设计交互编辑器</h1>
   <div class="sep"></div>
-  <button id="shareLinkBtn" title="分享码管理：生成/加载分享码">🔗 分享码</button>
+  <button id="shareLinkBtn" title="分享：导出/导入 .uxshare 文件">🔗 分享</button>
   <button id="clearStorageBtn" title="清除本地存储数据">🗑️ 清除缓存</button>
 </div>
 
@@ -2405,58 +2405,65 @@ document.addEventListener('keydown', e => {
 // LZ-String v1.5.0 (MIT License) - https://github.com/pieroxy/lz-string
 var LZString=function(){function o(o,r){if(!t[o]){t[o]={};for(var n=0;n<o.length;n++)t[o][o.charAt(n)]=n}return t[o][r]}var r=String.fromCharCode,n="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",e="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$",t={},i={compressToBase64:function(o){if(null==o)return"";var r=i._compress(o,6,function(o){return n.charAt(o)});switch(r.length%4){default:case 0:return r;case 1:return r+"===";case 2:return r+"==";case 3:return r+"="}},decompressFromBase64:function(r){return null==r?"":""==r?null:i._decompress(r.length,32,function(e){return o(n,r.charAt(e))})},compressToUTF16:function(o){return null==o?"":i._compress(o,15,function(o){return r(o+32)})+" "},decompressFromUTF16:function(o){return null==o?"":""==o?null:i._decompress(o.length,16384,function(r){return o.charCodeAt(r)-32})},compressToUint8Array:function(o){for(var r=i.compress(o),n=new Uint8Array(2*r.length),e=0,t=r.length;t>e;e++){var s=r.charCodeAt(e);n[2*e]=s>>>8,n[2*e+1]=s%256}return n},decompressFromUint8Array:function(o){if(null==o)return i.decompress(o);for(var n=new Array(o.length/2),e=0,t=n.length;t>e;e++)n[e]=256*o[2*e]+o[2*e+1];var s=[];return n.forEach(function(o){s.push(r(o))}),i.decompress(s.join(""))},compressToEncodedURIComponent:function(o){return null==o?"":i._compress(o,6,function(o){return e.charAt(o)})},decompressFromEncodedURIComponent:function(r){return null==r?"":""==r?null:(r=r.replace(/ /g,"+"),i._decompress(r.length,32,function(n){return o(e,r.charAt(n))}))},compress:function(o){return i._compress(o,16,function(o){return r(o)})},_compress:function(o,r,n){if(null==o)return"";var e,t,i,s={},p={},u="",c="",a="",l=2,f=3,h=2,d=[],m=0,v=0;for(i=0;i<o.length;i+=1)if(u=o.charAt(i),Object.prototype.hasOwnProperty.call(s,u)||(s[u]=f++,p[u]=!0),c=a+u,Object.prototype.hasOwnProperty.call(s,c))a=c;else{if(Object.prototype.hasOwnProperty.call(p,a)){if(a.charCodeAt(0)<256){for(e=0;h>e;e++)m<<=1,v==r-1?(v=0,d.push(n(m)),m=0):v++;for(t=a.charCodeAt(0),e=0;8>e;e++)m=m<<1|1&t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}else{for(t=1,e=0;h>e;e++)m=m<<1|t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t=0;for(t=a.charCodeAt(0),e=0;16>e;e++)m=m<<1|1&t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}l--,0==l&&(l=Math.pow(2,h),h++),delete p[a]}else for(t=s[a],e=0;h>e;e++)m=m<<1|1&t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;l--,0==l&&(l=Math.pow(2,h),h++),s[c]=f++,a=String(u)}if(""!==a){if(Object.prototype.hasOwnProperty.call(p,a)){if(a.charCodeAt(0)<256){for(e=0;h>e;e++)m<<=1,v==r-1?(v=0,d.push(n(m)),m=0):v++;for(t=a.charCodeAt(0),e=0;8>e;e++)m=m<<1|1&t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}else{for(t=1,e=0;h>e;e++)m=m<<1|t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t=0;for(t=a.charCodeAt(0),e=0;16>e;e++)m=m<<1|1&t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}l--,0==l&&(l=Math.pow(2,h),h++),delete p[a]}else for(t=s[a],e=0;h>e;e++)m=m<<1|1&t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;l--,0==l&&(l=Math.pow(2,h),h++)}for(t=2,e=0;h>e;e++)m=m<<1|1&t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;for(;;){if(m<<=1,v==r-1){d.push(n(m));break}v++}return d.join("")},decompress:function(o){return null==o?"":""==o?null:i._decompress(o.length,32768,function(r){return o.charCodeAt(r)})},_decompress:function(o,n,e){var t,i,s,p,u,c,a,l=[],f=4,h=4,d=3,m="",v=[],g={val:e(0),position:n,index:1};for(t=0;3>t;t+=1)l[t]=t;for(s=0,u=Math.pow(2,2),c=1;c!=u;)p=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(p>0?1:0)*c,c<<=1;switch(s){case 0:for(s=0,u=Math.pow(2,8),c=1;c!=u;)p=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(p>0?1:0)*c,c<<=1;a=r(s);break;case 1:for(s=0,u=Math.pow(2,16),c=1;c!=u;)p=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(p>0?1:0)*c,c<<=1;a=r(s);break;case 2:return""}for(l[3]=a,i=a,v.push(a);;){if(g.index>o)return"";for(s=0,u=Math.pow(2,d),c=1;c!=u;)p=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(p>0?1:0)*c,c<<=1;switch(s){case 0:for(s=0,u=Math.pow(2,8),c=1;c!=u;)p=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(p>0?1:0)*c,c<<=1;l[h++]=r(s),s=h-1,f--;break;case 1:for(s=0,u=Math.pow(2,16),c=1;c!=u;)p=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(p>0?1:0)*c,c<<=1;l[h++]=r(s),s=h-1,f--;break;case 2:return v.join("")}if(0==f&&(f=Math.pow(2,d),d++),l[s])a=l[s];else{if(s!==h)return null;a=i+i.charAt(0)}v.push(a),l[h++]=i+a.charAt(0),f--,i=a,0==f&&(f=Math.pow(2,d),d++)}}};return i}();
 
-// ====== 分享码 ======
-const SHARE_CODE_STORAGE_KEY = 'ux_design_editor_share_codes';
+// ====== 分享（文件导出/导入） ======
 
 /**
- * 生成分享码：将数据压缩为 Base64 字符串，存入 LocalStorage 并生成短码
+ * 打开分享面板（主入口）
  */
-function generateShareLink() {
+function openShareCodeManager() {
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `<div class="modal" style="max-width:500px;">
+    <h2>🔗 分享</h2>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;">📤 导出分享文件</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">下载 .uxshare 文件发送给对方，对方导入即可加载</p>
+      <div style="margin-bottom:8px;">
+        <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px;">文件名（可选）：</label>
+        <input id="shareFileName" type="text" placeholder="如: 科技2.0-v3" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;" maxlength="50">
+      </div>
+      <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;margin-bottom:8px;">
+        <input type="checkbox" id="shareSelectedOnly" style="accent-color:var(--accent);"> 仅导出当前模式（${MODE_LABELS[activeMode]}）
+      </label>
+      <button class="primary" style="width:100%;padding:8px;" onclick="doExportShareFile()">📥 下载 .uxshare 文件</button>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;">📥 导入分享文件</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">选择对方发送的 .uxshare 文件，或直接拖拽到编辑器页面</p>
+      <label style="display:block;padding:20px;border:2px dashed var(--border);border-radius:8px;text-align:center;cursor:pointer;transition:all .15s;color:var(--text2);font-size:13px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'" id="shareFileDropZone">
+        📂 点击选择文件 或 拖拽到此处
+        <input type="file" accept=".uxshare,.json" style="display:none;" onchange="handleShareFileSelect(this.files[0])">
+      </label>
+    </div>
+
+    <div class="m-actions">
+      <button onclick="this.closest('.modal-overlay').remove()">关闭</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+}
+
+/**
+ * 导出 .uxshare 文件
+ */
+function doExportShareFile() {
   if (isStoreEmpty()) {
     toast('当前无数据，请先导入 JSON');
     return;
   }
 
-  const ov = document.createElement('div');
-  ov.className = 'modal-overlay';
-  ov.innerHTML = `<div class="modal" style="max-width:500px;">
-    <h2>🔗 生成分享码</h2>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:10px;">生成一个短分享码，对方粘贴即可加载你的数据</p>
-    <div style="margin-bottom:12px;">
-      <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px;">自定义分享码名称（可选，留空自动生成）：</label>
-      <div style="display:flex;gap:6px;">
-        <span style="line-height:34px;font-size:14px;font-weight:600;color:var(--accent);">UX-</span>
-        <input id="shareCodeName" type="text" placeholder="如: 科技2.0-v3" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;" maxlength="30">
-      </div>
-    </div>
-    <div style="margin-bottom:12px;">
-      <label style="font-size:12px;color:var(--text2);">
-        <input type="checkbox" id="shareSelectedOnly" style="accent-color:var(--accent);"> 仅分享当前模式（${MODE_LABELS[activeMode]}）的数据
-      </label>
-    </div>
-    <div class="m-actions">
-      <button onclick="this.closest('.modal-overlay').remove()">取消</button>
-      <button class="primary" onclick="doGenerateShareCode()">📦 生成分享码</button>
-    </div>
-  </div>`;
-  document.body.appendChild(ov);
-  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
-  document.getElementById('shareCodeName').focus();
-}
+  const nameInput = document.getElementById('shareFileName');
+  const selectedOnly = document.getElementById('shareSelectedOnly')?.checked;
 
-function doGenerateShareCode() {
-  const nameInput = document.getElementById('shareCodeName');
-  const selectedOnly = document.getElementById('shareSelectedOnly').checked;
-
-  // 生成分享码ID
-  let codeId = nameInput.value.trim().replace(/[^a-zA-Z0-9\u4e00-\u9fa5\-_.]/g, '');
-  if (!codeId) {
-    // 自动生成：6位随机字符
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghkmnpqrstuvwxyz23456789';
-    codeId = '';
-    for (let i = 0; i < 6; i++) codeId += chars.charAt(Math.floor(Math.random() * chars.length));
+  // 文件名
+  let fileName = (nameInput?.value || '').trim().replace(/[<>:"/\\|?*]/g, '');
+  if (!fileName) {
+    const now = new Date();
+    fileName = `UX-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
   }
-  const shareCode = 'UX-' + codeId;
 
   // 准备数据
   let dataToShare;
@@ -2467,172 +2474,107 @@ function doGenerateShareCode() {
     dataToShare = JSON.parse(JSON.stringify(store));
   }
 
-  const json = JSON.stringify(dataToShare);
+  const modes = selectedOnly ? [activeMode] : ['A','B','C','D'].filter(k => {
+    if (k === 'A') return store.A.goals?.main?.length > 0 || store.A.modules?.length > 0;
+    return store[k]?.length > 0;
+  });
+
+  // 构建分享文件内容
+  const shareFile = {
+    _format: 'uxshare',
+    _version: '1.0',
+    _created: new Date().toISOString(),
+    _modes: modes,
+    data: dataToShare
+  };
+
+  const json = JSON.stringify(shareFile);
   const compressed = LZString.compressToBase64(json);
 
-  // 存储分享码到 LocalStorage
-  let shareCodes = {};
-  try { shareCodes = JSON.parse(localStorage.getItem(SHARE_CODE_STORAGE_KEY) || '{}'); } catch(e) {}
-  shareCodes[shareCode] = {
-    data: compressed,
-    created: new Date().toISOString(),
-    size: json.length,
-    modes: selectedOnly ? [activeMode] : ['A','B','C','D'].filter(k => {
-      if (k === 'A') return store.A.goals?.main?.length > 0 || store.A.modules?.length > 0;
-      return store[k]?.length > 0;
-    })
+  // 下载文件
+  const blob = new Blob([compressed], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName + '.uxshare';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  const originalKB = (JSON.stringify(dataToShare).length / 1024).toFixed(1);
+  const compressedKB = (compressed.length / 1024).toFixed(1);
+  toast(`已下载 ${fileName}.uxshare（${originalKB}KB → ${compressedKB}KB，含 ${modes.join('、')}）`);
+}
+
+/**
+ * 处理选择的分享文件
+ */
+function handleShareFileSelect(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    loadShareFileContent(e.target.result, file.name);
   };
-  try { localStorage.setItem(SHARE_CODE_STORAGE_KEY, JSON.stringify(shareCodes)); } catch(e) {}
-
-  // 关闭生成弹窗，显示结果
-  document.querySelector('.modal-overlay')?.remove();
-
-  const ov2 = document.createElement('div');
-  ov2.className = 'modal-overlay';
-  ov2.innerHTML = `<div class="modal" style="max-width:460px;">
-    <h2>✅ 分享码已生成</h2>
-    <div style="text-align:center;margin:16px 0;">
-      <div style="display:inline-block;background:var(--bg);border:2px solid var(--accent);border-radius:10px;padding:14px 28px;font-size:22px;font-weight:700;font-family:monospace;color:var(--accent);letter-spacing:2px;user-select:all;" id="shareCodeDisplay">${esc(shareCode)}</div>
-    </div>
-    <p style="font-size:12px;color:var(--text2);text-align:center;margin-bottom:4px;">📊 原始 ${(json.length/1024).toFixed(1)}KB → 压缩 ${(compressed.length/1024).toFixed(1)}KB · 包含 ${selectedOnly ? MODE_LABELS[activeMode] : '全部模式'}</p>
-    <p style="font-size:12px;color:var(--text2);text-align:center;margin-bottom:12px;">💡 对方在编辑器中点击「🔗 分享码」→「📥 加载分享码」→ 粘贴此码即可</p>
-    <div class="m-actions">
-      <button onclick="this.closest('.modal-overlay').remove()">关闭</button>
-      <button class="primary" onclick="copyShareCode('${esc(shareCode)}')">📋 复制分享码</button>
-      <button onclick="copyShareCodeWithData('${esc(shareCode)}')">📦 复制码+数据</button>
-    </div>
-  </div>`;
-  document.body.appendChild(ov2);
-  ov2.addEventListener('click', e => { if (e.target === ov2) ov2.remove(); });
-}
-
-function copyShareCode(code) {
-  navigator.clipboard.writeText(code).then(() => toast('分享码已复制'));
-}
-
-function copyShareCodeWithData(code) {
-  // 复制分享码 + 压缩数据，对方可以离线导入
-  let shareCodes = {};
-  try { shareCodes = JSON.parse(localStorage.getItem(SHARE_CODE_STORAGE_KEY) || '{}'); } catch(e) {}
-  const entry = shareCodes[code];
-  if (!entry) { toast('分享码未找到'); return; }
-  const text = code + '::' + entry.data;
-  navigator.clipboard.writeText(text).then(() => toast('分享码+数据已复制（对方粘贴即可加载）'));
+  reader.readAsText(file);
 }
 
 /**
- * 打开分享码管理弹窗（加载/管理）
+ * 解析并加载分享文件内容
  */
-function openShareCodeManager() {
-  let shareCodes = {};
-  try { shareCodes = JSON.parse(localStorage.getItem(SHARE_CODE_STORAGE_KEY) || '{}'); } catch(e) {}
-
-  const entries = Object.entries(shareCodes);
-  const listHtml = entries.length > 0 ? entries.map(([code, info]) => {
-    const date = new Date(info.created).toLocaleString();
-    const modes = (info.modes || []).join(', ');
-    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px;">
-      <span style="font-family:monospace;font-weight:600;color:var(--accent);min-width:120px;">${esc(code)}</span>
-      <span style="flex:1;color:var(--text2);font-size:11px;">${modes} · ${(info.size/1024).toFixed(1)}KB · ${date}</span>
-      <button style="font-size:11px;padding:2px 8px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:4px;cursor:pointer;" onclick="loadShareCodeLocal('${esc(code)}')">加载</button>
-      <button style="font-size:11px;padding:2px 8px;border:1px solid var(--red);background:transparent;color:var(--red);border-radius:4px;cursor:pointer;" onclick="deleteShareCode('${esc(code)}')">删除</button>
-    </div>`;
-  }).join('') : '<div style="padding:16px;text-align:center;color:var(--text2);font-size:13px;">暂无本地分享码记录</div>';
-
-  const ov = document.createElement('div');
-  ov.className = 'modal-overlay';
-  ov.innerHTML = `<div class="modal" style="max-width:550px;">
-    <h2>🔗 分享码管理</h2>
-
-    <div style="margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:600;margin-bottom:6px;">📥 加载分享码</div>
-      <div style="display:flex;gap:6px;">
-        <input id="loadShareCodeInput" type="text" placeholder="粘贴分享码（如 UX-A3kF9x）或 分享码+数据" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;">
-        <button class="primary" style="padding:6px 14px;white-space:nowrap;" onclick="loadShareCodeFromInput()">📥 加载</button>
-      </div>
-    </div>
-
-    <div style="margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:600;margin-bottom:6px;">📂 本地分享码记录</div>
-      <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;background:var(--bg);" id="shareCodeList">
-        ${listHtml}
-      </div>
-    </div>
-
-    <div class="m-actions">
-      <button onclick="this.closest('.modal-overlay').remove()">关闭</button>
-      <button class="primary" onclick="this.closest('.modal-overlay').remove();generateShareLink()">📦 生成新分享码</button>
-    </div>
-  </div>`;
-  document.body.appendChild(ov);
-  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
-  document.getElementById('loadShareCodeInput').focus();
-}
-
-/**
- * 从输入框加载分享码
- */
-function loadShareCodeFromInput() {
-  const input = document.getElementById('loadShareCodeInput');
-  const val = input.value.trim();
-  if (!val) { toast('请输入分享码'); return; }
-
-  // 检查是否是 "码+数据" 格式 (UX-xxx::base64data)
-  if (val.includes('::')) {
-    const parts = val.split('::');
-    const code = parts[0];
-    const compressed = parts.slice(1).join('::');
-    try {
-      const json = LZString.decompressFromBase64(compressed);
-      if (!json) { toast('数据解压失败'); return; }
-      const data = JSON.parse(json);
-      applyShareData(data, code);
-      // 同时存储到本地
-      let shareCodes = {};
-      try { shareCodes = JSON.parse(localStorage.getItem(SHARE_CODE_STORAGE_KEY) || '{}'); } catch(e) {}
-      shareCodes[code] = { data: compressed, created: new Date().toISOString(), size: json.length, modes: ['A','B','C','D'] };
-      try { localStorage.setItem(SHARE_CODE_STORAGE_KEY, JSON.stringify(shareCodes)); } catch(e) {}
-    } catch (e) { toast('分享码数据格式错误：' + e.message); }
-    return;
-  }
-
-  // 纯分享码，从本地 LocalStorage 查找
-  const code = val.startsWith('UX-') ? val : 'UX-' + val;
-  loadShareCodeLocal(code);
-}
-
-/**
- * 从本地存储加载指定分享码
- */
-function loadShareCodeLocal(code) {
-  let shareCodes = {};
-  try { shareCodes = JSON.parse(localStorage.getItem(SHARE_CODE_STORAGE_KEY) || '{}'); } catch(e) {}
-  const entry = shareCodes[code];
-  if (!entry) {
-    toast('本地未找到该分享码，请确认对方发送的是「分享码+数据」格式');
-    return;
-  }
+function loadShareFileContent(content, fileName) {
   try {
-    const json = LZString.decompressFromBase64(entry.data);
-    if (!json) { toast('数据解压失败'); return; }
-    const data = JSON.parse(json);
-    applyShareData(data, code);
-  } catch (e) { toast('加载失败：' + e.message); }
+    let data, label;
+
+    // 尝试作为压缩的 .uxshare 解析
+    const decompressed = LZString.decompressFromBase64(content.trim());
+    if (decompressed) {
+      const parsed = JSON.parse(decompressed);
+      if (parsed._format === 'uxshare' && parsed.data) {
+        data = parsed.data;
+        label = fileName || 'uxshare';
+      } else if (parsed.A || parsed.B || parsed.C || parsed.D) {
+        // 压缩的纯 JSON 数据
+        data = parsed;
+        label = fileName || 'share';
+      }
+    }
+
+    // 如果解压失败，尝试作为纯 JSON 解析
+    if (!data) {
+      const parsed = JSON.parse(content);
+      if (parsed._format === 'uxshare' && parsed.data) {
+        data = parsed.data;
+        label = fileName || 'uxshare';
+      } else if (parsed.A || parsed.B || parsed.C || parsed.D) {
+        data = parsed;
+        label = fileName || 'json';
+      }
+    }
+
+    if (!data) {
+      toast('文件格式无法识别');
+      return;
+    }
+
+    applyShareData(data, label);
+  } catch (e) {
+    toast('文件解析失败：' + e.message);
+  }
 }
 
 /**
  * 应用分享数据到 store
  */
-function applyShareData(data, code) {
+function applyShareData(data, label) {
   if (!data.A && !data.B && !data.C && !data.D) {
     toast('分享数据为空'); return;
   }
   const hasLocal = !isStoreEmpty();
   if (hasLocal) {
-    if (!confirm(`加载分享码 ${code} 的数据？\n含有数据的模式将覆盖当前对应模式的内容。`)) return;
+    if (!confirm(`加载 ${label} 的数据？\n含有数据的模式将覆盖当前对应模式的内容。`)) return;
   }
 
-  // 使用与导入相同的"有实质内容才覆盖"逻辑
   const hasContent = {
     A: data.A && (data.A.goals?.main?.length > 0 || data.A.goals?.hidden?.length > 0 || data.A.modules?.length > 0),
     B: data.B && Array.isArray(data.B) && data.B.length > 0,
@@ -2653,21 +2595,7 @@ function applyShareData(data, code) {
 
   document.querySelector('.modal-overlay')?.remove();
   const imported = ['A','B','C','D'].filter(k => hasContent[k]);
-  toast(`分享码 ${code} 加载成功（${imported.join('、')}）`);
-}
-
-/**
- * 删除本地分享码
- */
-function deleteShareCode(code) {
-  if (!confirm(`确定删除分享码 ${code}？`)) return;
-  let shareCodes = {};
-  try { shareCodes = JSON.parse(localStorage.getItem(SHARE_CODE_STORAGE_KEY) || '{}'); } catch(e) {}
-  delete shareCodes[code];
-  try { localStorage.setItem(SHARE_CODE_STORAGE_KEY, JSON.stringify(shareCodes)); } catch(e) {}
-  document.querySelector('.modal-overlay')?.remove();
-  openShareCodeManager(); // 刷新列表
-  toast('已删除');
+  toast(`加载成功（${imported.join('、')}）`);
 }
 
 /**
@@ -2754,6 +2682,17 @@ if (sharedLoaded) {
 } else {
   toast('数据已加载');
 }
+
+// 全局拖拽导入 .uxshare 文件
+document.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); });
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  const file = e.dataTransfer?.files?.[0];
+  if (file && (file.name.endsWith('.uxshare') || file.name.endsWith('.json'))) {
+    handleShareFileSelect(file);
+  }
+});
 </script>
 </body>
 </html>
