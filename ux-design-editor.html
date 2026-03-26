@@ -1040,26 +1040,44 @@ function editAnno(id) {
 // ====== Drag & Drop ======
 let dragData = null;
 
+// 工具函数：通过 drag-handle 精准控制拖动热区
+// 仅在 mousedown 于 .drag-handle 时才临时开启父容器的 draggable
+function bindHandleDrag(el, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop) {
+  el.draggable = false;
+  const handle = el.querySelector('.drag-handle');
+  if (handle) {
+    handle.onmousedown = () => { el.draggable = true; };
+    document.addEventListener('mouseup', () => { el.draggable = false; }, { once: false });
+    el.ondragend = () => { el.draggable = false; onDragEnd(); };
+  } else {
+    // 无 handle 则降级为全区域可拖（保持兼容）
+    el.draggable = true;
+    el.ondragend = onDragEnd;
+  }
+  el.ondragstart = onDragStart;
+  el.ondragover = onDragOver;
+  el.ondragleave = onDragLeave;
+  el.ondrop = onDrop;
+}
+
 function bindDragDrop() {
   // 模式 B 路径拖拽
   document.querySelectorAll('#panelB .card[data-path]').forEach((card, idx) => {
-    card.draggable = true;
-    card.ondragstart = e => {
-      dragData = { type: 'b-path', idx };
-      card.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-    };
-    card.ondragend = () => { card.classList.remove('dragging'); dragData = null; };
-    card.ondragover = e => { e.preventDefault(); if (dragData?.type === 'b-path') card.classList.add('drag-over'); };
-    card.ondragleave = () => card.classList.remove('drag-over');
-    card.ondrop = e => {
-      e.preventDefault(); card.classList.remove('drag-over');
-      if (dragData?.type === 'b-path' && dragData.idx !== idx) {
-        const item = store.B.splice(dragData.idx, 1)[0];
-        store.B.splice(idx, 0, item);
-        save(); renderAll(); toast('已调整顺序');
+    bindHandleDrag(
+      card,
+      e => { dragData = { type: 'b-path', idx }; card.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; },
+      () => { card.classList.remove('dragging'); dragData = null; },
+      e => { e.preventDefault(); if (dragData?.type === 'b-path') card.classList.add('drag-over'); },
+      () => card.classList.remove('drag-over'),
+      e => {
+        e.preventDefault(); card.classList.remove('drag-over');
+        if (dragData?.type === 'b-path' && dragData.idx !== idx) {
+          const item = store.B.splice(dragData.idx, 1)[0];
+          store.B.splice(idx, 0, item);
+          save(); renderAll(); toast('已调整顺序');
+        }
       }
-    };
+    );
   });
 
   // 模式 B 阶段拖拽
@@ -1069,88 +1087,82 @@ function bindDragDrop() {
     const path = bFindP(pid);
     if (!path) return;
     const stageIdx = path.stages.findIndex(s => s.id === sid);
-    
-    stage.draggable = true;
-    stage.ondragstart = e => {
-      e.stopPropagation();
-      dragData = { type: 'b-stage', pid, stageIdx };
-      stage.classList.add('dragging');
-    };
-    stage.ondragend = () => { stage.classList.remove('dragging'); dragData = null; };
-    stage.ondragover = e => { e.preventDefault(); e.stopPropagation(); if (dragData?.type === 'b-stage' && dragData.pid === pid) stage.classList.add('drag-over'); };
-    stage.ondragleave = () => stage.classList.remove('drag-over');
-    stage.ondrop = e => {
-      e.preventDefault(); e.stopPropagation(); stage.classList.remove('drag-over');
-      if (dragData?.type === 'b-stage' && dragData.pid === pid && dragData.stageIdx !== stageIdx) {
-        const item = path.stages.splice(dragData.stageIdx, 1)[0];
-        path.stages.splice(stageIdx, 0, item);
-        save(); renderAll(); toast('已调整阶段顺序');
+    bindHandleDrag(
+      stage,
+      e => { e.stopPropagation(); dragData = { type: 'b-stage', pid, stageIdx }; stage.classList.add('dragging'); },
+      () => { stage.classList.remove('dragging'); dragData = null; },
+      e => { e.preventDefault(); e.stopPropagation(); if (dragData?.type === 'b-stage' && dragData.pid === pid) stage.classList.add('drag-over'); },
+      () => stage.classList.remove('drag-over'),
+      e => {
+        e.preventDefault(); e.stopPropagation(); stage.classList.remove('drag-over');
+        if (dragData?.type === 'b-stage' && dragData.pid === pid && dragData.stageIdx !== stageIdx) {
+          const item = path.stages.splice(dragData.stageIdx, 1)[0];
+          path.stages.splice(stageIdx, 0, item);
+          save(); renderAll(); toast('已调整阶段顺序');
+        }
       }
-    };
+    );
   });
 
   // 模式 C 页面拖拽
   document.querySelectorAll('#panelC .card').forEach((card, idx) => {
     const pageId = card.querySelector('[data-f="c-page"]')?.dataset.i;
     if (!pageId) return;
-    card.draggable = true;
-    card.ondragstart = e => {
-      dragData = { type: 'c-page', idx };
-      card.classList.add('dragging');
-    };
-    card.ondragend = () => { card.classList.remove('dragging'); dragData = null; };
-    card.ondragover = e => { e.preventDefault(); if (dragData?.type === 'c-page') card.classList.add('drag-over'); };
-    card.ondragleave = () => card.classList.remove('drag-over');
-    card.ondrop = e => {
-      e.preventDefault(); card.classList.remove('drag-over');
-      if (dragData?.type === 'c-page' && dragData.idx !== idx) {
-        const item = store.C.splice(dragData.idx, 1)[0];
-        store.C.splice(idx, 0, item);
-        save(); renderAll(); toast('已调整顺序');
+    bindHandleDrag(
+      card,
+      e => { dragData = { type: 'c-page', idx }; card.classList.add('dragging'); },
+      () => { card.classList.remove('dragging'); dragData = null; },
+      e => { e.preventDefault(); if (dragData?.type === 'c-page') card.classList.add('drag-over'); },
+      () => card.classList.remove('drag-over'),
+      e => {
+        e.preventDefault(); card.classList.remove('drag-over');
+        if (dragData?.type === 'c-page' && dragData.idx !== idx) {
+          const item = store.C.splice(dragData.idx, 1)[0];
+          store.C.splice(idx, 0, item);
+          save(); renderAll(); toast('已调整顺序');
+        }
       }
-    };
+    );
   });
 
   // 模式 D 交互稿拖拽
   document.querySelectorAll('#panelD .card').forEach((card, idx) => {
     const specId = card.querySelector('[data-f="d-name"]')?.dataset.i;
     if (!specId) return;
-    card.draggable = true;
-    card.ondragstart = e => {
-      dragData = { type: 'd-spec', idx };
-      card.classList.add('dragging');
-    };
-    card.ondragend = () => { card.classList.remove('dragging'); dragData = null; };
-    card.ondragover = e => { e.preventDefault(); if (dragData?.type === 'd-spec') card.classList.add('drag-over'); };
-    card.ondragleave = () => card.classList.remove('drag-over');
-    card.ondrop = e => {
-      e.preventDefault(); card.classList.remove('drag-over');
-      if (dragData?.type === 'd-spec' && dragData.idx !== idx) {
-        const item = store.D.splice(dragData.idx, 1)[0];
-        store.D.splice(idx, 0, item);
-        save(); renderAll(); toast('已调整顺序');
+    bindHandleDrag(
+      card,
+      e => { dragData = { type: 'd-spec', idx }; card.classList.add('dragging'); },
+      () => { card.classList.remove('dragging'); dragData = null; },
+      e => { e.preventDefault(); if (dragData?.type === 'd-spec') card.classList.add('drag-over'); },
+      () => card.classList.remove('drag-over'),
+      e => {
+        e.preventDefault(); card.classList.remove('drag-over');
+        if (dragData?.type === 'd-spec' && dragData.idx !== idx) {
+          const item = store.D.splice(dragData.idx, 1)[0];
+          store.D.splice(idx, 0, item);
+          save(); renderAll(); toast('已调整顺序');
+        }
       }
-    };
+    );
   });
 
   // 模式 A 模块拖拽
   document.querySelectorAll('#panelA .card[data-mod]').forEach((card, idx) => {
-    card.draggable = true;
-    card.ondragstart = e => {
-      dragData = { type: 'a-mod', idx };
-      card.classList.add('dragging');
-    };
-    card.ondragend = () => { card.classList.remove('dragging'); dragData = null; };
-    card.ondragover = e => { e.preventDefault(); if (dragData?.type === 'a-mod') card.classList.add('drag-over'); };
-    card.ondragleave = () => card.classList.remove('drag-over');
-    card.ondrop = e => {
-      e.preventDefault(); card.classList.remove('drag-over');
-      if (dragData?.type === 'a-mod' && dragData.idx !== idx) {
-        const item = store.A.modules.splice(dragData.idx, 1)[0];
-        store.A.modules.splice(idx, 0, item);
-        save(); renderAll(); toast('已调整模块顺序');
+    bindHandleDrag(
+      card,
+      e => { dragData = { type: 'a-mod', idx }; card.classList.add('dragging'); },
+      () => { card.classList.remove('dragging'); dragData = null; },
+      e => { e.preventDefault(); if (dragData?.type === 'a-mod') card.classList.add('drag-over'); },
+      () => card.classList.remove('drag-over'),
+      e => {
+        e.preventDefault(); card.classList.remove('drag-over');
+        if (dragData?.type === 'a-mod' && dragData.idx !== idx) {
+          const item = store.A.modules.splice(dragData.idx, 1)[0];
+          store.A.modules.splice(idx, 0, item);
+          save(); renderAll(); toast('已调整模块顺序');
+        }
       }
-    };
+    );
   });
 }
 
