@@ -1,6 +1,6 @@
 # UX 设计交互编辑器 — 项目续接文档
 
-> **文档版本**：v3.2.3（2026-03-26 更新）
+> **文档版本**：v3.3.0（2026-03-27 更新）
 > **用途**：在新对话中快速恢复项目上下文，确保迭代连续性
 
 ---
@@ -39,9 +39,9 @@ let store = {
     goals: { main: [...], hidden: [...] },
     modules: [{ id, name, priority, features: [...], suggestions: [...] }]
   },
-  B: [{ id, title, startPoint, keyPoint, refs: { A: [...] }, stages: [...] }],
+  B: [{ id, title, startPoint, refs: { A: [...] }, stages: [...] }],  // keyPoint 已移除
   C: [{ id, pageName, nodes: [{ id, icon, label, note, children: [...] }] }],
-  D: [{ id, specName, refs: { B: [...], C: [...] }, visible: [...], boundaries: [...] }]
+  D: [{ id, specName, refs: { B: [...], C: [...] }, visible: [...], interactions: [...], boundaries: [...] }]
 };
 
 // 批注存储（独立于主数据）
@@ -313,11 +313,12 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 
 > 我正在迭代一个"UX设计交互编辑器"项目。
 > 
-> 请先阅读项目续接文档 `f:\codemake\PROJECT_RESUME.md`，了解项目背景、技术架构和已实现功能。
+> 请按顺序完成以下准备步骤，**不得跳过**：
+> 1. 阅读项目强制执行规则：`f:\codemake\.codemaker\rules`
+> 2. 阅读项目续接文档：`f:\codemake\PROJECT_RESUME.md`，了解项目背景、技术架构和已实现功能
+> 3. 阅读主代码文件：`f:\codemake\ux-design-editor.html`，了解当前实现
 > 
-> 然后阅读主代码文件 `f:\codemake\ux-design-editor.html`，了解当前实现。
-> 
-> 接下来，请帮我完成：[你的具体需求]
+> 准备完成后，请帮我完成：[你的具体需求]
 
 ---
 
@@ -390,7 +391,7 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
   }]
 }
 ```
-> ⚠️ 模式 D 不含 `interactions` 字段，操作与反馈流已由模式 B 的 `stages.feedbacks + branches` 承载。
+> ✅ 模式 D 现包含三层：`visible[]`（界面规格）+ `interactions[]`（交互层）+ `boundaries[]`（系统边界），与 SKILLS JSON 输出完全对应。
 
 ---
 
@@ -412,3 +413,4 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 | v3.2.2 | 2026-03-26 | 拖拽热区精准化：仅 ⠿ drag-handle 图标响应拖动，非该区域不触发；新增 `bindHandleDrag()` 工具函数统一管理五个拖拽场景 |
 | v3.3 | 2026-03-26 | 模式D结构重构：删除交互层（`interactions[]`），改为「界面规格」+「系统边界」两层结构，与 UX设计 Skill B+D 整合模式对齐 |
 | v3.2.3 | 2026-03-26 | 修复清除数据弹窗确认后卡死问题：调换 remove() 与 doClearStorage() 执行顺序，先关弹窗再渲染 |
+| v3.3.0 | 2026-03-27 | SKILLS对齐迭代：模式B删除 keyPoint 字段渲染；模式D恢复交互层（interactions[]）渲染区块；ux-design-rules.md 删除规则四；Skill Markdown模板同步更新 |

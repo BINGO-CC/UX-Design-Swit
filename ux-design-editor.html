@@ -1357,7 +1357,6 @@ function initB() {
     {
       id:nid(),title:'核心行为路径 1：文明遗产获取',
       startPoint:'玩家在大世界进行探索/战斗活动',
-      keyPoint:'让玩家在常规SOC行为中"自然发现"文明遗产，建立"遗产→科技"的心智关联',
       collapsed:false,
       stages:[
         {id:nid(),title:'大世界活动中获得文明遗产',
@@ -1381,7 +1380,6 @@ function initB() {
     {
       id:nid(),title:'核心行为路径 2：逆向研究（单个）',
       startPoint:'玩家拥有文明遗产道具，前往科技研究台',
-      keyPoint:'研究前信息透明→研究中有仪式感演出→研究后结果清晰有惊喜',
       collapsed:false,
       stages:[
         {id:nid(),title:'进入科技研究台 — 选择逆向研究功能',
@@ -1421,7 +1419,6 @@ function initB() {
     {
       id:nid(),title:'核心行为路径 3：逆向研究（批量）',
       startPoint:'玩家拥有多个文明遗产道具，希望批量处理',
-      keyPoint:'批量操作效率优先，同时保留单个操作的关键信息反馈',
       collapsed:true,
       stages:[
         {id:nid(),title:'进入批量研究模式',
@@ -1445,7 +1442,6 @@ function initB() {
     {
       id:nid(),title:'核心行为路径 4：科技发明',
       startPoint:'玩家拥有基础材料，希望尝试发明新科技',
-      keyPoint:'材料投入→概率预览→结果惊喜/容错，让"试错"变成"探索乐趣"',
       collapsed:true,
       stages:[
         {id:nid(),title:'进入科技发明界面',
@@ -1479,7 +1475,6 @@ function initB() {
     {
       id:nid(),title:'核心行为路径 5：科技等级提升',
       startPoint:'玩家持续解锁科技，累计解锁数达到升级阈值',
-      keyPoint:'升级是核心"体验跳变"时刻，需要仪式感演出 + 奖励明确展示',
       collapsed:true,
       stages:[
         {id:nid(),title:'触发科技等级提升',
@@ -1495,7 +1490,6 @@ function initB() {
     {
       id:nid(),title:'核心行为路径 6：科技碎片加点（科技强化）',
       startPoint:'玩家拥有科技强化机会，希望强化已解锁的科技',
-      keyPoint:'强化选择需要策略深度，但操作流程要简洁',
       collapsed:true,
       stages:[
         {id:nid(),title:'进入科技强化界面',
@@ -1516,7 +1510,6 @@ function initB() {
     {
       id:nid(),title:'核心行为路径 7：拆解台特殊分支（文明遗产拦截）',
       startPoint:'玩家在拆解台尝试拆解文明遗产道具',
-      keyPoint:'防止玩家误操作损失稀有道具，同时提供便捷的流程跳转',
       collapsed:true,
       stages:[
         {id:nid(),title:'尝试拆解文明遗产道具',
@@ -1551,7 +1544,6 @@ function renderB() {
         <div class="info">
           <div class="title editable" contenteditable="true" data-f="b-title" data-i="${path.id}">${esc(path.title)}${renderAnno(path.id)}</div>
           <div class="meta">【起点】<span class="editable" contenteditable="true" data-f="b-start" data-i="${path.id}">${esc(path.startPoint)}</span></div>
-          <div class="meta">【体验关键点】<span class="editable" contenteditable="true" data-f="b-key" data-i="${path.id}">${esc(path.keyPoint)}</span></div>
           ${renderRefTags(path, 'B')}
           ${renderBackRefTags(path.id)}
         </div>
@@ -1631,7 +1623,7 @@ function bFindP(id){return store.B.find(p=>p.id===id);}
 function bFindS(pid,sid){const p=bFindP(pid);return p?p.stages.find(s=>s.id===sid):null;}
 function bToggle(id){const p=bFindP(id);if(p)p.collapsed=!p.collapsed;renderAll();}
 function bToggleFb(pid,sid){const s=bFindS(pid,sid);if(s){s.fbCollapsed=s.fbCollapsed===false?true:false;renderAll();}}
-function bAddPath(){store.B.push({id:nid(),title:'新行为路径',startPoint:'请填写起点',keyPoint:'请填写关键点',collapsed:false,stages:[{id:nid(),title:'新阶段',actions:[{id:nid(),text:'请填写'}],feedbacks:[{id:nid(),text:'请填写'}],branches:[]}]});save();renderAll();toast('已新增路径');}
+function bAddPath(){store.B.push({id:nid(),title:'新行为路径',startPoint:'请填写起点',collapsed:false,stages:[{id:nid(),title:'新阶段',actions:[{id:nid(),text:'请填写'}],feedbacks:[{id:nid(),text:'请填写'}],branches:[]}]});save();renderAll();toast('已新增路径');}
 function bDelPath(id){store.B=store.B.filter(p=>p.id!==id);save();renderAll();toast('已删除');}
 function bAddStage(pid){const p=bFindP(pid);if(p){p.stages.push({id:nid(),title:'新阶段',actions:[{id:nid(),text:'请填写'}],feedbacks:[{id:nid(),text:'请填写'}],branches:[]});save();renderAll();toast('已新增');}}
 function bDelStage(pid,sid){const p=bFindP(pid);if(p){p.stages=p.stages.filter(s=>s.id!==sid);save();renderAll();toast('已删除');}}
@@ -2098,6 +2090,18 @@ function renderD() {
           </div>
         </div>
         <div class="spec-section">
+          <div class="spec-section-header" style="color:var(--accent);border-color:var(--accent);">🔄 交互层（操作与反馈流）</div>
+          <div class="spec-section-body">
+            <ul class="step-list">${(spec.interactions||[]).map(it=>`
+              <li class="step-item"><span class="step-num">•</span>
+                <span class="step-content editable" contenteditable="true" data-f="d-inter" data-i="${it.id}" data-sp="${spec.id}">${esc(it.text)}</span>
+                <button class="step-del" onclick="dDelItem('${spec.id}','interactions','${it.id}')">✕</button>
+              </li>`).join('')}
+            </ul>
+            <button class="add-btn" onclick="dAddItem('${spec.id}','interactions')">+ 新增交互条目</button>
+          </div>
+        </div>
+        <div class="spec-section">
           <div class="spec-section-header boundary">⚠️ 系统边界（接口异常 / 数据为空 / 配置缺失）</div>
           <div class="spec-section-body">
             ${spec.boundaries.map(b=>`
@@ -2121,10 +2125,11 @@ function renderD() {
 // Mode D helpers
 function dFindSpec(id){return store.D.find(s=>s.id===id);}
 function dToggle(id){const s=dFindSpec(id);if(s)s.collapsed=!s.collapsed;renderAll();}
-function dAddSpec(){store.D.push({id:nid(),specName:'新交互说明',collapsed:false,visible:[{id:nid(),text:'请填写'}],boundaries:[]});save();renderAll();toast('已新增');}
+function dAddSpec(){store.D.push({id:nid(),specName:'新交互说明',collapsed:false,visible:[{id:nid(),text:'请填写'}],interactions:[],boundaries:[]});save();renderAll();toast('已新增');}
 function dDelSpec(id){store.D=store.D.filter(s=>s.id!==id);save();renderAll();toast('已删除');}
 function dAddItem(spId,type){
   const sp=dFindSpec(spId);if(!sp)return;
+  if(!sp[type])sp[type]=[];
   if(type==='boundaries')sp[type].push({id:nid(),type:'异常类型',trigger:'触发条件',feedback:'反馈内容',recovery:'恢复路径'});
   else sp[type].push({id:nid(),text:'请填写'});
   save();renderAll();toast('已新增');
@@ -2162,7 +2167,6 @@ function onBlur(e) {
   // Mode B
   else if (f === 'b-title') { const p = bFindP(ds.i); if (p && p.title !== v) { p.title = v; ch = true; } }
   else if (f === 'b-start') { const p = bFindP(ds.i); if (p && p.startPoint !== v) { p.startPoint = v; ch = true; } }
-  else if (f === 'b-key') { const p = bFindP(ds.i); if (p && p.keyPoint !== v) { p.keyPoint = v; ch = true; } }
   else if (f === 'b-stitle') { const s = bFindS(ds.p, ds.i); if (s && s.title !== v) { s.title = v; ch = true; } }
   else if (f === 'b-step') {
     const s = bFindS(ds.p, ds.s); const it = s?.[ds.t]?.find(x => x.id === ds.i);
@@ -2186,6 +2190,7 @@ function onBlur(e) {
   // Mode D
   else if (f === 'd-name') { const sp = dFindSpec(ds.i); if (sp && sp.specName !== v) { sp.specName = v; ch = true; } }
   else if (f === 'd-vis') { const sp = dFindSpec(ds.sp); const it = sp?.visible.find(x => x.id === ds.i); if (it && it.text !== v) { it.text = v; ch = true; } }
+  else if (f === 'd-inter') { const sp = dFindSpec(ds.sp); const it = sp?.interactions?.find(x => x.id === ds.i); if (it && it.text !== v) { it.text = v; ch = true; } }
   else if (f === 'd-btype') { const sp = dFindSpec(ds.sp); const b = sp?.boundaries.find(x => x.id === ds.i); if (b && b.type !== v) { b.type = v; ch = true; } }
   else if (f === 'd-btrig') { const sp = dFindSpec(ds.sp); const b = sp?.boundaries.find(x => x.id === ds.i); if (b && b.trigger !== v) { b.trigger = v; ch = true; } }
   else if (f === 'd-bfeed') { const sp = dFindSpec(ds.sp); const b = sp?.boundaries.find(x => x.id === ds.i); if (b && b.feedback !== v) { b.feedback = v; ch = true; } }
@@ -2262,7 +2267,7 @@ function exportMd() {
   // Mode B
   md += '\n---\n\n## B 行为路径\n';
   store.B.forEach(path => {
-    md += `\n### ${path.title}\n**【起点】** ${path.startPoint}\n**【体验关键点】** ${path.keyPoint}\n\n`;
+    md += `\n### ${path.title}\n**【起点】** ${path.startPoint}\n\n`;
     path.stages.forEach((s, si) => {
       md += `#### 🌊 阶段 ${si + 1}：${s.title}\n👤 **用户操作**\n`;
       s.actions.forEach((a, i) => { md += `${i + 1}. ${a.text}\n`; });
