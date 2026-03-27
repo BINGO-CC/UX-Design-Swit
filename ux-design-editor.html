@@ -215,6 +215,26 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 .modal .m-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:14px;}
 .modal button{padding:7px 14px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;}
 .modal button.primary{background:var(--accent);border-color:var(--accent);}
+
+/* Inline add button (next to card title) */
+.add-inline-btn{background:transparent !important;border:1px dashed rgba(108,140,255,.35) !important;border-radius:5px;color:var(--text2) !important;cursor:pointer;font-size:12px !important;padding:2px 8px !important;transition:all .15s;white-space:nowrap;line-height:1.6;}
+.add-inline-btn:hover{border-color:var(--accent) !important;color:var(--accent) !important;background:rgba(108,140,255,.08) !important;}
+
+/* FB Popover (反馈与边界条件浮层) */
+.fb-popover-btn{background:rgba(168,85,247,.1) !important;border:1px solid rgba(168,85,247,.3) !important;border-radius:5px;color:var(--purple) !important;cursor:pointer;font-size:12px !important;padding:3px 9px !important;transition:all .15s;white-space:nowrap;}
+.fb-popover-btn:hover{background:rgba(168,85,247,.2) !important;border-color:var(--purple) !important;}
+.fb-popover-overlay{position:fixed;inset:0;z-index:260;background:rgba(0,0,0,.45);}
+.fb-popover{position:fixed;z-index:261;background:var(--surface);border:1px solid rgba(168,85,247,.35);border-radius:12px;padding:0;width:560px;max-width:calc(100vw - 40px);max-height:75vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.5);top:50%;left:50%;transform:translate(-50%,-50%);}
+.fb-popover-head{display:flex;align-items:center;gap:8px;padding:14px 18px 0;flex-shrink:0;}
+.fb-popover-head h3{font-size:14px;font-weight:600;color:var(--purple);flex:1;}
+.fb-popover-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:4px 6px;border-radius:4px;line-height:1;}
+.fb-popover-close:hover{background:var(--surface2);color:var(--text);}
+.fb-stage-tabs{display:flex;gap:4px;padding:10px 18px 0;flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
+.fb-stage-tabs::-webkit-scrollbar{display:none;}
+.fb-stage-tab{padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);white-space:nowrap;transition:all .15s;flex-shrink:0;}
+.fb-stage-tab:hover{border-color:var(--purple);color:var(--purple);}
+.fb-stage-tab.active{background:rgba(168,85,247,.15);border-color:var(--purple);color:var(--purple);font-weight:600;}
+.fb-popover-body{overflow-y:auto;padding:12px 18px 16px;flex:1;}
 </style>
 </head>
 <body>
@@ -1080,7 +1100,7 @@ function bindDragDrop() {
     );
   });
 
-  // 模式 B 阶段拖拽
+  // 模式 B 阶段拖拽（支持跨父级路径）
   document.querySelectorAll('#panelB .stage[data-stage]').forEach(stage => {
     const pid = stage.dataset.path;
     const sid = stage.dataset.stage;
@@ -1089,17 +1109,20 @@ function bindDragDrop() {
     const stageIdx = path.stages.findIndex(s => s.id === sid);
     bindHandleDrag(
       stage,
-      e => { e.stopPropagation(); dragData = { type: 'b-stage', pid, stageIdx }; stage.classList.add('dragging'); },
+      e => { e.stopPropagation(); dragData = { type: 'b-stage', pid, stageIdx, sid }; stage.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; },
       () => { stage.classList.remove('dragging'); dragData = null; },
-      e => { e.preventDefault(); e.stopPropagation(); if (dragData?.type === 'b-stage' && dragData.pid === pid) stage.classList.add('drag-over'); },
+      e => { e.preventDefault(); e.stopPropagation(); if (dragData?.type === 'b-stage') stage.classList.add('drag-over'); },
       () => stage.classList.remove('drag-over'),
       e => {
         e.preventDefault(); e.stopPropagation(); stage.classList.remove('drag-over');
-        if (dragData?.type === 'b-stage' && dragData.pid === pid && dragData.stageIdx !== stageIdx) {
-          const item = path.stages.splice(dragData.stageIdx, 1)[0];
-          path.stages.splice(stageIdx, 0, item);
-          save(); renderAll(); toast('已调整阶段顺序');
-        }
+        if (dragData?.type !== 'b-stage') return;
+        if (dragData.pid === pid && dragData.stageIdx === stageIdx) return;
+        const srcPath = bFindP(dragData.pid);
+        const tgtPath = bFindP(pid);
+        if (!srcPath || !tgtPath) return;
+        const [item] = srcPath.stages.splice(dragData.stageIdx, 1);
+        tgtPath.stages.splice(stageIdx, 0, item);
+        save(); renderAll(); toast(dragData.pid === pid ? '已调整阶段顺序' : '已跨路径移动阶段');
       }
     );
   });
@@ -1262,6 +1285,10 @@ function renderA() {
     <div class="card">
       <div class="card-header">
         <div class="info"><div class="title">🎯 核心目标拆解</div></div>
+        <div class="actions">
+          <button class="add-inline-btn" onclick="aAddGoal('main')">＋主目标</button>
+          <button class="add-inline-btn" onclick="aAddGoal('hidden')">＋隐性需求</button>
+        </div>
       </div>
       <div class="card-body">
         <div style="margin-top:10px;font-size:13px;font-weight:600;color:var(--accent);">主目标</div>
@@ -1272,7 +1299,6 @@ function renderA() {
             <button class="step-del" onclick="aDelGoal('main','${g.id}')">✕</button>
           </li>`).join('')}
         </ul>
-        <button class="add-btn" onclick="aAddGoal('main')">+ 新增主目标</button>
         <div style="margin-top:12px;font-size:13px;font-weight:600;color:var(--purple);">隐性需求</div>
         <ul class="step-list">${A.goals.hidden.map((g,i) => `
           <li class="step-item">
@@ -1281,12 +1307,10 @@ function renderA() {
             <button class="step-del" onclick="aDelGoal('hidden','${g.id}')">✕</button>
           </li>`).join('')}
         </ul>
-        <button class="add-btn" onclick="aAddGoal('hidden')">+ 新增隐性需求</button>
       </div>
     </div>
-    <div style="font-size:15px;font-weight:600;margin:16px 0 10px;">🧩 功能模块拆解与优化建议</div>
+    <div style="font-size:15px;font-weight:600;margin:16px 0 10px;display:flex;align-items:center;gap:8px;">🧩 功能模块拆解与优化建议<button class="add-inline-btn" onclick="aAddModule()">＋新增模块</button></div>
     ${A.modules.map(m => renderModule(m)).join('')}
-    <button class="add-btn" onclick="aAddModule()" style="margin-top:12px;">+ 新增功能模块</button>
   `;
 }
 
@@ -1302,8 +1326,10 @@ function renderModule(m) {
         ${renderBackRefTags(m.id)}
       </div>
       <div class="actions">
+        <button class="add-inline-btn" onclick="aAddFeat('${m.id}')">＋功能</button>
+        <button class="add-inline-btn" onclick="aAddSug('${m.id}')">＋建议</button>
+        <button onclick="if(confirm('删除该模块？'))aDelMod('${m.id}')" style="color:var(--red)" title="删除模块">🗑</button>
         <button onclick="aToggleMod('${m.id}')">${m.collapsed ? '▶' : '▼'}</button>
-        <button class="danger" style="color:var(--red)" onclick="if(confirm('删除该模块？'))aDelMod('${m.id}')">🗑</button>
       </div>
     </div>
     <div class="card-body ${m.collapsed ? 'collapsed' : ''}">
@@ -1329,13 +1355,22 @@ function renderModule(m) {
   </div>`;
 }
 
+// Util: focus editable element after render
+function focusEl(selector) {
+  requestAnimationFrame(() => {
+    const el = document.querySelector(selector);
+    if (el) { el.focus(); const r=document.createRange(),s=window.getSelection(); r.selectNodeContents(el); r.collapse(false); s.removeAllRanges(); s.addRange(r); }
+  });
+}
+
 // Mode A operations
-function aAddGoal(type) { store.A.goals[type].push({id:nid(),text:'请填写'}); save(); renderAll(); toast('已新增'); }
+function aAddGoal(type) { const nId=nid(); store.A.goals[type].push({id:nId,text:'请填写'}); save(); renderAll(); toast('已新增'); focusEl(`[data-f="a-${type}"][data-i="${nId}"]`); }
 function aDelGoal(type,id) { store.A.goals[type] = store.A.goals[type].filter(g=>g.id!==id); save(); renderAll(); toast('已删除'); }
 function aAddModule() {
-  store.A.modules.push({id:nid(),name:'新模块',priority:'mid',collapsed:false,
+  const nId=nid();
+  store.A.modules.push({id:nId,name:'新模块',priority:'mid',collapsed:false,
     features:[{id:nid(),text:'请填写功能'}],suggestions:[]});
-  save(); renderAll(); toast('已新增模块');
+  save(); renderAll(); toast('已新增模块'); focusEl(`[data-f="a-modname"][data-i="${nId}"]`);
 }
 function aDelMod(id) { store.A.modules = store.A.modules.filter(m=>m.id!==id); save(); renderAll(); toast('已删除模块'); }
 function aToggleMod(id) { const m = store.A.modules.find(x=>x.id===id); if(m) m.collapsed=!m.collapsed; renderAll(); }
@@ -1344,9 +1379,9 @@ function aCyclePriority(id) {
   m.priority = m.priority==='high'?'mid':m.priority==='mid'?'low':'high';
   save(); renderAll(); toast('优先级已切换');
 }
-function aAddFeat(mid) { const m=store.A.modules.find(x=>x.id===mid); if(m){m.features.push({id:nid(),text:'请填写'});save();renderAll();toast('已新增');} }
+function aAddFeat(mid) { const m=store.A.modules.find(x=>x.id===mid); if(m){const nId=nid();m.features.push({id:nId,text:'请填写'});save();renderAll();toast('已新增');focusEl(`[data-f="a-feat"][data-i="${nId}"]`);} }
 function aDelFeat(mid,fid) { const m=store.A.modules.find(x=>x.id===mid); if(m){m.features=m.features.filter(f=>f.id!==fid);save();renderAll();toast('已删除');} }
-function aAddSug(mid) { const m=store.A.modules.find(x=>x.id===mid); if(m){m.suggestions.push({id:nid(),text:'请填写建议',reason:'请填写依据'});save();renderAll();toast('已新增');} }
+function aAddSug(mid) { const m=store.A.modules.find(x=>x.id===mid); if(m){const nId=nid();m.suggestions.push({id:nId,text:'请填写建议',reason:'请填写依据'});save();renderAll();toast('已新增');focusEl(`[data-f="a-sug"][data-i="${nId}"]`);} }
 function aDelSug(mid,sid) { const m=store.A.modules.find(x=>x.id===mid); if(m){m.suggestions=m.suggestions.filter(s=>s.id!==sid);save();renderAll();toast('已删除');} }
 
 // ============================================================
@@ -1549,8 +1584,9 @@ function renderB() {
         </div>
         <div class="actions">
           <button class="ref-link-btn" onclick="openRefModal('${path.id}','B')" title="管理引用关系">🔗</button>
+          <button class="add-inline-btn" onclick="bAddStage('${path.id}')">＋阶段</button>
+          <button onclick="if(confirm('删除该路径？'))bDelPath('${path.id}')" style="color:var(--red)" title="删除路径">🗑</button>
           <button onclick="bToggle('${path.id}')">${path.collapsed?'▶':'▼'}</button>
-          <button onclick="showCtx(event,bCtxPath('${path.id}'))">⋯</button>
         </div>
       </div>
       <div class="card-body ${path.collapsed?'collapsed':''}">
@@ -1558,48 +1594,31 @@ function renderB() {
         <button class="add-btn" onclick="bAddStage('${path.id}')">+ 新增阶段</button>
       </div>
     </div>`).join('') +
-    '<button class="add-btn" onclick="bAddPath()" style="margin-top:12px;">+ 新增路径</button>';
+    '<div style="display:flex;align-items:center;gap:8px;margin-top:12px;"><button class="add-btn" style="flex:1;" onclick="bAddPath()">+ 新增路径</button></div>';
 }
 
 function renderBStage(pid,stage,si) {
+  const fbCount = stage.feedbacks.length + stage.branches.reduce((acc,b)=>acc+b.items.length,0);
   return `<div class="stage" data-stage="${stage.id}" data-path="${pid}">
     <div class="stage-header">
-      <span style="font-size:13px;cursor:grab;color:var(--text2);">⠿</span>
+      <span class="drag-handle" style="font-size:13px;color:var(--text2);">⠿</span>
       <span style="font-size:16px;">🌊</span>
       <span class="stage-title">阶段 ${si+1}：<span class="editable" contenteditable="true" data-f="b-stitle" data-i="${stage.id}" data-p="${pid}">${esc(stage.title)}</span></span>
-      <button onclick="showCtx(event,bCtxStage('${pid}','${stage.id}'))">⋯</button>
+      <button class="fb-popover-btn" onclick="openFbPopover('${pid}','${stage.id}')">🔄 反馈与边界 ${fbCount>0?'<span style="opacity:.7;font-weight:400;">('+stage.feedbacks.length+'+'+stage.branches.length+')</span>':''}</button>
+      <button onclick="bCopyStage('${pid}','${stage.id}')" title="复制阶段" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">⎘</button>
+      <button onclick="if(confirm('删除该阶段？'))bDelStage('${pid}','${stage.id}')" title="删除阶段" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text2)'">🗑</button>
     </div>
     <div class="action-block">
-      <div class="block-label">👤 用户操作</div>
+      <div class="block-label" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>👤 用户操作</span>
+        <button class="add-inline-btn" onclick="bAddStep('${pid}','${stage.id}','actions')">＋操作</button>
+      </div>
       <ul class="step-list">${stage.actions.map((a,i)=>`
         <li class="step-item"><span class="step-num">${i+1}.</span>
           <span class="step-content editable" contenteditable="true" data-f="b-step" data-i="${a.id}" data-s="${stage.id}" data-p="${pid}" data-t="actions">${esc(a.text)}</span>
           <button class="step-del" onclick="bDelStep('${pid}','${stage.id}','actions','${a.id}')">✕</button>
         </li>`).join('')}
       </ul>
-      <button class="add-btn" onclick="bAddStep('${pid}','${stage.id}','actions')">+ 新增操作</button>
-    </div>
-    <div class="fb-wrapper">
-      <div class="fb-wrapper-header" onclick="bToggleFb('${pid}','${stage.id}')">
-        <span class="fb-toggle">${stage.fbCollapsed===false ? '▼' : '▶'}</span>
-        <span>🔄 反馈与边界条件</span>
-        <span style="font-weight:400;font-size:12px;color:var(--text2);margin-left:auto;">${stage.feedbacks.length} 条反馈 · ${stage.branches.length} 个分支</span>
-      </div>
-      <div class="fb-wrapper-body ${stage.fbCollapsed===false ? '' : 'collapsed'}">
-        <div style="text-align:center;color:var(--text2);font-size:16px;margin:3px 0;">│<br>▼</div>
-        <div class="feedback-block">
-          <div class="block-label">💻 系统反馈</div>
-          <ul class="step-list">${stage.feedbacks.map(f=>`
-            <li class="step-item"><span class="step-num">•</span>
-              <span class="step-content editable" contenteditable="true" data-f="b-step" data-i="${f.id}" data-s="${stage.id}" data-p="${pid}" data-t="feedbacks">${esc(f.text)}</span>
-              <button class="step-del" onclick="bDelStep('${pid}','${stage.id}','feedbacks','${f.id}')">✕</button>
-            </li>`).join('')}
-          </ul>
-          <button class="add-btn" onclick="bAddStep('${pid}','${stage.id}','feedbacks')">+ 新增反馈</button>
-        </div>
-        ${stage.branches.map(b=>renderBBranch(pid,stage.id,b)).join('')}
-        <button class="add-btn" onclick="bAddBranch('${pid}','${stage.id}')">+ 新增分支</button>
-      </div>
     </div>
   </div>`;
 }
@@ -1622,19 +1641,130 @@ function renderBBranch(pid,sid,b) {
 function bFindP(id){return store.B.find(p=>p.id===id);}
 function bFindS(pid,sid){const p=bFindP(pid);return p?p.stages.find(s=>s.id===sid):null;}
 function bToggle(id){const p=bFindP(id);if(p)p.collapsed=!p.collapsed;renderAll();}
-function bToggleFb(pid,sid){const s=bFindS(pid,sid);if(s){s.fbCollapsed=s.fbCollapsed===false?true:false;renderAll();}}
-function bAddPath(){store.B.push({id:nid(),title:'新行为路径',startPoint:'请填写起点',collapsed:false,stages:[{id:nid(),title:'新阶段',actions:[{id:nid(),text:'请填写'}],feedbacks:[{id:nid(),text:'请填写'}],branches:[]}]});save();renderAll();toast('已新增路径');}
+function bAddPath(){const nId=nid();store.B.push({id:nId,title:'新行为路径',startPoint:'请填写起点',collapsed:false,stages:[{id:nid(),title:'新阶段',actions:[{id:nid(),text:'请填写'}],feedbacks:[],branches:[]}]});save();renderAll();toast('已新增路径');focusEl(`[data-f="b-title"][data-i="${nId}"]`);}
 function bDelPath(id){store.B=store.B.filter(p=>p.id!==id);save();renderAll();toast('已删除');}
-function bAddStage(pid){const p=bFindP(pid);if(p){p.stages.push({id:nid(),title:'新阶段',actions:[{id:nid(),text:'请填写'}],feedbacks:[{id:nid(),text:'请填写'}],branches:[]});save();renderAll();toast('已新增');}}
+function bAddStage(pid){const p=bFindP(pid);if(p){const nId=nid();p.stages.push({id:nId,title:'新阶段',actions:[{id:nid(),text:'请填写'}],feedbacks:[],branches:[]});save();renderAll();toast('已新增');focusEl(`[data-f="b-stitle"][data-i="${nId}"]`);}}
 function bDelStage(pid,sid){const p=bFindP(pid);if(p){p.stages=p.stages.filter(s=>s.id!==sid);save();renderAll();toast('已删除');}}
-function bAddStep(pid,sid,type){const s=bFindS(pid,sid);if(s){s[type].push({id:nid(),text:'请填写'});save();renderAll();toast('已新增');}}
+function bCopyStage(pid,sid){
+  const p=bFindP(pid);if(!p)return;
+  const s=bFindS(pid,sid);if(!s)return;
+  const idx=p.stages.findIndex(x=>x.id===sid);
+  function deepClone(obj){return JSON.parse(JSON.stringify(obj));}
+  function reId(obj){
+    if(Array.isArray(obj))return obj.map(reId);
+    if(obj&&typeof obj==='object'){const n={};for(const k in obj){n[k]=k==='id'?nid():reId(obj[k]);}return n;}
+    return obj;
+  }
+  const copy=reId(deepClone(s));copy.title=s.title+' (副本)';
+  p.stages.splice(idx+1,0,copy);save();renderAll();toast('阶段已复制');
+}
+function bAddStep(pid,sid,type){const s=bFindS(pid,sid);if(s){const nId=nid();s[type].push({id:nId,text:'请填写'});save();renderAll();toast('已新增');focusEl(`[data-f="b-step"][data-i="${nId}"]`);}}
 function bDelStep(pid,sid,type,id){const s=bFindS(pid,sid);if(s){s[type]=s[type].filter(x=>x.id!==id);save();renderAll();toast('已删除');}}
-function bAddBranch(pid,sid){const s=bFindS(pid,sid);if(s){s.branches.push({id:nid(),label:'新分支：条件',items:[{id:nid(),text:'请填写'}]});save();renderAll();toast('已新增');}}
+function bAddBranch(pid,sid){const s=bFindS(pid,sid);if(s){const nId=nid();s.branches.push({id:nId,label:'新分支：条件',items:[{id:nid(),text:'请填写'}]});save();renderAll();toast('已新增');focusEl(`[data-f="b-blabel"][data-i="${nId}"]`);}}
 function bDelBranch(pid,sid,bid){const s=bFindS(pid,sid);if(s){s.branches=s.branches.filter(b=>b.id!==bid);save();renderAll();toast('已删除');}}
-function bAddBItem(pid,sid,bid){const s=bFindS(pid,sid);const b=s?.branches.find(x=>x.id===bid);if(b){b.items.push({id:nid(),text:'请填写'});save();renderAll();toast('已新增');}}
+function bAddBItem(pid,sid,bid){const s=bFindS(pid,sid);const b=s?.branches.find(x=>x.id===bid);if(b){const nId=nid();b.items.push({id:nId,text:'请填写'});save();renderAll();toast('已新增');focusEl(`[data-f="b-bitem"][data-i="${nId}"]`);}}
 function bDelBItem(pid,sid,bid,iid){const s=bFindS(pid,sid);const b=s?.branches.find(x=>x.id===bid);if(b){b.items=b.items.filter(x=>x.id!==iid);save();renderAll();toast('已删除');}}
-function bCtxPath(id){return `<button onclick="bDelPath('${id}');closeCtx();" class="danger">🗑 删除路径</button>`;}
-function bCtxStage(pid,sid){return `<button onclick="bDelStage('${pid}','${sid}');closeCtx();" class="danger">🗑 删除阶段</button>`;}
+
+// FB Popover (反馈与边界条件浮层)
+let fbPopoverState = null; // { pid, sid }
+function openFbPopover(pid, sid) {
+  fbPopoverState = { pid, sid };
+  renderFbPopover();
+}
+function closeFbPopover() {
+  fbPopoverState = null;
+  const ol = document.getElementById('fbPopoverOverlay');
+  if (ol) ol.remove();
+}
+function renderFbPopover() {
+  const ol = document.getElementById('fbPopoverOverlay');
+  if (ol) ol.remove();
+  if (!fbPopoverState) return;
+  const { pid, sid } = fbPopoverState;
+  const path = bFindP(pid); if (!path) return;
+  const stageIdx = path.stages.findIndex(s => s.id === sid);
+  if (stageIdx < 0) return;
+  const stage = path.stages[stageIdx];
+
+  const tabsHtml = path.stages.map((s, i) =>
+    `<div class="fb-stage-tab ${s.id === sid ? 'active' : ''}" onclick="switchFbPopoverStage('${pid}','${s.id}')">${i+1}. ${esc(s.title.length>12?s.title.slice(0,12)+'…':s.title)}</div>`
+  ).join('');
+
+  const feedbacksHtml = stage.feedbacks.map(f => `
+    <li class="step-item"><span class="step-num">•</span>
+      <span class="step-content editable" contenteditable="true" data-f="b-step" data-i="${f.id}" data-s="${stage.id}" data-p="${pid}" data-t="feedbacks">${esc(f.text)}</span>
+      <button class="step-del" onclick="bDelStep('${pid}','${stage.id}','feedbacks','${f.id}');renderFbPopover()">✕</button>
+    </li>`).join('');
+
+  const branchesHtml = stage.branches.map(b => `
+    <div class="branch">
+      <div class="branch-header">
+        <span style="color:var(--orange);">👉</span>
+        <span class="branch-title editable" contenteditable="true" data-f="b-blabel" data-i="${b.id}" data-s="${stage.id}" data-p="${pid}">${esc(b.label)}</span>
+        <button onclick="bDelBranch('${pid}','${stage.id}','${b.id}');renderFbPopover()">✕</button>
+      </div>
+      ${b.items.map(it=>`<div class="branch-item"><span class="bullet">•</span>
+        <span class="editable" contenteditable="true" style="flex:1" data-f="b-bitem" data-i="${it.id}" data-b="${b.id}" data-s="${stage.id}" data-p="${pid}">${esc(it.text)}</span>
+        <button class="step-del" onclick="bDelBItem('${pid}','${stage.id}','${b.id}','${it.id}');renderFbPopover()" style="opacity:.4;font-size:11px;background:none;border:none;color:var(--text2);cursor:pointer;">✕</button>
+      </div>`).join('')}
+      <button class="add-btn" onclick="bAddBItemInPopover('${pid}','${stage.id}','${b.id}')">+ 新增分支项</button>
+    </div>`).join('');
+
+  const html = `<div class="fb-popover-overlay" id="fbPopoverOverlay" onclick="if(event.target===this)closeFbPopover()">
+    <div class="fb-popover">
+      <div class="fb-popover-head">
+        <h3>🔄 反馈与边界条件</h3>
+        <button class="fb-popover-close" onclick="closeFbPopover()">✕</button>
+      </div>
+      <div class="fb-stage-tabs">${tabsHtml}</div>
+      <div class="fb-popover-body">
+        <div class="feedback-block" style="margin-bottom:10px;">
+          <div class="block-label" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>💻 系统反馈</span>
+            <button class="add-inline-btn" onclick="bAddStepInPopover('${pid}','${stage.id}','feedbacks')">＋新增反馈</button>
+          </div>
+          <ul class="step-list">${feedbacksHtml}</ul>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:var(--orange);margin-bottom:6px;">👉 分支条件</div>
+        ${branchesHtml}
+        <button class="add-btn" onclick="bAddBranchInPopover('${pid}','${stage.id}')">+ 新增分支</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  bindEditableInPopover();
+}
+function switchFbPopoverStage(pid, sid) {
+  fbPopoverState = { pid, sid };
+  renderFbPopover();
+}
+function bAddStepInPopover(pid, sid, type) {
+  const s = bFindS(pid, sid); if (!s) return;
+  const nId = nid(); s[type].push({id:nId, text:'请填写'});
+  save(); renderFbPopover();
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`#fbPopoverOverlay [data-f="b-step"][data-i="${nId}"]`);
+    if (el) { el.focus(); const r=document.createRange(),sel=window.getSelection(); r.selectNodeContents(el); r.collapse(false); sel.removeAllRanges(); sel.addRange(r); }
+  });
+}
+function bAddBranchInPopover(pid, sid) {
+  const s = bFindS(pid, sid); if (!s) return;
+  const nId = nid(); s.branches.push({id:nId, label:'新分支：条件', items:[{id:nid(), text:'请填写'}]});
+  save(); renderFbPopover();
+}
+function bAddBItemInPopover(pid, sid, bid) {
+  const s = bFindS(pid, sid); const b = s?.branches.find(x=>x.id===bid); if (!b) return;
+  const nId = nid(); b.items.push({id:nId, text:'请填写'});
+  save(); renderFbPopover();
+}
+function bindEditableInPopover() {
+  // 使浮层内 editable 在 blur 时也能触发统一编辑处理
+  requestAnimationFrame(() => {
+    document.querySelectorAll('#fbPopoverOverlay .editable').forEach(el => {
+      el.onblur = onBlur;
+    });
+  });
+}
 
 // ============================================================
 // MODE C: 信息架构
@@ -1810,8 +1940,9 @@ function renderC() {
           ${renderBackRefTags(page.id)}
         </div>
         <div class="actions">
+          <button class="add-inline-btn" onclick="cAddNode('${page.id}',null)">＋节点</button>
+          <button onclick="if(confirm('删除该页面架构？'))cDelPage('${page.id}')" style="color:var(--red)" title="删除页面">🗑</button>
           <button onclick="cToggle('${page.id}')">${page.collapsed?'▶':'▼'}</button>
-          <button class="danger" style="color:var(--red)" onclick="if(confirm('删除？'))cDelPage('${page.id}')">🗑</button>
         </div>
       </div>
       <div class="card-body ${page.collapsed?'collapsed':''}">
@@ -1819,7 +1950,7 @@ function renderC() {
         <button class="add-btn" onclick="cAddNode('${page.id}',null)">+ 新增根节点</button>
       </div>
     </div>`).join('') +
-    '<button class="add-btn" onclick="cAddPage()" style="margin-top:12px;">+ 新增页面架构</button>';
+    '<div style="display:flex;align-items:center;gap:8px;margin-top:12px;"><button class="add-btn" style="flex:1;" onclick="cAddPage()">+ 新增页面架构</button></div>';
 }
 
 function renderCNode(pageId,node,depth) {
@@ -1848,14 +1979,15 @@ function cFindParent(nodes,id){
   for(const n of nodes){if((n.children||[]).some(c=>c.id===id))return n;const r=cFindParent(n.children||[],id);if(r)return r;}return null;
 }
 function cToggle(id){const p=cFindPage(id);if(p)p.collapsed=!p.collapsed;renderAll();}
-function cAddPage(){store.C.push({id:nid(),pageName:'新页面',collapsed:false,nodes:[{id:nid(),icon:'📌',label:'新区域',note:'',children:[]}]});save();renderAll();toast('已新增');}
+function cAddPage(){const nId=nid();store.C.push({id:nId,pageName:'新页面',collapsed:false,nodes:[{id:nid(),icon:'📌',label:'新区域',note:'',children:[]}]});save();renderAll();toast('已新增');focusEl(`[data-f="c-page"][data-i="${nId}"]`);}
 function cDelPage(id){store.C=store.C.filter(p=>p.id!==id);save();renderAll();toast('已删除');}
 function cAddNode(pgId,parentId){
   const pg=cFindPage(pgId);if(!pg)return;
-  const newNode={id:nid(),icon:'',label:'新节点',note:'',children:[]};
+  const nId=nid();
+  const newNode={id:nId,icon:'',label:'新节点',note:'',children:[]};
   if(!parentId){pg.nodes.push(newNode);}
   else{const p=cFindNode(pg.nodes,parentId);if(p){if(!p.children)p.children=[];p.children.push(newNode);}}
-  save();renderAll();toast('已新增');
+  save();renderAll();toast('已新增');focusEl(`[data-f="c-label"][data-i="${nId}"]`);
 }
 function cDelNode(pgId,nodeId){
   const pg=cFindPage(pgId);if(!pg)return;
@@ -2072,8 +2204,10 @@ function renderD() {
         </div>
         <div class="actions">
           <button class="ref-link-btn" onclick="openRefModal('${spec.id}','D')" title="管理引用关系">🔗</button>
+          <button class="add-inline-btn" onclick="dAddItem('${spec.id}','visible')">＋规格</button>
+          <button class="add-inline-btn" onclick="dAddItem('${spec.id}','boundaries')">＋边界</button>
+          <button onclick="if(confirm('删除？'))dDelSpec('${spec.id}')" style="color:var(--red)" title="删除">🗑</button>
           <button onclick="dToggle('${spec.id}')">${spec.collapsed?'▶':'▼'}</button>
-          <button class="danger" style="color:var(--red)" onclick="if(confirm('删除？'))dDelSpec('${spec.id}')">🗑</button>
         </div>
       </div>
       <div class="card-body ${spec.collapsed?'collapsed':''}">
@@ -2119,20 +2253,23 @@ function renderD() {
         </div>
       </div>
     </div>`).join('') +
-    '<button class="add-btn" onclick="dAddSpec()" style="margin-top:12px;">+ 新增交互说明</button>';
+    '<div style="display:flex;align-items:center;gap:8px;margin-top:12px;"><button class="add-btn" style="flex:1;" onclick="dAddSpec()">+ 新增交互说明</button></div>';
 }
 
 // Mode D helpers
 function dFindSpec(id){return store.D.find(s=>s.id===id);}
 function dToggle(id){const s=dFindSpec(id);if(s)s.collapsed=!s.collapsed;renderAll();}
-function dAddSpec(){store.D.push({id:nid(),specName:'新交互说明',collapsed:false,visible:[{id:nid(),text:'请填写'}],interactions:[],boundaries:[]});save();renderAll();toast('已新增');}
+function dAddSpec(){const nId=nid();store.D.push({id:nId,specName:'新交互说明',collapsed:false,visible:[{id:nid(),text:'请填写'}],interactions:[],boundaries:[]});save();renderAll();toast('已新增');focusEl(`[data-f="d-name"][data-i="${nId}"]`);}
 function dDelSpec(id){store.D=store.D.filter(s=>s.id!==id);save();renderAll();toast('已删除');}
 function dAddItem(spId,type){
   const sp=dFindSpec(spId);if(!sp)return;
   if(!sp[type])sp[type]=[];
-  if(type==='boundaries')sp[type].push({id:nid(),type:'异常类型',trigger:'触发条件',feedback:'反馈内容',recovery:'恢复路径'});
-  else sp[type].push({id:nid(),text:'请填写'});
+  let nId=nid();
+  if(type==='boundaries')sp[type].push({id:nId,type:'异常类型',trigger:'触发条件',feedback:'反馈内容',recovery:'恢复路径'});
+  else sp[type].push({id:nId,text:'请填写'});
   save();renderAll();toast('已新增');
+  const fMap={visible:'d-vis',interactions:'d-inter',boundaries:'d-btype'};
+  if(fMap[type])focusEl(`[data-f="${fMap[type]}"][data-i="${nId}"]`);
 }
 function dDelItem(spId,type,id){const sp=dFindSpec(spId);if(!sp)return;sp[type]=sp[type].filter(x=>x.id!==id);save();renderAll();toast('已删除');}
 

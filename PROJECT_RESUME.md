@@ -414,3 +414,4 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 | v3.3 | 2026-03-26 | 模式D结构重构：删除交互层（`interactions[]`），改为「界面规格」+「系统边界」两层结构，与 UX设计 Skill B+D 整合模式对齐 |
 | v3.2.3 | 2026-03-26 | 修复清除数据弹窗确认后卡死问题：调换 remove() 与 doClearStorage() 执行顺序，先关弹窗再渲染 |
 | v3.3.0 | 2026-03-27 | SKILLS对齐迭代：模式B删除 keyPoint 字段渲染；模式D恢复交互层（interactions[]）渲染区块；ux-design-rules.md 删除规则四；Skill Markdown模板同步更新 |
+| v3.4.0 | 2026-03-27 | 全局UI重构：删除按钮移至 actions 区域（收起左侧）；添加按钮移至标题右侧（inline 样式）；所有新增操作点击后自动聚焦；B阶段拖拽支持跨路径；B阶段新增复制按钮(⎘)；反馈与边界条件改为浮层形式（fb-popover），支持阶段切换Tab；去除箭头字符元素 |
