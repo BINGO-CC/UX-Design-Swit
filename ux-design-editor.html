@@ -67,8 +67,10 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 .card-header .title{font-size:15px;font-weight:600;color:var(--accent);}
 .card-header .meta{font-size:13px;color:var(--text2);margin-top:3px;}
 .card-header .actions{display:flex;gap:5px;}
-.card-header .actions button{background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:15px;padding:3px 5px;border-radius:4px;}
+.card-header .actions button{background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:14px;padding:3px 5px;border-radius:4px;}
 .card-header .actions button:hover{background:var(--surface);color:var(--text);}
+.card-header .actions button.del-btn{color:var(--red) !important;font-size:14px;}
+.card-header .actions button.del-btn:hover{background:rgba(248,113,113,.12) !important;color:var(--red) !important;}
 .card-body{padding:0 18px 14px;}
 .card-body.collapsed{display:none;}
 
@@ -93,9 +95,9 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 .step-item .step-num{color:var(--text2);font-size:13px;min-width:18px;text-align:right;padding-top:1px;}
 .step-item .step-drag{cursor:grab;color:var(--text2);font-size:11px;padding-top:3px;user-select:none;}
 .step-item .step-content{flex:1;}
-.step-item .step-del{background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;opacity:0;transition:opacity .15s;}
+.step-item .step-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:2px 5px;opacity:0;transition:opacity .15s;line-height:1;}
 .step-item:hover .step-del{opacity:1;}
-.step-item .step-del:hover{color:var(--red);}
+.step-item .step-del:hover{opacity:.7;}
 
 /* Feedback & Boundary wrapper (Mode B) */
 .fb-wrapper{margin:7px 0;border:1px solid rgba(168,85,247,.2);border-radius:6px;overflow:hidden;}
@@ -109,8 +111,8 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 .branch{margin:7px 0;padding:9px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);}
 .branch-header{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
 .branch-header .branch-title{font-weight:600;font-size:13px;color:var(--orange);flex:1;}
-.branch-header button{background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;}
-.branch-header button:hover{color:var(--red);}
+.branch-header button{background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;}
+.branch-header button:hover{opacity:.7;}
 .branch-item{display:flex;gap:5px;padding:2px 0;font-size:14px;}
 .branch-item .bullet{color:var(--text2);min-width:14px;}
 
@@ -122,9 +124,11 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 .node-icon{font-size:14px;min-width:20px;text-align:center;}
 .node-label{flex:1;font-size:14px;}
 .node-note{font-size:12px;color:var(--text2);font-style:italic;}
-.node-actions button{background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;padding:2px 4px;opacity:0;transition:opacity .1s;}
+.node-actions button{background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:2px 4px;opacity:0;transition:opacity .1s;}
 .node-row:hover .node-actions button{opacity:1;}
 .node-actions button:hover{color:var(--accent);}
+.node-actions button.del-btn{color:var(--red);}
+.node-actions button.del-btn:hover{color:var(--red);opacity:.7;}
 
 /* Spec section (Mode D) */
 .spec-section{margin-top:14px;border-radius:6px;overflow:hidden;}
@@ -224,7 +228,7 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 .fb-popover-btn{background:rgba(168,85,247,.1) !important;border:1px solid rgba(168,85,247,.3) !important;border-radius:5px;color:var(--purple) !important;cursor:pointer;font-size:12px !important;padding:3px 9px !important;transition:all .15s;white-space:nowrap;}
 .fb-popover-btn:hover{background:rgba(168,85,247,.2) !important;border-color:var(--purple) !important;}
 .fb-popover-overlay{position:fixed;inset:0;z-index:260;background:rgba(0,0,0,.45);}
-.fb-popover{position:fixed;z-index:261;background:var(--surface);border:1px solid rgba(168,85,247,.35);border-radius:12px;padding:0;width:560px;max-width:calc(100vw - 40px);max-height:75vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.5);top:50%;left:50%;transform:translate(-50%,-50%);}
+.fb-popover{position:fixed;z-index:261;background:var(--surface);border:1px solid rgba(168,85,247,.35);border-radius:12px;padding:0;width:560px;max-width:calc(100vw - 40px);height:75vh;max-height:75vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.5);top:50%;left:50%;transform:translate(-50%,-50%);}
 .fb-popover-head{display:flex;align-items:center;gap:8px;padding:14px 18px 0;flex-shrink:0;}
 .fb-popover-head h3{font-size:14px;font-weight:600;color:var(--purple);flex:1;}
 .fb-popover-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:4px 6px;border-radius:4px;line-height:1;}
@@ -234,7 +238,9 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 .fb-stage-tab{padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);white-space:nowrap;transition:all .15s;flex-shrink:0;}
 .fb-stage-tab:hover{border-color:var(--purple);color:var(--purple);}
 .fb-stage-tab.active{background:rgba(168,85,247,.15);border-color:var(--purple);color:var(--purple);font-weight:600;}
-.fb-popover-body{overflow-y:auto;padding:12px 18px 16px;flex:1;}
+.fb-popover-body{overflow-y:auto;padding:12px 18px 16px;flex:1;min-height:0;}
+.fb-popover-body .editable{overflow-wrap:break-word;word-break:break-word;}
+.fb-popover-body .step-content,.fb-popover-body .branch-title{white-space:normal;overflow-wrap:break-word;word-break:break-word;}
 </style>
 </head>
 <body>
@@ -1326,9 +1332,10 @@ function renderModule(m) {
         ${renderBackRefTags(m.id)}
       </div>
       <div class="actions">
+        <button onclick="aCopyMod('${m.id}')" title="复制模块内容" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:3px 5px;border-radius:4px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">⎘</button>
         <button class="add-inline-btn" onclick="aAddFeat('${m.id}')">＋功能</button>
         <button class="add-inline-btn" onclick="aAddSug('${m.id}')">＋建议</button>
-        <button onclick="if(confirm('删除该模块？'))aDelMod('${m.id}')" style="color:var(--red)" title="删除模块">🗑</button>
+        <button class="del-btn" onclick="if(confirm('删除该模块？'))aDelMod('${m.id}')" title="删除模块">🗑</button>
         <button onclick="aToggleMod('${m.id}')">${m.collapsed ? '▶' : '▼'}</button>
       </div>
     </div>
@@ -1347,7 +1354,7 @@ function renderModule(m) {
         <div style="margin:5px 0;padding:7px 10px;border-radius:5px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.15);">
           <div class="editable" contenteditable="true" data-f="a-sug" data-i="${s.id}" data-mod="${m.id}">${esc(s.text)}</div>
           <div style="font-size:12px;color:var(--text2);margin-top:3px;">依据：<span class="editable" contenteditable="true" data-f="a-sugr" data-i="${s.id}" data-mod="${m.id}">${esc(s.reason)}</span>
-            <button class="step-del" onclick="aDelSug('${m.id}','${s.id}')" style="opacity:.5;font-size:12px;background:none;border:none;color:var(--text2);cursor:pointer;margin-left:6px;">✕</button>
+            <button class="step-del" onclick="aDelSug('${m.id}','${s.id}')" style="margin-left:6px;">✕</button>
           </div>
         </div>`).join('')}
       <button class="add-btn" onclick="aAddSug('${m.id}')">+ 新增建议</button>
@@ -1364,12 +1371,12 @@ function focusEl(selector) {
 }
 
 // Mode A operations
-function aAddGoal(type) { const nId=nid(); store.A.goals[type].push({id:nId,text:'请填写'}); save(); renderAll(); toast('已新增'); focusEl(`[data-f="a-${type}"][data-i="${nId}"]`); }
+function aAddGoal(type) { const nId=nid(); store.A.goals[type].push({id:nId,text:''}); save(); renderAll(); toast('已新增'); focusEl(`[data-f="a-${type}"][data-i="${nId}"]`); }
 function aDelGoal(type,id) { store.A.goals[type] = store.A.goals[type].filter(g=>g.id!==id); save(); renderAll(); toast('已删除'); }
 function aAddModule() {
   const nId=nid();
   store.A.modules.push({id:nId,name:'新模块',priority:'mid',collapsed:false,
-    features:[{id:nid(),text:'请填写功能'}],suggestions:[]});
+    features:[{id:nid(),text:''}],suggestions:[]});
   save(); renderAll(); toast('已新增模块'); focusEl(`[data-f="a-modname"][data-i="${nId}"]`);
 }
 function aDelMod(id) { store.A.modules = store.A.modules.filter(m=>m.id!==id); save(); renderAll(); toast('已删除模块'); }
@@ -1379,10 +1386,73 @@ function aCyclePriority(id) {
   m.priority = m.priority==='high'?'mid':m.priority==='mid'?'low':'high';
   save(); renderAll(); toast('优先级已切换');
 }
-function aAddFeat(mid) { const m=store.A.modules.find(x=>x.id===mid); if(m){const nId=nid();m.features.push({id:nId,text:'请填写'});save();renderAll();toast('已新增');focusEl(`[data-f="a-feat"][data-i="${nId}"]`);} }
+function aAddFeat(mid) { const m=store.A.modules.find(x=>x.id===mid); if(m){const nId=nid();m.features.push({id:nId,text:''});save();renderAll();toast('已新增');focusEl(`[data-f="a-feat"][data-i="${nId}"]`);} }
 function aDelFeat(mid,fid) { const m=store.A.modules.find(x=>x.id===mid); if(m){m.features=m.features.filter(f=>f.id!==fid);save();renderAll();toast('已删除');} }
-function aAddSug(mid) { const m=store.A.modules.find(x=>x.id===mid); if(m){const nId=nid();m.suggestions.push({id:nId,text:'请填写建议',reason:'请填写依据'});save();renderAll();toast('已新增');focusEl(`[data-f="a-sug"][data-i="${nId}"]`);} }
+function aAddSug(mid) { const m=store.A.modules.find(x=>x.id===mid); if(m){const nId=nid();m.suggestions.push({id:nId,text:'',reason:''});save();renderAll();toast('已新增');focusEl(`[data-f="a-sug"][data-i="${nId}"]`);} }
 function aDelSug(mid,sid) { const m=store.A.modules.find(x=>x.id===mid); if(m){m.suggestions=m.suggestions.filter(s=>s.id!==sid);save();renderAll();toast('已删除');} }
+
+// ============================================================
+// 复制模块内容到剪贴板（纯文本，区分标题与正文）
+// ============================================================
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(()=>toast('已复制到剪贴板')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('已复制到剪贴板');
+  });
+}
+
+function aCopyMod(mid) {
+  const m=store.A.modules.find(x=>x.id===mid);if(!m)return;
+  const p=m.priority==='high'?'高':m.priority==='mid'?'中':'低';
+  let lines=[`【模块】${m.name}（优先级：${p}）`,''];
+  lines.push('包含功能：');
+  m.features.forEach((f,i)=>lines.push(`  ${i+1}. ${f.text}`));
+  if(m.suggestions.length){lines.push('');lines.push('UX补充建议：');m.suggestions.forEach(s=>{lines.push(`  • ${s.text}`);if(s.reason)lines.push(`    依据：${s.reason}`);});}
+  copyToClipboard(lines.join('\n'));
+}
+
+function bCopyPath(pid) {
+  const path=bFindP(pid);if(!path)return;
+  let lines=[`【路径】${path.title}`,'  起点：'+path.startPoint,''];
+  path.stages.forEach((s,si)=>{
+    lines.push(`  阶段 ${si+1}：${s.title}`);
+    if(s.actions.length){lines.push('    用户操作：');s.actions.forEach((a,i)=>lines.push(`      ${i+1}. ${a.text}`));}
+    if(s.feedbacks.length){lines.push('    系统反馈：');s.feedbacks.forEach(f=>lines.push(`      • ${f.text}`));}
+    s.branches.forEach(b=>{lines.push(`    分支：${b.label}`);b.items.forEach(it=>lines.push(`      • ${it.text}`));});
+    lines.push('');
+  });
+  copyToClipboard(lines.join('\n'));
+}
+
+function bCopyStageToClipboard(pid, sid) {
+  const s=bFindS(pid,sid);if(!s)return;
+  const path=bFindP(pid);
+  const si=path?path.stages.findIndex(x=>x.id===sid):-1;
+  let lines=[`【阶段】${si>=0?'阶段 '+(si+1)+'：':''}${s.title}`,''];
+  if(s.actions.length){lines.push('用户操作：');s.actions.forEach((a,i)=>lines.push(`  ${i+1}. ${a.text}`));}
+  if(s.feedbacks.length){lines.push('系统反馈：');s.feedbacks.forEach(f=>lines.push(`  • ${f.text}`));}
+  s.branches.forEach(b=>{lines.push(`分支：${b.label}`);b.items.forEach(it=>lines.push(`  • ${it.text}`));});
+  copyToClipboard(lines.join('\n'));
+}
+
+function cCopyPage(pgId) {
+  const pg=cFindPage(pgId);if(!pg)return;
+  let lines=[`【页面架构】${pg.pageName}`,''];
+  function printNode(n,indent){
+    lines.push(`${indent}${n.icon||'├─'} ${n.label}${n.note?' ('+n.note+')':''}`);
+    (n.children||[]).forEach(c=>printNode(c,indent+'  '));
+  }
+  pg.nodes.forEach(n=>printNode(n,''));
+  copyToClipboard(lines.join('\n'));
+}
+
+function dCopySpec(spId) {
+  const sp=dFindSpec(spId);if(!sp)return;
+  let lines=[`【交互稿】${sp.specName}`,''];
+  if(sp.visible&&sp.visible.length){lines.push('界面规格：');sp.visible.forEach(v=>lines.push(`  • ${v.text}`));lines.push('');}
+  if(sp.interactions&&sp.interactions.length){lines.push('交互层：');sp.interactions.forEach(it=>lines.push(`  • ${it.text}`));lines.push('');}
+  if(sp.boundaries&&sp.boundaries.length){lines.push('系统边界：');sp.boundaries.forEach(b=>{lines.push(`  【${b.type}】`);lines.push(`    触发：${b.trigger}`);lines.push(`    反馈：${b.feedback}`);lines.push(`    恢复：${b.recovery}`);});lines.push('');}
+  copyToClipboard(lines.join('\n'));
+}
 
 // ============================================================
 // MODE B: 行为路径
@@ -1584,8 +1654,9 @@ function renderB() {
         </div>
         <div class="actions">
           <button class="ref-link-btn" onclick="openRefModal('${path.id}','B')" title="管理引用关系">🔗</button>
+          <button onclick="bCopyPath('${path.id}')" title="复制路径内容" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:3px 5px;border-radius:4px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">⎘</button>
           <button class="add-inline-btn" onclick="bAddStage('${path.id}')">＋阶段</button>
-          <button onclick="if(confirm('删除该路径？'))bDelPath('${path.id}')" style="color:var(--red)" title="删除路径">🗑</button>
+          <button class="del-btn" onclick="if(confirm('删除该路径？'))bDelPath('${path.id}')" title="删除路径">🗑</button>
           <button onclick="bToggle('${path.id}')">${path.collapsed?'▶':'▼'}</button>
         </div>
       </div>
@@ -1605,8 +1676,8 @@ function renderBStage(pid,stage,si) {
       <span style="font-size:16px;">🌊</span>
       <span class="stage-title">阶段 ${si+1}：<span class="editable" contenteditable="true" data-f="b-stitle" data-i="${stage.id}" data-p="${pid}">${esc(stage.title)}</span></span>
       <button class="fb-popover-btn" onclick="openFbPopover('${pid}','${stage.id}')">🔄 反馈与边界 ${fbCount>0?'<span style="opacity:.7;font-weight:400;">('+stage.feedbacks.length+'+'+stage.branches.length+')</span>':''}</button>
-      <button onclick="bCopyStage('${pid}','${stage.id}')" title="复制阶段" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">⎘</button>
-      <button onclick="if(confirm('删除该阶段？'))bDelStage('${pid}','${stage.id}')" title="删除阶段" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text2)'">🗑</button>
+      <button onclick="bCopyStageToClipboard('${pid}','${stage.id}')" title="复制阶段内容到剪贴板" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">⎘</button>
+      <button onclick="if(confirm('删除该阶段？'))bDelStage('${pid}','${stage.id}')" title="删除阶段" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;">🗑</button>
     </div>
     <div class="action-block">
       <div class="block-label" style="display:flex;align-items:center;justify-content:space-between;">
@@ -1631,7 +1702,7 @@ function renderBBranch(pid,sid,b) {
   </div>
   ${b.items.map(it=>`<div class="branch-item"><span class="bullet">•</span>
     <span class="editable" contenteditable="true" style="flex:1" data-f="b-bitem" data-i="${it.id}" data-b="${b.id}" data-s="${sid}" data-p="${pid}">${esc(it.text)}</span>
-    <button class="step-del" onclick="bDelBItem('${pid}','${sid}','${b.id}','${it.id}')" style="opacity:.4;font-size:11px;background:none;border:none;color:var(--text2);cursor:pointer;">✕</button>
+    <button class="step-del" onclick="bDelBItem('${pid}','${sid}','${b.id}','${it.id}')">✕</button>
   </div>`).join('')}
   <button class="add-btn" onclick="bAddBItem('${pid}','${sid}','${b.id}')">+ 新增分支项</button>
   </div>`;
@@ -1641,9 +1712,9 @@ function renderBBranch(pid,sid,b) {
 function bFindP(id){return store.B.find(p=>p.id===id);}
 function bFindS(pid,sid){const p=bFindP(pid);return p?p.stages.find(s=>s.id===sid):null;}
 function bToggle(id){const p=bFindP(id);if(p)p.collapsed=!p.collapsed;renderAll();}
-function bAddPath(){const nId=nid();store.B.push({id:nId,title:'新行为路径',startPoint:'请填写起点',collapsed:false,stages:[{id:nid(),title:'新阶段',actions:[{id:nid(),text:'请填写'}],feedbacks:[],branches:[]}]});save();renderAll();toast('已新增路径');focusEl(`[data-f="b-title"][data-i="${nId}"]`);}
+function bAddPath(){const nId=nid();store.B.push({id:nId,title:'新行为路径',startPoint:'',collapsed:false,stages:[{id:nid(),title:'新阶段',actions:[{id:nid(),text:''}],feedbacks:[],branches:[]}]});save();renderAll();toast('已新增路径');focusEl(`[data-f="b-title"][data-i="${nId}"]`);}
 function bDelPath(id){store.B=store.B.filter(p=>p.id!==id);save();renderAll();toast('已删除');}
-function bAddStage(pid){const p=bFindP(pid);if(p){const nId=nid();p.stages.push({id:nId,title:'新阶段',actions:[{id:nid(),text:'请填写'}],feedbacks:[],branches:[]});save();renderAll();toast('已新增');focusEl(`[data-f="b-stitle"][data-i="${nId}"]`);}}
+function bAddStage(pid){const p=bFindP(pid);if(p){const nId=nid();p.stages.push({id:nId,title:'新阶段',actions:[{id:nid(),text:''}],feedbacks:[],branches:[]});save();renderAll();toast('已新增');focusEl(`[data-f="b-stitle"][data-i="${nId}"]`);}}
 function bDelStage(pid,sid){const p=bFindP(pid);if(p){p.stages=p.stages.filter(s=>s.id!==sid);save();renderAll();toast('已删除');}}
 function bCopyStage(pid,sid){
   const p=bFindP(pid);if(!p)return;
@@ -1658,11 +1729,11 @@ function bCopyStage(pid,sid){
   const copy=reId(deepClone(s));copy.title=s.title+' (副本)';
   p.stages.splice(idx+1,0,copy);save();renderAll();toast('阶段已复制');
 }
-function bAddStep(pid,sid,type){const s=bFindS(pid,sid);if(s){const nId=nid();s[type].push({id:nId,text:'请填写'});save();renderAll();toast('已新增');focusEl(`[data-f="b-step"][data-i="${nId}"]`);}}
+function bAddStep(pid,sid,type){const s=bFindS(pid,sid);if(s){const nId=nid();s[type].push({id:nId,text:''});save();renderAll();toast('已新增');focusEl(`[data-f="b-step"][data-i="${nId}"]`);}}
 function bDelStep(pid,sid,type,id){const s=bFindS(pid,sid);if(s){s[type]=s[type].filter(x=>x.id!==id);save();renderAll();toast('已删除');}}
-function bAddBranch(pid,sid){const s=bFindS(pid,sid);if(s){const nId=nid();s.branches.push({id:nId,label:'新分支：条件',items:[{id:nid(),text:'请填写'}]});save();renderAll();toast('已新增');focusEl(`[data-f="b-blabel"][data-i="${nId}"]`);}}
+function bAddBranch(pid,sid){const s=bFindS(pid,sid);if(s){const nId=nid();s.branches.push({id:nId,label:'',items:[{id:nid(),text:''}]});save();renderAll();toast('已新增');focusEl(`[data-f="b-blabel"][data-i="${nId}"]`);}}
 function bDelBranch(pid,sid,bid){const s=bFindS(pid,sid);if(s){s.branches=s.branches.filter(b=>b.id!==bid);save();renderAll();toast('已删除');}}
-function bAddBItem(pid,sid,bid){const s=bFindS(pid,sid);const b=s?.branches.find(x=>x.id===bid);if(b){const nId=nid();b.items.push({id:nId,text:'请填写'});save();renderAll();toast('已新增');focusEl(`[data-f="b-bitem"][data-i="${nId}"]`);}}
+function bAddBItem(pid,sid,bid){const s=bFindS(pid,sid);const b=s?.branches.find(x=>x.id===bid);if(b){const nId=nid();b.items.push({id:nId,text:''});save();renderAll();toast('已新增');focusEl(`[data-f="b-bitem"][data-i="${nId}"]`);}}
 function bDelBItem(pid,sid,bid,iid){const s=bFindS(pid,sid);const b=s?.branches.find(x=>x.id===bid);if(b){b.items=b.items.filter(x=>x.id!==iid);save();renderAll();toast('已删除');}}
 
 // FB Popover (反馈与边界条件浮层)
@@ -1705,7 +1776,7 @@ function renderFbPopover() {
       </div>
       ${b.items.map(it=>`<div class="branch-item"><span class="bullet">•</span>
         <span class="editable" contenteditable="true" style="flex:1" data-f="b-bitem" data-i="${it.id}" data-b="${b.id}" data-s="${stage.id}" data-p="${pid}">${esc(it.text)}</span>
-        <button class="step-del" onclick="bDelBItem('${pid}','${stage.id}','${b.id}','${it.id}');renderFbPopover()" style="opacity:.4;font-size:11px;background:none;border:none;color:var(--text2);cursor:pointer;">✕</button>
+        <button class="step-del" onclick="bDelBItem('${pid}','${stage.id}','${b.id}','${it.id}');renderFbPopover()">✕</button>
       </div>`).join('')}
       <button class="add-btn" onclick="bAddBItemInPopover('${pid}','${stage.id}','${b.id}')">+ 新增分支项</button>
     </div>`).join('');
@@ -1740,7 +1811,7 @@ function switchFbPopoverStage(pid, sid) {
 }
 function bAddStepInPopover(pid, sid, type) {
   const s = bFindS(pid, sid); if (!s) return;
-  const nId = nid(); s[type].push({id:nId, text:'请填写'});
+  const nId = nid(); s[type].push({id:nId, text:''});
   save(); renderFbPopover();
   requestAnimationFrame(() => {
     const el = document.querySelector(`#fbPopoverOverlay [data-f="b-step"][data-i="${nId}"]`);
@@ -1749,12 +1820,12 @@ function bAddStepInPopover(pid, sid, type) {
 }
 function bAddBranchInPopover(pid, sid) {
   const s = bFindS(pid, sid); if (!s) return;
-  const nId = nid(); s.branches.push({id:nId, label:'新分支：条件', items:[{id:nid(), text:'请填写'}]});
+  const nId = nid(); s.branches.push({id:nId, label:'', items:[{id:nid(), text:''}]});
   save(); renderFbPopover();
 }
 function bAddBItemInPopover(pid, sid, bid) {
   const s = bFindS(pid, sid); const b = s?.branches.find(x=>x.id===bid); if (!b) return;
-  const nId = nid(); b.items.push({id:nId, text:'请填写'});
+  const nId = nid(); b.items.push({id:nId, text:''});
   save(); renderFbPopover();
 }
 function bindEditableInPopover() {
@@ -1940,8 +2011,9 @@ function renderC() {
           ${renderBackRefTags(page.id)}
         </div>
         <div class="actions">
+          <button onclick="cCopyPage('${page.id}')" title="复制页面内容" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:3px 5px;border-radius:4px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">⎘</button>
           <button class="add-inline-btn" onclick="cAddNode('${page.id}',null)">＋节点</button>
-          <button onclick="if(confirm('删除该页面架构？'))cDelPage('${page.id}')" style="color:var(--red)" title="删除页面">🗑</button>
+          <button class="del-btn" onclick="if(confirm('删除该页面架构？'))cDelPage('${page.id}')" title="删除页面">🗑</button>
           <button onclick="cToggle('${page.id}')">${page.collapsed?'▶':'▼'}</button>
         </div>
       </div>
@@ -1963,7 +2035,7 @@ function renderCNode(pageId,node,depth) {
       <span class="node-actions">
         <button onclick="cAddNode('${pageId}','${node.id}')" title="添加子节点">＋</button>
         <button onclick="cEditNote('${pageId}','${node.id}')" title="编辑备注">📝</button>
-        <button onclick="cDelNode('${pageId}','${node.id}')" title="删除" style="color:var(--red)">✕</button>
+        <button class="del-btn" onclick="cDelNode('${pageId}','${node.id}')" title="删除">✕</button>
       </span>
     </div>
     ${(node.children||[]).map(c=>renderCNode(pageId,c,depth+1)).join('')}
@@ -1979,12 +2051,12 @@ function cFindParent(nodes,id){
   for(const n of nodes){if((n.children||[]).some(c=>c.id===id))return n;const r=cFindParent(n.children||[],id);if(r)return r;}return null;
 }
 function cToggle(id){const p=cFindPage(id);if(p)p.collapsed=!p.collapsed;renderAll();}
-function cAddPage(){const nId=nid();store.C.push({id:nId,pageName:'新页面',collapsed:false,nodes:[{id:nid(),icon:'📌',label:'新区域',note:'',children:[]}]});save();renderAll();toast('已新增');focusEl(`[data-f="c-page"][data-i="${nId}"]`);}
+function cAddPage(){const nId=nid();store.C.push({id:nId,pageName:'',collapsed:false,nodes:[{id:nid(),icon:'📌',label:'',note:'',children:[]}]});save();renderAll();toast('已新增');focusEl(`[data-f="c-page"][data-i="${nId}"]`);}
 function cDelPage(id){store.C=store.C.filter(p=>p.id!==id);save();renderAll();toast('已删除');}
 function cAddNode(pgId,parentId){
   const pg=cFindPage(pgId);if(!pg)return;
   const nId=nid();
-  const newNode={id:nId,icon:'',label:'新节点',note:'',children:[]};
+  const newNode={id:nId,icon:'',label:'',note:'',children:[]};
   if(!parentId){pg.nodes.push(newNode);}
   else{const p=cFindNode(pg.nodes,parentId);if(p){if(!p.children)p.children=[];p.children.push(newNode);}}
   save();renderAll();toast('已新增');focusEl(`[data-f="c-label"][data-i="${nId}"]`);
@@ -2204,15 +2276,17 @@ function renderD() {
         </div>
         <div class="actions">
           <button class="ref-link-btn" onclick="openRefModal('${spec.id}','D')" title="管理引用关系">🔗</button>
-          <button class="add-inline-btn" onclick="dAddItem('${spec.id}','visible')">＋规格</button>
-          <button class="add-inline-btn" onclick="dAddItem('${spec.id}','boundaries')">＋边界</button>
-          <button onclick="if(confirm('删除？'))dDelSpec('${spec.id}')" style="color:var(--red)" title="删除">🗑</button>
+          <button onclick="dCopySpec('${spec.id}')" title="复制交互稿内容" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:3px 5px;border-radius:4px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">⎘</button>
+          <button class="del-btn" onclick="if(confirm('删除？'))dDelSpec('${spec.id}')" title="删除">🗑</button>
           <button onclick="dToggle('${spec.id}')">${spec.collapsed?'▶':'▼'}</button>
         </div>
       </div>
       <div class="card-body ${spec.collapsed?'collapsed':''}">
         <div class="spec-section">
-          <div class="spec-section-header visible">👁️ 界面规格（布局 / 元素状态 / 数据规则）</div>
+          <div class="spec-section-header visible" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>👁️ 界面规格（布局 / 元素状态 / 数据规则）</span>
+            <button class="add-inline-btn" onclick="dAddItem('${spec.id}','visible')">＋规格</button>
+          </div>
           <div class="spec-section-body">
             <ul class="step-list">${spec.visible.map(v=>`
               <li class="step-item"><span class="step-num">•</span>
@@ -2220,11 +2294,13 @@ function renderD() {
                 <button class="step-del" onclick="dDelItem('${spec.id}','visible','${v.id}')">✕</button>
               </li>`).join('')}
             </ul>
-            <button class="add-btn" onclick="dAddItem('${spec.id}','visible')">+ 新增界面规格条目</button>
           </div>
         </div>
         <div class="spec-section">
-          <div class="spec-section-header" style="color:var(--accent);border-color:var(--accent);">🔄 交互层（操作与反馈流）</div>
+          <div class="spec-section-header interact" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>🔄 交互层（操作与反馈流）</span>
+            <button class="add-inline-btn" onclick="dAddItem('${spec.id}','interactions')">＋交互</button>
+          </div>
           <div class="spec-section-body">
             <ul class="step-list">${(spec.interactions||[]).map(it=>`
               <li class="step-item"><span class="step-num">•</span>
@@ -2232,23 +2308,24 @@ function renderD() {
                 <button class="step-del" onclick="dDelItem('${spec.id}','interactions','${it.id}')">✕</button>
               </li>`).join('')}
             </ul>
-            <button class="add-btn" onclick="dAddItem('${spec.id}','interactions')">+ 新增交互条目</button>
           </div>
         </div>
         <div class="spec-section">
-          <div class="spec-section-header boundary">⚠️ 系统边界（接口异常 / 数据为空 / 配置缺失）</div>
+          <div class="spec-section-header boundary" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>⚠️ 系统边界（接口异常 / 数据为空 / 配置缺失）</span>
+            <button class="add-inline-btn" onclick="dAddItem('${spec.id}','boundaries')">＋边界</button>
+          </div>
           <div class="spec-section-body">
             ${spec.boundaries.map(b=>`
               <div style="margin:6px 0;padding:8px 10px;border-radius:5px;border:1px solid rgba(248,113,113,.15);background:rgba(248,113,113,.04);">
                 <div style="font-weight:600;font-size:13px;color:var(--red);">
                   <span class="editable" contenteditable="true" data-f="d-btype" data-i="${b.id}" data-sp="${spec.id}">${esc(b.type)}</span>
-                  <button class="step-del" onclick="dDelItem('${spec.id}','boundaries','${b.id}')" style="float:right;opacity:.5;font-size:11px;background:none;border:none;color:var(--text2);cursor:pointer;">✕</button>
+                  <button class="step-del" onclick="dDelItem('${spec.id}','boundaries','${b.id}')" style="float:right;">✕</button>
                 </div>
                 <div style="font-size:13px;margin-top:3px;">触发：<span class="editable" contenteditable="true" data-f="d-btrig" data-i="${b.id}" data-sp="${spec.id}">${esc(b.trigger)}</span></div>
                 <div style="font-size:13px;margin-top:2px;">反馈：<span class="editable" contenteditable="true" data-f="d-bfeed" data-i="${b.id}" data-sp="${spec.id}">${esc(b.feedback)}</span></div>
                 <div style="font-size:13px;margin-top:2px;">恢复：<span class="editable" contenteditable="true" data-f="d-brec" data-i="${b.id}" data-sp="${spec.id}">${esc(b.recovery)}</span></div>
               </div>`).join('')}
-            <button class="add-btn" onclick="dAddItem('${spec.id}','boundaries')">+ 新增边界条目</button>
           </div>
         </div>
       </div>
@@ -2259,14 +2336,14 @@ function renderD() {
 // Mode D helpers
 function dFindSpec(id){return store.D.find(s=>s.id===id);}
 function dToggle(id){const s=dFindSpec(id);if(s)s.collapsed=!s.collapsed;renderAll();}
-function dAddSpec(){const nId=nid();store.D.push({id:nId,specName:'新交互说明',collapsed:false,visible:[{id:nid(),text:'请填写'}],interactions:[],boundaries:[]});save();renderAll();toast('已新增');focusEl(`[data-f="d-name"][data-i="${nId}"]`);}
+function dAddSpec(){const nId=nid();store.D.push({id:nId,specName:'',collapsed:false,visible:[],interactions:[],boundaries:[]});save();renderAll();toast('已新增');focusEl(`[data-f="d-name"][data-i="${nId}"]`);}
 function dDelSpec(id){store.D=store.D.filter(s=>s.id!==id);save();renderAll();toast('已删除');}
 function dAddItem(spId,type){
   const sp=dFindSpec(spId);if(!sp)return;
   if(!sp[type])sp[type]=[];
   let nId=nid();
-  if(type==='boundaries')sp[type].push({id:nId,type:'异常类型',trigger:'触发条件',feedback:'反馈内容',recovery:'恢复路径'});
-  else sp[type].push({id:nId,text:'请填写'});
+  if(type==='boundaries')sp[type].push({id:nId,type:'',trigger:'',feedback:'',recovery:''});
+  else sp[type].push({id:nId,text:''});
   save();renderAll();toast('已新增');
   const fMap={visible:'d-vis',interactions:'d-inter',boundaries:'d-btype'};
   if(fMap[type])focusEl(`[data-f="${fMap[type]}"][data-i="${nId}"]`);
