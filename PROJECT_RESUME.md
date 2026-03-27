@@ -1,6 +1,6 @@
 # UX 设计交互编辑器 — 项目续接文档
 
-> **文档版本**：v3.3.0（2026-03-27 更新）
+> **文档版本**：v3.4.0（2026-03-27 更新）
 > **用途**：在新对话中快速恢复项目上下文，确保迭代连续性
 
 ---
@@ -18,7 +18,7 @@
 
 | 文件路径 | 说明 | 状态 |
 |---------|------|------|
-| `f:\codemake\ux-design-editor.html` | 统一交互编辑器（主文件） | ✅ 已完成 v3.1 |
+| `f:\codemake\ux-design-editor.html` | 统一交互编辑器（主文件） | ✅ 已完成 v3.4 |
 | `f:\codemake\.codemaker\skills\ux-design.md` | UX设计 Skill 指令 | ✅ 已更新（含JSON输出） |
 | `f:\codemake\PROJECT_RESUME.md` | 本文档 | ✅ 当前文件 |
 | `f:\codemake\behavior-path-editor.html` | 早期原型（仅模式B） | 🔒 已废弃 |
@@ -78,7 +78,7 @@ const ANNO_STORAGE_KEY = 'ux_design_editor_annotations';
 | **引用** | 覆盖率报告 Markdown 导出 | `exportCoverageReportMd()` |
 | **UI** | 四模式 Tab 切换 | `switchMode()` |
 | **UI** | 卡片折叠/展开 | `collapsed` 属性 |
-| **UI** | 模式B阶段"反馈与边界条件"折叠 | `fbCollapsed` 属性 + `.fb-wrapper` |
+| **UI** | 模式B阶段"反馈与边界条件"浮层（v3.4） | `fb-popover-btn` + `openFbPopover()` + 阶段切换Tab |
 | **UI** | 优先级切换（模式A） | `aCyclePriority()` |
 | **UI** | 存储状态指示 | 工具栏绿色圆点 |
 | **UI** | 空状态引导 | 📭 图标 + 可点击导入链接 |
@@ -170,15 +170,18 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 - **修复**：替换为官方 v1.5.0 完整版
 - TAB 行 `position:sticky;top:43px` 保持置顶
 
-### 3.0.7 模式B"反馈与边界条件"折叠容器（v3.2）
-- **改动位置**：`renderBStage()` 函数
-- **表现**：每个阶段中"💻 系统反馈"和"👉 分支条件"被包裹在"🔄 反馈与边界条件"父级容器中
-- **默认状态**：收起（`fbCollapsed` 未设置或为 `true` 时收起）
-- **标题栏信息**：显示统计（N 条反馈 · N 个分支），点击可折叠/展开
-- **视觉风格**：紫色主题边框 + 背景色，与现有 action-block / feedback-block 风格统一
-- **新增 CSS 类**：`.fb-wrapper` / `.fb-wrapper-header` / `.fb-wrapper-body`
-- **新增函数**：`bToggleFb(pid, sid)` — 切换折叠状态
-- **数据字段**：`stage.fbCollapsed`（可选，undefined/true = 收起，false = 展开）
+### 3.0.7 模式B"反馈与边界条件"交互演进
+
+**v3.2 折叠容器方案**（已被 v3.4 浮层替代，CSS 类保留但不再使用）
+- 原方案将反馈/分支包裹在可折叠 `.fb-wrapper` 容器中，`stage.fbCollapsed` 控制展开态
+
+**v3.4 浮层方案（当前）**
+- **入口**：每个阶段的 ` 反馈与边界` 按钮（`.fb-popover-btn`，紫色样式）
+- **表现**：点击弹出全局居中浮层，顶部有所有阶段的 Tab 切换，可直接编辑反馈/分支
+- **浮层内容**：系统反馈列表 + 分支条件列表，支持新增/删除/编辑
+- **新增 CSS 类**：`.fb-popover-overlay` / `.fb-popover` / `.fb-stage-tabs` / `.fb-stage-tab` / `.fb-popover-body`
+- **新增函数**：`openFbPopover()` / `closeFbPopover()` / `renderFbPopover()` / `switchFbPopoverStage()` / `bAddStepInPopover()` / `bAddBranchInPopover()` / `bAddBItemInPopover()` / `bindEditableInPopover()`
+- **状态变量**：`fbPopoverState = { pid, sid }`（模块级，不持久化）
 
 ### 3.0.5 Toast 提示位置
 - 从页面底部移至**顶部居中**，边距 20px
