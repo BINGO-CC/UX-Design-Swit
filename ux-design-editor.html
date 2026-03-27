@@ -1404,6 +1404,10 @@ function aDelSug(mid,sid) { const m=store.A.modules.find(x=>x.id===mid); if(m){m
 // ============================================================
 // 复制模块内容到剪贴板（纯文本，区分标题与正文）
 // ============================================================
+// 去除 emoji 及多余空白，保留纯文本语义内容
+function stripEmoji(str) {
+  return (str||'').replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').replace(/\s{2,}/g,' ').trim();
+}
 function copyToClipboard(text) {
   navigator.clipboard.writeText(text).then(()=>toast('已复制到剪贴板')).catch(()=>{
     const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('已复制到剪贴板');
@@ -1413,21 +1417,21 @@ function copyToClipboard(text) {
 function aCopyMod(mid) {
   const m=store.A.modules.find(x=>x.id===mid);if(!m)return;
   const p=m.priority==='high'?'高':m.priority==='mid'?'中':'低';
-  let lines=[`【模块】${m.name}（优先级：${p}）`,''];
+  let lines=[`【模块】${stripEmoji(m.name)}（优先级：${p}）`,''];
   lines.push('包含功能：');
-  m.features.forEach((f,i)=>lines.push(`  ${i+1}. ${f.text}`));
-  if(m.suggestions.length){lines.push('');lines.push('UX补充建议：');m.suggestions.forEach(s=>{lines.push(`  • ${s.text}`);if(s.reason)lines.push(`    依据：${s.reason}`);});}
+  m.features.forEach((f,i)=>lines.push(`  ${i+1}. ${stripEmoji(f.text)}`));
+  if(m.suggestions.length){lines.push('');lines.push('UX补充建议：');m.suggestions.forEach(s=>{lines.push(`  • ${stripEmoji(s.text)}`);if(s.reason)lines.push(`    依据：${stripEmoji(s.reason)}`);});}
   copyToClipboard(lines.join('\n'));
 }
 
 function bCopyPath(pid) {
   const path=bFindP(pid);if(!path)return;
-  let lines=[`【路径】${path.title}`,'  起点：'+path.startPoint,''];
+  let lines=[`【路径】${stripEmoji(path.title)}`,'  起点：'+stripEmoji(path.startPoint),''];
   path.stages.forEach((s,si)=>{
-    lines.push(`  阶段 ${si+1}：${s.title}`);
-    if(s.actions.length){lines.push('    用户操作：');s.actions.forEach((a,i)=>lines.push(`      ${i+1}. ${a.text}`));}
-    if(s.feedbacks.length){lines.push('    系统反馈：');s.feedbacks.forEach(f=>lines.push(`      • ${f.text}`));}
-    s.branches.forEach(b=>{lines.push(`    分支：${b.label}`);b.items.forEach(it=>lines.push(`      • ${it.text}`));});
+    lines.push(`  阶段 ${si+1}：${stripEmoji(s.title)}`);
+    if(s.actions.length){lines.push('    用户操作：');s.actions.forEach((a,i)=>lines.push(`      ${i+1}. ${stripEmoji(a.text)}`));}
+    if(s.feedbacks.length){lines.push('    系统反馈：');s.feedbacks.forEach(f=>lines.push(`      • ${stripEmoji(f.text)}`));}
+    s.branches.forEach(b=>{lines.push(`    分支：${stripEmoji(b.label)}`);b.items.forEach(it=>lines.push(`      • ${stripEmoji(it.text)}`));});
     lines.push('');
   });
   copyToClipboard(lines.join('\n'));
@@ -1437,18 +1441,18 @@ function bCopyStageToClipboard(pid, sid) {
   const s=bFindS(pid,sid);if(!s)return;
   const path=bFindP(pid);
   const si=path?path.stages.findIndex(x=>x.id===sid):-1;
-  let lines=[`【阶段】${si>=0?'阶段 '+(si+1)+'：':''}${s.title}`,''];
-  if(s.actions.length){lines.push('用户操作：');s.actions.forEach((a,i)=>lines.push(`  ${i+1}. ${a.text}`));}
-  if(s.feedbacks.length){lines.push('系统反馈：');s.feedbacks.forEach(f=>lines.push(`  • ${f.text}`));}
-  s.branches.forEach(b=>{lines.push(`分支：${b.label}`);b.items.forEach(it=>lines.push(`  • ${it.text}`));});
+  let lines=[`${si>=0?'阶段 '+(si+1)+'：':''}${stripEmoji(s.title)}`,''];
+  if(s.actions.length){lines.push('用户操作：');s.actions.forEach((a,i)=>lines.push(`  ${i+1}. ${stripEmoji(a.text)}`));}
+  if(s.feedbacks.length){lines.push('系统反馈：');s.feedbacks.forEach(f=>lines.push(`  • ${stripEmoji(f.text)}`));}
+  s.branches.forEach(b=>{lines.push(`分支：${stripEmoji(b.label)}`);b.items.forEach(it=>lines.push(`  • ${stripEmoji(it.text)}`));});
   copyToClipboard(lines.join('\n'));
 }
 
 function cCopyPage(pgId) {
   const pg=cFindPage(pgId);if(!pg)return;
-  let lines=[`【页面架构】${pg.pageName}`,''];
+  let lines=[`【页面架构】${stripEmoji(pg.pageName)}`,''];
   function printNode(n,indent){
-    lines.push(`${indent}${n.icon||'├─'} ${n.label}${n.note?' ('+n.note+')':''}`);
+    lines.push(`${indent}├─ ${stripEmoji(n.label)}${n.note?' ('+stripEmoji(n.note)+')':''}`);
     (n.children||[]).forEach(c=>printNode(c,indent+'  '));
   }
   pg.nodes.forEach(n=>printNode(n,''));
@@ -1457,10 +1461,10 @@ function cCopyPage(pgId) {
 
 function dCopySpec(spId) {
   const sp=dFindSpec(spId);if(!sp)return;
-  let lines=[`【交互稿】${sp.specName}`,''];
-  if(sp.visible&&sp.visible.length){lines.push('界面规格：');sp.visible.forEach(v=>lines.push(`  • ${v.text}`));lines.push('');}
-  if(sp.interactions&&sp.interactions.length){lines.push('交互层：');sp.interactions.forEach(it=>lines.push(`  • ${it.text}`));lines.push('');}
-  if(sp.boundaries&&sp.boundaries.length){lines.push('系统边界：');sp.boundaries.forEach(b=>{lines.push(`  【${b.type}】`);lines.push(`    触发：${b.trigger}`);lines.push(`    反馈：${b.feedback}`);lines.push(`    恢复：${b.recovery}`);});lines.push('');}
+  let lines=[`【交互稿】${stripEmoji(sp.specName)}`,''];
+  if(sp.visible&&sp.visible.length){lines.push('界面规格：');sp.visible.forEach(v=>lines.push(`  • ${stripEmoji(v.text)}`));lines.push('');}
+  if(sp.interactions&&sp.interactions.length){lines.push('交互层：');sp.interactions.forEach(it=>lines.push(`  • ${stripEmoji(it.text)}`));lines.push('');}
+  if(sp.boundaries&&sp.boundaries.length){lines.push('系统边界：');sp.boundaries.forEach(b=>{lines.push(`  【${stripEmoji(b.type)}】`);lines.push(`    触发：${stripEmoji(b.trigger)}`);lines.push(`    反馈：${stripEmoji(b.feedback)}`);lines.push(`    恢复：${stripEmoji(b.recovery)}`);});lines.push('');}
   copyToClipboard(lines.join('\n'));
 }
 
