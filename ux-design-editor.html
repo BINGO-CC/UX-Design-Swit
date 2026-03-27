@@ -1408,7 +1408,28 @@ function aDelSug(mid,sid) { const m=store.A.modules.find(x=>x.id===mid); if(m){m
 function stripEmoji(str) {
   return (str||'').replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').replace(/\s{2,}/g,' ').trim();
 }
-function copyToClipboard(text) {
+
+// 复制富文本到剪贴板（同时写 text/html + text/plain）
+// lines 为数组，每项：{ text, bold?, indent? }
+function copyRichText(lines) {
+  const plain = lines.map(l => (l.indent||'') + l.text).join('\n');
+  const html = '<div style="font-family:sans-serif;font-size:14px;line-height:1.8;">' +
+    lines.map(l => {
+      const t = l.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const ind = l.indent ? `<span style="white-space:pre;">${l.indent}</span>` : '';
+      return l.bold
+        ? `<p style="margin:0;">${ind}<strong>${t}</strong></p>`
+        : `<p style="margin:0;">${ind}${t}</p>`;
+    }).join('') + '</div>';
+  try {
+    const item = new ClipboardItem({
+      'text/html' : new Blob([html],  { type:'text/html'  }),
+      'text/plain': new Blob([plain], { type:'text/plain' })
+    });
+    navigator.clipboard.write([item]).then(()=>toast('已复制到剪贴板（含格式）')).catch(()=>_copyPlainFallback(plain));
+  } catch(e) { _copyPlainFallback(plain); }
+}
+function _copyPlainFallback(text) {
   navigator.clipboard.writeText(text).then(()=>toast('已复制到剪贴板')).catch(()=>{
     const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('已复制到剪贴板');
   });
@@ -1417,55 +1438,82 @@ function copyToClipboard(text) {
 function aCopyMod(mid) {
   const m=store.A.modules.find(x=>x.id===mid);if(!m)return;
   const p=m.priority==='high'?'高':m.priority==='mid'?'中':'低';
-  let lines=[`【模块】${stripEmoji(m.name)}（优先级：${p}）`,''];
-  lines.push('包含功能：');
-  m.features.forEach((f,i)=>lines.push(`  ${i+1}. ${stripEmoji(f.text)}`));
-  if(m.suggestions.length){lines.push('');lines.push('UX补充建议：');m.suggestions.forEach(s=>{lines.push(`  • ${stripEmoji(s.text)}`);if(s.reason)lines.push(`    依据：${stripEmoji(s.reason)}`);});}
-  copyToClipboard(lines.join('\n'));
+  const L=[];
+  L.push({text:`【模块】${stripEmoji(m.name)}（优先级：${p}）`,bold:true});
+  L.push({text:''});
+  L.push({text:'包含功能：',bold:true});
+  m.features.forEach((f,i)=>L.push({text:`${i+1}. ${stripEmoji(f.text)}`,indent:'  '}));
+  if(m.suggestions.length){
+    L.push({text:''});
+    L.push({text:'UX补充建议：',bold:true});
+    m.suggestions.forEach(s=>{
+      L.push({text:`• ${stripEmoji(s.text)}`,indent:'  '});
+      if(s.reason)L.push({text:`依据：${stripEmoji(s.reason)}`,indent:'    '});
+    });
+  }
+  copyRichText(L);
 }
 
 function bCopyPath(pid) {
   const path=bFindP(pid);if(!path)return;
-  let lines=[`【路径】${stripEmoji(path.title)}`,'  起点：'+stripEmoji(path.startPoint),''];
+  const L=[];
+  L.push({text:`【路径】${stripEmoji(path.title)}`,bold:true});
+  L.push({text:`起点：${stripEmoji(path.startPoint)}`,indent:'  '});
+  L.push({text:''});
   path.stages.forEach((s,si)=>{
-    lines.push(`  阶段 ${si+1}：${stripEmoji(s.title)}`);
-    if(s.actions.length){lines.push('    用户操作：');s.actions.forEach((a,i)=>lines.push(`      ${i+1}. ${stripEmoji(a.text)}`));}
-    if(s.feedbacks.length){lines.push('    系统反馈：');s.feedbacks.forEach(f=>lines.push(`      • ${stripEmoji(f.text)}`));}
-    s.branches.forEach(b=>{lines.push(`    分支：${stripEmoji(b.label)}`);b.items.forEach(it=>lines.push(`      • ${stripEmoji(it.text)}`));});
-    lines.push('');
+    L.push({text:`阶段 ${si+1}：${stripEmoji(s.title)}`,bold:true,indent:'  '});
+    if(s.actions.length){L.push({text:'用户操作：',bold:true,indent:'    '});s.actions.forEach((a,i)=>L.push({text:`${i+1}. ${stripEmoji(a.text)}`,indent:'      '}));}
+    if(s.feedbacks.length){L.push({text:'系统反馈：',bold:true,indent:'    '});s.feedbacks.forEach(f=>L.push({text:`• ${stripEmoji(f.text)}`,indent:'      '}));}
+    s.branches.forEach(b=>{L.push({text:`分支：${stripEmoji(b.label)}`,bold:true,indent:'    '});b.items.forEach(it=>L.push({text:`• ${stripEmoji(it.text)}`,indent:'      '}));});
+    L.push({text:''});
   });
-  copyToClipboard(lines.join('\n'));
+  copyRichText(L);
 }
 
 function bCopyStageToClipboard(pid, sid) {
   const s=bFindS(pid,sid);if(!s)return;
   const path=bFindP(pid);
   const si=path?path.stages.findIndex(x=>x.id===sid):-1;
-  let lines=[`${si>=0?'阶段 '+(si+1)+'：':''}${stripEmoji(s.title)}`,''];
-  if(s.actions.length){lines.push('用户操作：');s.actions.forEach((a,i)=>lines.push(`  ${i+1}. ${stripEmoji(a.text)}`));}
-  if(s.feedbacks.length){lines.push('系统反馈：');s.feedbacks.forEach(f=>lines.push(`  • ${stripEmoji(f.text)}`));}
-  s.branches.forEach(b=>{lines.push(`分支：${stripEmoji(b.label)}`);b.items.forEach(it=>lines.push(`  • ${stripEmoji(it.text)}`));});
-  copyToClipboard(lines.join('\n'));
+  const L=[];
+  L.push({text:`${si>=0?'阶段 '+(si+1)+'：':''}${stripEmoji(s.title)}`,bold:true});
+  L.push({text:''});
+  if(s.actions.length){L.push({text:'用户操作：',bold:true});s.actions.forEach((a,i)=>L.push({text:`${i+1}. ${stripEmoji(a.text)}`,indent:'  '}));}
+  if(s.feedbacks.length){L.push({text:'系统反馈：',bold:true});s.feedbacks.forEach(f=>L.push({text:`• ${stripEmoji(f.text)}`,indent:'  '}));}
+  s.branches.forEach(b=>{L.push({text:`分支：${stripEmoji(b.label)}`,bold:true});b.items.forEach(it=>L.push({text:`• ${stripEmoji(it.text)}`,indent:'  '}));});
+  copyRichText(L);
 }
 
 function cCopyPage(pgId) {
   const pg=cFindPage(pgId);if(!pg)return;
-  let lines=[`【页面架构】${stripEmoji(pg.pageName)}`,''];
+  const L=[];
+  L.push({text:`【页面架构】${stripEmoji(pg.pageName)}`,bold:true});
+  L.push({text:''});
   function printNode(n,indent){
-    lines.push(`${indent}├─ ${stripEmoji(n.label)}${n.note?' ('+stripEmoji(n.note)+')':''}`);
+    L.push({text:`├─ ${stripEmoji(n.label)}${n.note?' ('+stripEmoji(n.note)+')':''}`,indent});
     (n.children||[]).forEach(c=>printNode(c,indent+'  '));
   }
   pg.nodes.forEach(n=>printNode(n,''));
-  copyToClipboard(lines.join('\n'));
+  copyRichText(L);
 }
 
 function dCopySpec(spId) {
   const sp=dFindSpec(spId);if(!sp)return;
-  let lines=[`【交互稿】${stripEmoji(sp.specName)}`,''];
-  if(sp.visible&&sp.visible.length){lines.push('界面规格：');sp.visible.forEach(v=>lines.push(`  • ${stripEmoji(v.text)}`));lines.push('');}
-  if(sp.interactions&&sp.interactions.length){lines.push('交互层：');sp.interactions.forEach(it=>lines.push(`  • ${stripEmoji(it.text)}`));lines.push('');}
-  if(sp.boundaries&&sp.boundaries.length){lines.push('系统边界：');sp.boundaries.forEach(b=>{lines.push(`  【${stripEmoji(b.type)}】`);lines.push(`    触发：${stripEmoji(b.trigger)}`);lines.push(`    反馈：${stripEmoji(b.feedback)}`);lines.push(`    恢复：${stripEmoji(b.recovery)}`);});lines.push('');}
-  copyToClipboard(lines.join('\n'));
+  const L=[];
+  L.push({text:`【交互稿】${stripEmoji(sp.specName)}`,bold:true});
+  L.push({text:''});
+  if(sp.visible&&sp.visible.length){L.push({text:'界面规格：',bold:true});sp.visible.forEach(v=>L.push({text:`• ${stripEmoji(v.text)}`,indent:'  '}));L.push({text:''});}
+  if(sp.interactions&&sp.interactions.length){L.push({text:'交互层：',bold:true});sp.interactions.forEach(it=>L.push({text:`• ${stripEmoji(it.text)}`,indent:'  '}));L.push({text:''});}
+  if(sp.boundaries&&sp.boundaries.length){
+    L.push({text:'系统边界：',bold:true});
+    sp.boundaries.forEach(b=>{
+      L.push({text:`【${stripEmoji(b.type)}】`,bold:true,indent:'  '});
+      L.push({text:`触发：${stripEmoji(b.trigger)}`,indent:'    '});
+      L.push({text:`反馈：${stripEmoji(b.feedback)}`,indent:'    '});
+      L.push({text:`恢复：${stripEmoji(b.recovery)}`,indent:'    '});
+    });
+    L.push({text:''});
+  }
+  copyRichText(L);
 }
 
 // ============================================================
