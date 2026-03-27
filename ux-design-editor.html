@@ -1408,6 +1408,12 @@ function aDelSug(mid,sid) { const m=store.A.modules.find(x=>x.id===mid); if(m){m
 function stripEmoji(str) {
   return (str||'').replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').replace(/\s{2,}/g,' ').trim();
 }
+// 避免前缀与字段内容重复：若内容已以"前缀"开头则直接用内容，否则拼接前缀
+function safePrefix(prefix, value) {
+  const v = stripEmoji(value);
+  const p = prefix.replace(/：$/, '');
+  return (v.startsWith(p+'：') || v.startsWith(p+':') || v===p) ? v : `${prefix}${v}`;
+}
 
 // 复制富文本到剪贴板（同时写 text/html + text/plain）
 // lines 为数组，每项：{ text, bold?, indent? }
@@ -1458,13 +1464,14 @@ function bCopyPath(pid) {
   const path=bFindP(pid);if(!path)return;
   const L=[];
   L.push({text:`【路径】${stripEmoji(path.title)}`,bold:true});
-  L.push({text:`起点：${stripEmoji(path.startPoint)}`,indent:'  '});
+  L.push({text:safePrefix('起点：',path.startPoint),indent:'  '});
   L.push({text:''});
   path.stages.forEach((s,si)=>{
-    L.push({text:`阶段 ${si+1}：${stripEmoji(s.title)}`,bold:true,indent:'  '});
+    const stitle=stripEmoji(s.title);
+    L.push({text:safePrefix(`阶段 ${si+1}：`,stitle),bold:true,indent:'  '});
     if(s.actions.length){L.push({text:'用户操作：',bold:true,indent:'    '});s.actions.forEach((a,i)=>L.push({text:`${i+1}. ${stripEmoji(a.text)}`,indent:'      '}));}
     if(s.feedbacks.length){L.push({text:'系统反馈：',bold:true,indent:'    '});s.feedbacks.forEach(f=>L.push({text:`• ${stripEmoji(f.text)}`,indent:'      '}));}
-    s.branches.forEach(b=>{L.push({text:`分支：${stripEmoji(b.label)}`,bold:true,indent:'    '});b.items.forEach(it=>L.push({text:`• ${stripEmoji(it.text)}`,indent:'      '}));});
+    s.branches.forEach(b=>{L.push({text:`↳ ${stripEmoji(b.label)}`,bold:true,indent:'    '});b.items.forEach(it=>L.push({text:`• ${stripEmoji(it.text)}`,indent:'      '}));});
     L.push({text:''});
   });
   copyRichText(L);
@@ -1479,7 +1486,7 @@ function bCopyStageToClipboard(pid, sid) {
   L.push({text:''});
   if(s.actions.length){L.push({text:'用户操作：',bold:true});s.actions.forEach((a,i)=>L.push({text:`${i+1}. ${stripEmoji(a.text)}`,indent:'  '}));}
   if(s.feedbacks.length){L.push({text:'系统反馈：',bold:true});s.feedbacks.forEach(f=>L.push({text:`• ${stripEmoji(f.text)}`,indent:'  '}));}
-  s.branches.forEach(b=>{L.push({text:`分支：${stripEmoji(b.label)}`,bold:true});b.items.forEach(it=>L.push({text:`• ${stripEmoji(it.text)}`,indent:'  '}));});
+  s.branches.forEach(b=>{L.push({text:`↳ ${stripEmoji(b.label)}`,bold:true});b.items.forEach(it=>L.push({text:`• ${stripEmoji(it.text)}`,indent:'  '}));});
   copyRichText(L);
 }
 
@@ -1507,9 +1514,9 @@ function dCopySpec(spId) {
     L.push({text:'系统边界：',bold:true});
     sp.boundaries.forEach(b=>{
       L.push({text:`【${stripEmoji(b.type)}】`,bold:true,indent:'  '});
-      L.push({text:`触发：${stripEmoji(b.trigger)}`,indent:'    '});
-      L.push({text:`反馈：${stripEmoji(b.feedback)}`,indent:'    '});
-      L.push({text:`恢复：${stripEmoji(b.recovery)}`,indent:'    '});
+      L.push({text:safePrefix('触发：',b.trigger),indent:'    '});
+      L.push({text:safePrefix('反馈：',b.feedback),indent:'    '});
+      L.push({text:safePrefix('恢复：',b.recovery),indent:'    '});
     });
     L.push({text:''});
   }
