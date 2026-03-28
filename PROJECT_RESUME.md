@@ -1,6 +1,6 @@
 # UX 设计交互编辑器 — 项目续接文档
 
-> **文档版本**：v4.1.0（2026-03-28 更新）
+> **文档版本**：v4.1.1（2026-03-28 更新）
 > **用途**：在新对话中快速恢复项目上下文，确保迭代连续性
 
 ---
@@ -449,3 +449,4 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 | v3.5.8 | 2026-03-27 | 修复复制输出前缀重复问题：新增 `safePrefix()` 工具函数，检测字段内容是否已包含前缀避免重复拼接；分支标签改用 `↳` 前缀替代 `分支：`；`bCopyPath`/`bCopyStageToClipboard`/`dCopySpec` 中起点/阶段/触发/反馈/恢复字段全部走 safePrefix |
 | v4.0.0 | 2026-03-28 | **模式D架构重构**：①Skill更新——D定位为终极交付物(SSoT)，B→D关系从"平行映射"升级为"吸收与升华"；新增四条生成法则（名词具象化/动词物理化/黑箱透明化/防御性设计）+输出粒度规则（多项目通用）②数据结构重构——`visible[]`→`elements[]`（按区域分组，含area+items[{label,desc}]）、`interactions[]`→`flows[]`（含action/trigger/validation/steps[]+内嵌exceptions[]）、`boundaries[]`字段名升级（type→scenario, feedback→defense）③编辑器UI全面适配——三个区块独立渲染子组件（renderDArea/renderDFlow/renderDException/renderDBoundary）④旧数据自动迁移函数`migrateD()`⑤复制/导出Markdown同步更新 |
 | v4.1.0 | 2026-03-28 | **模式D交互优化**：①三大区块（元素/交互流/边界）支持独立折叠收起（`dToggleSec()`+`_colElem`/`_colFlow`/`_colBound` 运行时状态）②三大区块标题栏新增 ⎘ 复制按钮（`dCopyElements`/`dCopyFlows`/`dCopyBoundaries`）③交互流中每个操作卡片新增 ⎘ 复制按钮（`dCopyFlow`）④模块D内所有新增按钮统一右对齐（`justify-content:flex-end`/`sec-actions margin-left:auto`） |
+| v4.1.1 | 2026-03-28 | **模式D BUG修复**：①区块收起按钮响应区域修正——移除 `spec-section-header` 的 `onclick`，仅 `sec-toggle-btn` 按钮本身可触发折叠/展开；移除 header 的 `cursor:pointer`；简化 `dToggleSec()` 去除 event 参数 ②收起箭头方向修正——移除 CSS `.spec-section.collapsed .sec-toggle-btn{transform:rotate(-90deg)}`，箭头字符自身已正确（收起▶/展开▼）③UI反馈条目删除按钮修复——`.bound-item .step-del` 改为 `.bound-item > .step-del`（直接子元素选择器），避免嵌套在 `step-item` 内的删除按钮被强制 `position:absolute` 飞到卡片右上角 ④UI反馈条目字体统一——`.step-item .step-content` 新增 `font-size:13px`，与触发条件/系统校验等保持一致 |
