@@ -410,6 +410,47 @@ function ensureRefs() {
   });
 }
 
+// ====== D 模块数据迁移（旧 visible/interactions → 新 elements/flows）======
+function migrateD() {
+  let migrated = false;
+  (store.D || []).forEach(spec => {
+    // 迁移 visible → elements
+    if (spec.visible && !spec.elements) {
+      spec.elements = [{
+        id: nid(), area: '默认区域',
+        items: spec.visible.map(v => ({ id: v.id || nid(), label: '展示内容', desc: v.text || '' }))
+      }];
+      delete spec.visible;
+      migrated = true;
+    }
+    // 迁移 interactions → flows
+    if (spec.interactions && !spec.flows) {
+      spec.flows = spec.interactions.map(it => ({
+        id: it.id || nid(), action: it.text || '', trigger: '', validation: '',
+        steps: [], exceptions: []
+      }));
+      delete spec.interactions;
+      migrated = true;
+    }
+    // 迁移 boundaries 字段名（type→scenario, feedback→defense）
+    if (spec.boundaries) {
+      spec.boundaries.forEach(b => {
+        if (b.type !== undefined && b.scenario === undefined) {
+          b.scenario = b.type; delete b.type; migrated = true;
+        }
+        if (b.feedback !== undefined && b.defense === undefined) {
+          b.defense = b.feedback; delete b.feedback; migrated = true;
+        }
+      });
+    }
+    // 确保新字段存在
+    if (!spec.elements) spec.elements = [];
+    if (!spec.flows) spec.flows = [];
+    if (!spec.boundaries) spec.boundaries = [];
+  });
+  if (migrated) { save(); console.log('[migrateD] 旧版 D 模块数据已迁移到新结构'); }
+}
+
 /**
  * 根据 ID 在 store 中查找对应节点及其标签
  * 返回 { mode, label, obj } 或 null
@@ -1508,15 +1549,37 @@ function dCopySpec(spId) {
   const L=[];
   L.push({text:`【交互稿】${stripEmoji(sp.specName)}`,bold:true});
   L.push({text:''});
-  if(sp.visible&&sp.visible.length){L.push({text:'界面规格：',bold:true});sp.visible.forEach(v=>L.push({text:`• ${stripEmoji(v.text)}`,indent:'  '}));L.push({text:''});}
-  if(sp.interactions&&sp.interactions.length){L.push({text:'交互层：',bold:true});sp.interactions.forEach(it=>L.push({text:`• ${stripEmoji(it.text)}`,indent:'  '}));L.push({text:''});}
+  if(sp.elements&&sp.elements.length){
+    L.push({text:'元素状态与基础逻辑：',bold:true});
+    sp.elements.forEach(el=>{
+      L.push({text:`【${stripEmoji(el.area)}】`,bold:true,indent:'  '});
+      (el.items||[]).forEach(it=>L.push({text:`• ${stripEmoji(it.label)}：${stripEmoji(it.desc)}`,indent:'    '}));
+    });
+    L.push({text:''});
+  }
+  if(sp.flows&&sp.flows.length){
+    L.push({text:'核心场景交互流：',bold:true});
+    sp.flows.forEach(fl=>{
+      L.push({text:`操作：${stripEmoji(fl.action)}`,bold:true,indent:'  '});
+      if(fl.trigger)L.push({text:safePrefix('触发条件：',fl.trigger),indent:'    '});
+      if(fl.validation)L.push({text:safePrefix('系统校验：',fl.validation),indent:'    '});
+      (fl.steps||[]).forEach((st,i)=>L.push({text:`${i+1}. ${stripEmoji(st.desc)}`,indent:'    '}));
+      (fl.exceptions||[]).forEach(ex=>{
+        L.push({text:`⚠️ 异常分支：${stripEmoji(ex.scenario)}`,bold:true,indent:'    '});
+        L.push({text:safePrefix('触发条件：',ex.trigger),indent:'      '});
+        L.push({text:safePrefix('防错设计：',ex.defense),indent:'      '});
+        L.push({text:safePrefix('流程反馈：',ex.recovery),indent:'      '});
+      });
+    });
+    L.push({text:''});
+  }
   if(sp.boundaries&&sp.boundaries.length){
-    L.push({text:'系统边界：',bold:true});
+    L.push({text:'系统级边界：',bold:true});
     sp.boundaries.forEach(b=>{
-      L.push({text:`【${stripEmoji(b.type)}】`,bold:true,indent:'  '});
-      L.push({text:safePrefix('触发：',b.trigger),indent:'    '});
-      L.push({text:safePrefix('反馈：',b.feedback),indent:'    '});
-      L.push({text:safePrefix('恢复：',b.recovery),indent:'    '});
+      L.push({text:`【${stripEmoji(b.scenario)}】`,bold:true,indent:'  '});
+      L.push({text:safePrefix('触发条件：',b.trigger),indent:'    '});
+      L.push({text:safePrefix('防错设计：',b.defense),indent:'    '});
+      L.push({text:safePrefix('流程反馈：',b.recovery),indent:'    '});
     });
     L.push({text:''});
   }
@@ -2158,183 +2221,152 @@ function cEditNote(pgId,nodeId){
 function initD() {
   store.D = [
     { id:nid(), specName:'科技研究台 — 主界面', collapsed:false,
-      visible:[
-        {id:nid(),text:'页面布局：全屏界面，纵向三段式（顶部信息栏 | Tab切换栏 | 内容区）'},
-        {id:nid(),text:'科技等级进度条：进度不足时灰色填充，满时金色脉动'},
-        {id:nid(),text:'强化机会角标：无可用机会时隐藏；有机会时红色数字角标'},
-        {id:nid(),text:'Tab按钮：选中态高亮+下划线；未选中态默认色'}
+      elements:[
+        {id:nid(),area:'顶部信息栏',items:[
+          {id:nid(),label:'科技等级进度条',desc:'进度不足时灰色填充，满时金色脉动'},
+          {id:nid(),label:'强化机会角标',desc:'无可用机会时隐藏；有机会时红色数字角标'}
+        ]},
+        {id:nid(),area:'Tab切换栏',items:[
+          {id:nid(),label:'Tab按钮',desc:'选中态高亮+下划线；未选中态默认色'},
+          {id:nid(),label:'页面布局',desc:'全屏界面，纵向三段式（顶部信息栏 | Tab切换栏 | 内容区）'}
+        ]}
       ],
-      interactions:[
-        {id:nid(),text:'点击「逆向研究」Tab ➔ 内容区切换至逆向研究子页面'},
-        {id:nid(),text:'点击「科技发明」Tab ➔ 内容区切换至科技发明子页面'},
-        {id:nid(),text:'点击强化机会角标 ➔ 弹出气泡提示，点击跳转强化界面'},
-        {id:nid(),text:'点击科技等级区域 ➔ 展开等级详情悬浮卡片'}
+      flows:[
+        {id:nid(),action:'切换功能Tab',trigger:'点击「逆向研究」或「科技发明」Tab',validation:'无',
+          steps:[{id:nid(),desc:'下划线指示器平滑滑动至目标Tab'},{id:nid(),desc:'内容区切换至对应子页面'}],
+          exceptions:[]},
+        {id:nid(),action:'查看强化机会',trigger:'点击强化机会角标',validation:'无',
+          steps:[{id:nid(),desc:'弹出气泡提示，展示可用机会数量'},{id:nid(),desc:'点击气泡跳转科技强化界面'}],
+          exceptions:[]}
       ],
       boundaries:[
-        {id:nid(),type:'设施被破坏',trigger:'耐久为0或被攻击',feedback:'Toast提示"研究台已损坏，请先修复"',recovery:'提示修复所需材料'},
-        {id:nid(),type:'首次打开引导',trigger:'玩家首次交互研究台',feedback:'新手引导蒙层，高亮Tab',recovery:'按序引导'}
+        {id:nid(),scenario:'设施被破坏',trigger:'耐久为0或被攻击',defense:'Toast提示"研究台已损坏，请先修复"',recovery:'提示修复所需材料'},
+        {id:nid(),scenario:'首次打开引导',trigger:'玩家首次交互研究台',defense:'新手引导蒙层，高亮Tab',recovery:'按序引导'}
       ]
     },
     { id:nid(), specName:'逆向研究子页面', collapsed:true,
-      visible:[
-        {id:nid(),text:'研究槽位：5个槽位横向排列，空闲态显示"+"图标'},
-        {id:nid(),text:'研究中槽位：显示道具图标 + 进度条 + 剩余时间'},
-        {id:nid(),text:'已完成槽位：道具图标发光 + "完成"标识'},
-        {id:nid(),text:'可用道具提示：背包/储藏箱中文明遗产数量'}
+      elements:[
+        {id:nid(),area:'研究槽位区',items:[
+          {id:nid(),label:'槽位布局',desc:'5个槽位横向排列，空闲态显示"+"图标'},
+          {id:nid(),label:'研究中状态',desc:'显示道具图标 + 进度条 + 剩余时间'},
+          {id:nid(),label:'已完成状态',desc:'道具图标发光 + "完成"标识'}
+        ]},
+        {id:nid(),area:'可用道具提示',items:[
+          {id:nid(),label:'展示内容',desc:'背包/储藏箱中文明遗产数量'}
+        ]}
       ],
-      interactions:[
-        {id:nid(),text:'点击空闲槽位 ➔ 打开道具选择列表'},
-        {id:nid(),text:'点击研究中槽位 ➔ 展示详细进度和预期产出'},
-        {id:nid(),text:'点击已完成槽位 ➔ 弹出研究结果面板'},
-        {id:nid(),text:'点击「批量研究」 ➔ 切换至批量选择模式'},
-        {id:nid(),text:'点击「一键领取」 ➔ 依次弹出所有完成项的结果'}
+      flows:[
+        {id:nid(),action:'选择空闲槽位',trigger:'点击空闲槽位',validation:'槽位状态为空闲',
+          steps:[{id:nid(),desc:'打开道具选择列表'}],
+          exceptions:[{id:nid(),scenario:'槽位已满',trigger:'5个槽位均在研究中',defense:'新增槽位按钮置灰 + Toast提示',recovery:'等待或加速完成'}]},
+        {id:nid(),action:'领取研究结果',trigger:'点击已完成槽位',validation:'研究状态为已完成',
+          steps:[{id:nid(),desc:'弹出研究结果面板'}],
+          exceptions:[]},
+        {id:nid(),action:'批量研究',trigger:'点击「批量研究」按钮',validation:'存在可研究道具',
+          steps:[{id:nid(),desc:'切换至批量选择模式'}],
+          exceptions:[{id:nid(),scenario:'无可用道具',trigger:'背包和储藏箱均无文明遗产',defense:'提示"暂无可研究道具"',recovery:'引导获取途径'}]}
       ],
       boundaries:[
-        {id:nid(),type:'槽位已满',trigger:'5个槽位均在研究中',feedback:'新增槽位按钮置灰 + Toast提示',recovery:'等待或加速完成'},
-        {id:nid(),type:'无可用道具',trigger:'背包和储藏箱均无文明遗产',feedback:'提示"暂无可研究道具"',recovery:'引导获取途径'}
+        {id:nid(),scenario:'网络超时',trigger:'研究请求发出后5s无响应',defense:'加载态按钮切换为错误态，顶部红色提示',recovery:'按钮恢复可点击，显示"重新研究"'}
       ]
     },
     { id:nid(), specName:'道具选择列表', collapsed:true,
-      visible:[
-        {id:nid(),text:'列表区：道具卡片网格布局（2-3列）'},
-        {id:nid(),text:'道具卡片：图标 + 名称 + 文明遗产角标 + 对应科技状态'},
-        {id:nid(),text:'筛选区：数据来源Tab（背包/储藏箱）+ 排序下拉'},
-        {id:nid(),text:'选中态：边框高亮 + 勾选图标'}
+      elements:[
+        {id:nid(),area:'筛选/排序区',items:[
+          {id:nid(),label:'数据来源切换',desc:'背包 / 储藏箱 Tab'},
+          {id:nid(),label:'排序方式',desc:'品质 / 获取时间 / 对应科技'}
+        ]},
+        {id:nid(),area:'道具列表区',items:[
+          {id:nid(),label:'道具卡片',desc:'图标 + 名称 + 文明遗产角标 + 对应科技状态'},
+          {id:nid(),label:'选中态',desc:'边框高亮 + 勾选图标'}
+        ]}
       ],
-      interactions:[
-        {id:nid(),text:'点击道具卡片 ➔ 选中该道具，显示选中态'},
-        {id:nid(),text:'长按/悬停道具 ➔ 展示对应科技预览气泡'},
-        {id:nid(),text:'切换数据来源Tab ➔ 列表刷新'},
-        {id:nid(),text:'点击「确认选择」 ➔ 返回逆向研究页，道具放入槽位'}
+      flows:[
+        {id:nid(),action:'选择道具',trigger:'点击道具卡片',validation:'道具仍在背包中',
+          steps:[{id:nid(),desc:'选中该道具，显示选中态'},{id:nid(),desc:'长按/悬停展示对应科技预览气泡'}],
+          exceptions:[]},
+        {id:nid(),action:'确认选择',trigger:'点击「确认选择」',validation:'已选中至少一个道具',
+          steps:[{id:nid(),desc:'返回逆向研究页，道具放入槽位'}],
+          exceptions:[]}
       ],
       boundaries:[
-        {id:nid(),type:'列表为空',trigger:'当前来源无文明遗产',feedback:'空状态插画 + 引导文案',recovery:'提示切换来源或获取方式'},
-        {id:nid(),type:'道具数量过多',trigger:'列表项 > 50',feedback:'启用分页或虚拟滚动',recovery:'使用筛选功能'}
+        {id:nid(),scenario:'列表为空',trigger:'当前来源无文明遗产',defense:'空状态插画 + 引导文案',recovery:'提示切换来源或获取方式'}
       ]
     },
     { id:nid(), specName:'研究结果面板', collapsed:true,
-      visible:[
-        {id:nid(),text:'结果展示：科技图标居中放大 + 名称 + 效果描述'},
-        {id:nid(),text:'解锁动效：科技图标从道具中浮现 + 点亮动画'},
-        {id:nid(),text:'碎片结算：碎片图标 + 数量 + 飞入背包动效'},
-        {id:nid(),text:'进度关联：科技等级进度条增长动画'}
+      elements:[
+        {id:nid(),area:'结果展示区',items:[
+          {id:nid(),label:'科技解锁结果',desc:'科技图标居中放大 + 名称 + 效果描述'},
+          {id:nid(),label:'碎片结算',desc:'碎片图标 + 数量 + 飞入背包动效'},
+          {id:nid(),label:'进度关联',desc:'科技等级进度条增长动画'}
+        ]}
       ],
-      interactions:[
-        {id:nid(),text:'动效播放完毕 ➔ 展示操作按钮'},
-        {id:nid(),text:'点击「继续研究」 ➔ 关闭面板，返回逆向研究页'},
-        {id:nid(),text:'点击「查看科技」 ➔ 跳转科技详情页'},
-        {id:nid(),text:'点击面板外区域 ➔ 关闭面板'}
+      flows:[
+        {id:nid(),action:'领取结果',trigger:'动效播放完毕',validation:'无',
+          steps:[{id:nid(),desc:'展示操作按钮'},{id:nid(),desc:'点击「继续研究」关闭面板返回逆向研究页'},{id:nid(),desc:'点击「查看科技」跳转科技详情页'}],
+          exceptions:[{id:nid(),scenario:'科技升级触发',trigger:'本次解锁导致等级提升',defense:'衔接升级演出，结果面板后置',recovery:'升级演出完成后展示结果'}]}
       ],
       boundaries:[
-        {id:nid(),type:'科技升级触发',trigger:'本次解锁导致等级提升',feedback:'衔接升级演出，结果面板后置',recovery:'升级演出完成后展示结果'},
-        {id:nid(),type:'网络异常',trigger:'领取时断网',feedback:'重试按钮 + 提示',recovery:'重连后重新领取'}
+        {id:nid(),scenario:'网络异常',trigger:'领取时断网',defense:'重试按钮 + 提示',recovery:'重连后重新领取'}
       ]
     },
     { id:nid(), specName:'科技发明子页面', collapsed:true,
-      visible:[
-        {id:nid(),text:'材料投入区：3×3九宫格，空槽位显示"+"'},
-        {id:nid(),text:'已投入槽位：显示材料图标 + 数量，可点击移除'},
-        {id:nid(),text:'产物预览区：可能产物列表（按概率降序）+ 概率百分比'},
-        {id:nid(),text:'概率指示：≥100%显示绿色"必定成功"，<100%橙色警示'}
+      elements:[
+        {id:nid(),area:'材料投入区',items:[
+          {id:nid(),label:'布局',desc:'3×3九宫格，空槽位显示"+"'},
+          {id:nid(),label:'已投入槽位',desc:'显示材料图标 + 数量，可点击移除'}
+        ]},
+        {id:nid(),area:'产物预览区',items:[
+          {id:nid(),label:'产物列表',desc:'按概率降序展示 + 概率百分比'},
+          {id:nid(),label:'概率指示',desc:'≥100%显示绿色"必定成功"，<100%橙色警示'}
+        ]}
       ],
-      interactions:[
-        {id:nid(),text:'点击材料槽位 ➔ 打开材料选择列表'},
-        {id:nid(),text:'点击已投入材料 ➔ 移除该材料，更新预览'},
-        {id:nid(),text:'材料变化时 ➔ 实时更新产物预览和概率'},
-        {id:nid(),text:'点击「开始发明」 ➔ 播放发明动效，展示结果'},
-        {id:nid(),text:'点击「快捷配方」 ➔ 弹出配方列表，点击自动填充'}
+      flows:[
+        {id:nid(),action:'投入材料',trigger:'点击材料槽位',validation:'背包中有可用材料',
+          steps:[{id:nid(),desc:'打开材料选择列表'},{id:nid(),desc:'选中后材料放入槽位，实时更新产物预览'}],
+          exceptions:[{id:nid(),scenario:'材料不足',trigger:'材料数量为0',defense:'材料卡片置灰 + 数量标红',recovery:'提示获取途径'},{id:nid(),scenario:'同种材料重复',trigger:'尝试投入已存在材料',defense:'Toast提示"同种材料不可重复"',recovery:'选择其他材料'}]},
+        {id:nid(),action:'开始发明',trigger:'点击「开始发明」按钮',validation:'至少投入1种材料',
+          steps:[{id:nid(),desc:'播放发明演出动效：材料融合→光效→结果揭晓'}],
+          exceptions:[]}
       ],
-      boundaries:[
-        {id:nid(),type:'材料不足',trigger:'材料数量为0',feedback:'材料卡片置灰 + 数量标红',recovery:'提示获取途径'},
-        {id:nid(),type:'同种材料重复',trigger:'尝试投入已存在材料',feedback:'Toast提示"同种材料不可重复"',recovery:'选择其他材料'}
-      ]
-    },
-    { id:nid(), specName:'发明结果面板', collapsed:true,
-      visible:[
-        {id:nid(),text:'成功态：科技图标居中 + 金色光效 + "发明成功"'},
-        {id:nid(),text:'残次品态：残次品图标 + 数量 + 用途提示'},
-        {id:nid(),text:'失败态：灰色图标 + "发明失败" + 建议文案'},
-        {id:nid(),text:'配方记录提示：成功时显示"已记录配方"'}
-      ],
-      interactions:[
-        {id:nid(),text:'点击「再次发明」 ➔ 返回发明页，保留上次材料配置'},
-        {id:nid(),text:'点击「返回」 ➔ 清空材料，返回发明页'},
-        {id:nid(),text:'点击「查看配方记录」 ➔ 跳转配方列表'}
-      ],
-      boundaries:[
-        {id:nid(),type:'连续失败',trigger:'连续失败3次',feedback:'额外安慰提示 + 建议调整',recovery:'提供配方参考入口'},
-        {id:nid(),type:'首次成功',trigger:'玩家首次发明成功',feedback:'额外庆祝动效 + 成就提示',recovery:'引导查看科技详情'}
-      ]
+      boundaries:[]
     },
     { id:nid(), specName:'科技主界面', collapsed:true,
-      visible:[
-        {id:nid(),text:'页面布局：顶部进度区 + 科技列表区 + 底部快捷入口'},
-        {id:nid(),text:'科技等级：大字号显示 + 进度条 + 下一级预览'},
-        {id:nid(),text:'科技卡片：图标 + 名称 + 强化等级星星 + 状态标识'},
-        {id:nid(),text:'分类Tab：全部/工具/建筑/装备，选中态高亮'}
+      elements:[
+        {id:nid(),area:'科技等级与进度区',items:[
+          {id:nid(),label:'科技等级',desc:'大字号显示 + 进度条 + 下一级预览'}
+        ]},
+        {id:nid(),area:'科技列表区',items:[
+          {id:nid(),label:'科技卡片',desc:'图标 + 名称 + 强化等级星星 + 状态标识'},
+          {id:nid(),label:'分类Tab',desc:'全部/工具/建筑/装备，选中态高亮'}
+        ]}
       ],
-      interactions:[
-        {id:nid(),text:'点击科技卡片 ➔ 展开科技详情面板'},
-        {id:nid(),text:'切换分类Tab ➔ 列表筛选刷新'},
-        {id:nid(),text:'点击「前往研究台」 ➔ 跳转科技研究台'},
-        {id:nid(),text:'点击「科技强化」 ➔ 跳转科技强化界面'}
-      ],
-      boundaries:[
-        {id:nid(),type:'无已解锁科技',trigger:'新玩家首次进入',feedback:'空状态 + 引导文案',recovery:'引导前往研究台'},
-        {id:nid(),type:'科技数量过多',trigger:'已解锁 > 30',feedback:'启用搜索功能',recovery:'支持关键词搜索'}
-      ]
-    },
-    { id:nid(), specName:'科技强化界面', collapsed:true,
-      visible:[
-        {id:nid(),text:'强化机会展示：大字号数字 + 来源说明'},
-        {id:nid(),text:'科技列表：按类型/强化等级分组展示'},
-        {id:nid(),text:'科技卡片：当前等级 + 下一级效果预览'},
-        {id:nid(),text:'满级标识：金色"MAX"角标'}
-      ],
-      interactions:[
-        {id:nid(),text:'点击科技卡片 ➔ 展开强化详情面板'},
-        {id:nid(),text:'点击「强化」按钮 ➔ 播放强化动效，等级+1'},
-        {id:nid(),text:'强化成功 ➔ 更新卡片等级，机会数-1'}
+      flows:[
+        {id:nid(),action:'查看科技详情',trigger:'点击科技卡片',validation:'无',
+          steps:[{id:nid(),desc:'展开科技详情面板'}],exceptions:[]},
+        {id:nid(),action:'前往研究台',trigger:'点击「前往研究台」按钮',validation:'无',
+          steps:[{id:nid(),desc:'跳转科技研究台'}],exceptions:[]}
       ],
       boundaries:[
-        {id:nid(),type:'无强化机会',trigger:'机会数为0',feedback:'提示"暂无强化机会"',recovery:'引导科技升级获取'},
-        {id:nid(),type:'科技已满级',trigger:'点击满级科技',feedback:'按钮置灰 + 满级提示',recovery:'引导强化其他科技'}
-      ]
-    },
-    { id:nid(), specName:'科技等级升级演出', collapsed:true,
-      visible:[
-        {id:nid(),text:'全屏遮罩：深色半透明背景'},
-        {id:nid(),text:'等级数字动效：旧数字→新数字，放大+金色光效'},
-        {id:nid(),text:'奖励展示：强化机会图标 + 一次性奖励道具'},
-        {id:nid(),text:'庆祝粒子：金色粒子飘落'}
-      ],
-      interactions:[
-        {id:nid(),text:'动效播放完毕 ➔ 展示「领取奖励」按钮'},
-        {id:nid(),text:'点击「领取奖励」 ➔ 奖励飞入背包，关闭演出'},
-        {id:nid(),text:'点击空白区域 ➔ 跳过动效，直接展示结果'}
-      ],
-      boundaries:[
-        {id:nid(),type:'连续升级',trigger:'单次操作触发多次升级',feedback:'合并演出，累计展示',recovery:'一次性展示所有奖励'},
-        {id:nid(),type:'动效加载失败',trigger:'资源加载异常',feedback:'降级为简化动效',recovery:'直接展示结果'}
+        {id:nid(),scenario:'无已解锁科技',trigger:'新玩家首次进入',defense:'空状态 + 引导文案',recovery:'引导前往研究台'}
       ]
     },
     { id:nid(), specName:'拆解台拦截弹窗', collapsed:true,
-      visible:[
-        {id:nid(),text:'弹窗布局：警告图标 + 说明文案 + 收益预览 + 操作按钮'},
-        {id:nid(),text:'警告图标：橙色感叹号'},
-        {id:nid(),text:'收益预览：逆向研究可获得的科技/碎片预览'},
-        {id:nid(),text:'按钮组：「前往研究台」（主按钮）+ 「仍要拆解」（次按钮）'}
+      elements:[
+        {id:nid(),area:'弹窗内容区',items:[
+          {id:nid(),label:'警告信息',desc:'橙色感叹号 + 说明文案'},
+          {id:nid(),label:'收益预览',desc:'逆向研究可获得的科技/碎片预览'},
+          {id:nid(),label:'按钮组',desc:'「前往研究台」（主按钮）+ 「仍要拆解」（次按钮）'}
+        ]}
       ],
-      interactions:[
-        {id:nid(),text:'点击「前往研究台」 ➔ 关闭弹窗，打开研究台并预选道具'},
-        {id:nid(),text:'点击「仍要拆解」 ➔ 弹出二次确认弹窗'},
-        {id:nid(),text:'二次确认「确定」 ➔ 执行拆解，返回拆解台'},
-        {id:nid(),text:'点击「取消」或弹窗外 ➔ 关闭弹窗，取消操作'}
+      flows:[
+        {id:nid(),action:'选择跳转研究台',trigger:'点击「前往研究台」',validation:'无',
+          steps:[{id:nid(),desc:'关闭弹窗，打开研究台并预选道具'}],exceptions:[]},
+        {id:nid(),action:'坚持拆解',trigger:'点击「仍要拆解」',validation:'无',
+          steps:[{id:nid(),desc:'弹出二次确认弹窗'},{id:nid(),desc:'确认后执行拆解，返回拆解台'}],
+          exceptions:[{id:nid(),scenario:'批量拆解含文明遗产',trigger:'选中多个含文明遗产的道具',defense:'逐个弹出拦截或合并提示',recovery:'支持"全部跳转"或"全部拆解"'}]}
       ],
-      boundaries:[
-        {id:nid(),type:'批量拆解',trigger:'选中多个含文明遗产的道具',feedback:'逐个弹出拦截或合并提示',recovery:'支持"全部跳转"或"全部拆解"'},
-        {id:nid(),type:'用户设置跳过',trigger:'用户勾选"不再提示"',feedback:'记录用户偏好',recovery:'设置中可恢复提示'}
-      ]
+      boundaries:[]
     }
   ];
 }
@@ -2361,50 +2393,34 @@ function renderD() {
         </div>
       </div>
       <div class="card-body ${spec.collapsed?'collapsed':''}">
+        <!-- 🧩 元素状态与基础逻辑 -->
         <div class="spec-section">
           <div class="spec-section-header visible" style="display:flex;align-items:center;justify-content:space-between;">
-            <span>👁️ 界面规格（布局 / 元素状态 / 数据规则）</span>
-            <button class="add-inline-btn" onclick="dAddItem('${spec.id}','visible')">＋规格</button>
+            <span>🧩 元素状态与基础逻辑（页面内容 / 控件 / 规则约束）</span>
+            <button class="add-inline-btn" onclick="dAddArea('${spec.id}')">＋区域</button>
           </div>
           <div class="spec-section-body">
-            <ul class="step-list">${spec.visible.map(v=>`
-              <li class="step-item"><span class="step-num">•</span>
-                <span class="step-content editable" contenteditable="true" data-f="d-vis" data-i="${v.id}" data-sp="${spec.id}">${esc(v.text)}</span>
-                <button class="step-del" onclick="dDelItem('${spec.id}','visible','${v.id}')">✕</button>
-              </li>`).join('')}
-            </ul>
+            ${(spec.elements||[]).map(area=>renderDArea(spec.id,area)).join('')}
           </div>
         </div>
+        <!-- 🖱️ 核心场景交互流 -->
         <div class="spec-section">
           <div class="spec-section-header interact" style="display:flex;align-items:center;justify-content:space-between;">
-            <span>🔄 交互层（操作与反馈流）</span>
-            <button class="add-inline-btn" onclick="dAddItem('${spec.id}','interactions')">＋交互</button>
+            <span>🖱️ 核心场景交互流（操作 → 校验 → 反馈 → 异常分支）</span>
+            <button class="add-inline-btn" onclick="dAddFlow('${spec.id}')">＋操作</button>
           </div>
           <div class="spec-section-body">
-            <ul class="step-list">${(spec.interactions||[]).map(it=>`
-              <li class="step-item"><span class="step-num">•</span>
-                <span class="step-content editable" contenteditable="true" data-f="d-inter" data-i="${it.id}" data-sp="${spec.id}">${esc(it.text)}</span>
-                <button class="step-del" onclick="dDelItem('${spec.id}','interactions','${it.id}')">✕</button>
-              </li>`).join('')}
-            </ul>
+            ${(spec.flows||[]).map(fl=>renderDFlow(spec.id,fl)).join('')}
           </div>
         </div>
+        <!-- 🚧 系统级边界 -->
         <div class="spec-section">
           <div class="spec-section-header boundary" style="display:flex;align-items:center;justify-content:space-between;">
-            <span>⚠️ 系统边界（接口异常 / 数据为空 / 配置缺失）</span>
-            <button class="add-inline-btn" onclick="dAddItem('${spec.id}','boundaries')">＋边界</button>
+            <span>🚧 系统级边界（全局异常 / 配置缺失 / 网络断连）</span>
+            <button class="add-inline-btn" onclick="dAddBoundary('${spec.id}')">＋边界</button>
           </div>
           <div class="spec-section-body">
-            ${spec.boundaries.map(b=>`
-              <div class="bound-item" style="margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(248,113,113,.15);background:rgba(248,113,113,.04);position:relative;">
-                <button class="step-del" onclick="dDelItem('${spec.id}','boundaries','${b.id}')">✕</button>
-                <div style="font-weight:600;font-size:13px;color:var(--red);">
-                  <span class="editable" contenteditable="true" data-f="d-btype" data-i="${b.id}" data-sp="${spec.id}">${esc(b.type)}</span>
-                </div>
-                <div style="font-size:13px;margin-top:3px;">触发：<span class="editable" contenteditable="true" data-f="d-btrig" data-i="${b.id}" data-sp="${spec.id}">${esc(b.trigger)}</span></div>
-                <div style="font-size:13px;margin-top:2px;">反馈：<span class="editable" contenteditable="true" data-f="d-bfeed" data-i="${b.id}" data-sp="${spec.id}">${esc(b.feedback)}</span></div>
-                <div style="font-size:13px;margin-top:2px;">恢复：<span class="editable" contenteditable="true" data-f="d-brec" data-i="${b.id}" data-sp="${spec.id}">${esc(b.recovery)}</span></div>
-              </div>`).join('')}
+            ${(spec.boundaries||[]).map(b=>renderDBoundary(spec.id,b)).join('')}
           </div>
         </div>
       </div>
@@ -2412,22 +2428,97 @@ function renderD() {
     '<div style="display:flex;align-items:center;gap:8px;margin-top:12px;"><button class="add-btn" style="flex:1;" onclick="dAddSpec()">+ 新增交互说明</button></div>';
 }
 
+// ====== D: 渲染子组件 ======
+function renderDArea(spId, area) {
+  return `<div class="bound-item" style="margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(99,102,241,.15);background:rgba(99,102,241,.04);position:relative;">
+    <button class="step-del" onclick="dDelArea('${spId}','${area.id}')">✕</button>
+    <div style="font-weight:600;font-size:13px;color:var(--accent);">
+      【<span class="editable" contenteditable="true" data-f="d-area" data-i="${area.id}" data-sp="${spId}">${esc(area.area)}</span>】
+    </div>
+    <ul class="step-list" style="margin-top:4px;">
+      ${(area.items||[]).map(it=>`
+        <li class="step-item"><span class="step-num">•</span>
+          <span class="editable" contenteditable="true" style="font-weight:600;min-width:50px;" data-f="d-elabel" data-i="${it.id}" data-area="${area.id}" data-sp="${spId}">${esc(it.label)}</span>
+          <span style="margin:0 4px;color:var(--text2);">：</span>
+          <span class="step-content editable" contenteditable="true" data-f="d-edesc" data-i="${it.id}" data-area="${area.id}" data-sp="${spId}">${esc(it.desc)}</span>
+          <button class="step-del" onclick="dDelAreaItem('${spId}','${area.id}','${it.id}')">✕</button>
+        </li>`).join('')}
+    </ul>
+    <button class="add-btn" style="margin-top:4px;" onclick="dAddAreaItem('${spId}','${area.id}')">+ 新增条目</button>
+  </div>`;
+}
+
+function renderDFlow(spId, fl) {
+  return `<div class="bound-item" style="margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(59,130,246,.15);background:rgba(59,130,246,.04);position:relative;">
+    <button class="step-del" onclick="dDelFlow('${spId}','${fl.id}')">✕</button>
+    <div style="font-weight:600;font-size:13px;color:var(--accent);">
+      操作：<span class="editable" contenteditable="true" data-f="d-faction" data-i="${fl.id}" data-sp="${spId}">${esc(fl.action)}</span>
+    </div>
+    <div style="font-size:13px;margin-top:3px;">触发条件：<span class="editable" contenteditable="true" data-f="d-ftrig" data-i="${fl.id}" data-sp="${spId}">${esc(fl.trigger)}</span></div>
+    <div style="font-size:13px;margin-top:2px;">系统校验：<span class="editable" contenteditable="true" data-f="d-fvalid" data-i="${fl.id}" data-sp="${spId}">${esc(fl.validation)}</span></div>
+    <div style="font-size:13px;margin-top:4px;font-weight:600;">UI 反馈：
+      <button class="add-inline-btn" onclick="dAddFlowStep('${spId}','${fl.id}')" style="margin-left:6px;">＋反馈</button>
+    </div>
+    <ul class="step-list" style="margin-top:2px;">
+      ${(fl.steps||[]).map((st,i)=>`
+        <li class="step-item"><span class="step-num">${i+1}.</span>
+          <span class="step-content editable" contenteditable="true" data-f="d-fstep" data-i="${st.id}" data-fl="${fl.id}" data-sp="${spId}">${esc(st.desc)}</span>
+          <button class="step-del" onclick="dDelFlowStep('${spId}','${fl.id}','${st.id}')">✕</button>
+        </li>`).join('')}
+    </ul>
+    ${(fl.exceptions||[]).length>0?`<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(248,113,113,.25);">
+      <div style="font-size:12px;font-weight:600;color:var(--orange);margin-bottom:4px;">⚠️ 异常分支
+        <button class="add-inline-btn" onclick="dAddFlowException('${spId}','${fl.id}')" style="margin-left:6px;">＋异常</button>
+      </div>
+      ${fl.exceptions.map(ex=>renderDException(spId,fl.id,ex)).join('')}
+    </div>`:`<div style="margin-top:6px;"><button class="add-inline-btn" onclick="dAddFlowException('${spId}','${fl.id}')">＋异常分支</button></div>`}
+  </div>`;
+}
+
+function renderDException(spId, flId, ex) {
+  return `<div style="margin:4px 0 4px 12px;padding:6px 24px 6px 8px;border-radius:4px;border:1px solid rgba(248,113,113,.2);background:rgba(248,113,113,.04);position:relative;">
+    <button class="step-del" onclick="dDelFlowException('${spId}','${flId}','${ex.id}')">✕</button>
+    <div style="font-weight:600;font-size:12px;color:var(--red);">
+      ⚠️ <span class="editable" contenteditable="true" data-f="d-exscn" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.scenario)}</span>
+    </div>
+    <div style="font-size:12px;margin-top:2px;">触发条件：<span class="editable" contenteditable="true" data-f="d-extrig" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.trigger)}</span></div>
+    <div style="font-size:12px;margin-top:1px;">防错设计：<span class="editable" contenteditable="true" data-f="d-exdef" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.defense)}</span></div>
+    <div style="font-size:12px;margin-top:1px;">流程反馈：<span class="editable" contenteditable="true" data-f="d-exrec" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.recovery)}</span></div>
+  </div>`;
+}
+
+function renderDBoundary(spId, b) {
+  return `<div class="bound-item" style="margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(248,113,113,.15);background:rgba(248,113,113,.04);position:relative;">
+    <button class="step-del" onclick="dDelBoundary('${spId}','${b.id}')">✕</button>
+    <div style="font-weight:600;font-size:13px;color:var(--red);">
+      <span class="editable" contenteditable="true" data-f="d-bscn" data-i="${b.id}" data-sp="${spId}">${esc(b.scenario)}</span>
+    </div>
+    <div style="font-size:13px;margin-top:3px;">触发条件：<span class="editable" contenteditable="true" data-f="d-btrig" data-i="${b.id}" data-sp="${spId}">${esc(b.trigger)}</span></div>
+    <div style="font-size:13px;margin-top:2px;">防错设计：<span class="editable" contenteditable="true" data-f="d-bdef" data-i="${b.id}" data-sp="${spId}">${esc(b.defense)}</span></div>
+    <div style="font-size:13px;margin-top:2px;">流程反馈：<span class="editable" contenteditable="true" data-f="d-brec" data-i="${b.id}" data-sp="${spId}">${esc(b.recovery)}</span></div>
+  </div>`;
+}
+
 // Mode D helpers
 function dFindSpec(id){return store.D.find(s=>s.id===id);}
 function dToggle(id){const s=dFindSpec(id);if(s)s.collapsed=!s.collapsed;renderAll();}
-function dAddSpec(){const nId=nid();store.D.push({id:nId,specName:'',collapsed:false,visible:[],interactions:[],boundaries:[]});save();renderAll();toast('已新增');focusEl(`[data-f="d-name"][data-i="${nId}"]`);}
+function dAddSpec(){const nId=nid();store.D.push({id:nId,specName:'',collapsed:false,elements:[],flows:[],boundaries:[]});save();renderAll();toast('已新增');focusEl(`[data-f="d-name"][data-i="${nId}"]`);}
 function dDelSpec(id){store.D=store.D.filter(s=>s.id!==id);save();renderAll();toast('已删除');}
-function dAddItem(spId,type){
-  const sp=dFindSpec(spId);if(!sp)return;
-  if(!sp[type])sp[type]=[];
-  let nId=nid();
-  if(type==='boundaries')sp[type].push({id:nId,type:'',trigger:'',feedback:'',recovery:''});
-  else sp[type].push({id:nId,text:''});
-  save();renderAll();toast('已新增');
-  const fMap={visible:'d-vis',interactions:'d-inter',boundaries:'d-btype'};
-  if(fMap[type])focusEl(`[data-f="${fMap[type]}"][data-i="${nId}"]`);
-}
-function dDelItem(spId,type,id){const sp=dFindSpec(spId);if(!sp)return;sp[type]=sp[type].filter(x=>x.id!==id);save();renderAll();toast('已删除');}
+// Elements (区域)
+function dAddArea(spId){const sp=dFindSpec(spId);if(!sp)return;if(!sp.elements)sp.elements=[];const nId=nid();sp.elements.push({id:nId,area:'',items:[{id:nid(),label:'',desc:''}]});save();renderAll();toast('已新增');focusEl(`[data-f="d-area"][data-i="${nId}"]`);}
+function dDelArea(spId,areaId){const sp=dFindSpec(spId);if(!sp)return;sp.elements=(sp.elements||[]).filter(x=>x.id!==areaId);save();renderAll();toast('已删除');}
+function dAddAreaItem(spId,areaId){const sp=dFindSpec(spId);if(!sp)return;const area=(sp.elements||[]).find(x=>x.id===areaId);if(!area)return;const nId=nid();if(!area.items)area.items=[];area.items.push({id:nId,label:'',desc:''});save();renderAll();toast('已新增');focusEl(`[data-f="d-elabel"][data-i="${nId}"]`);}
+function dDelAreaItem(spId,areaId,itemId){const sp=dFindSpec(spId);if(!sp)return;const area=(sp.elements||[]).find(x=>x.id===areaId);if(!area)return;area.items=(area.items||[]).filter(x=>x.id!==itemId);save();renderAll();toast('已删除');}
+// Flows (交互流)
+function dAddFlow(spId){const sp=dFindSpec(spId);if(!sp)return;if(!sp.flows)sp.flows=[];const nId=nid();sp.flows.push({id:nId,action:'',trigger:'',validation:'',steps:[{id:nid(),desc:''}],exceptions:[]});save();renderAll();toast('已新增');focusEl(`[data-f="d-faction"][data-i="${nId}"]`);}
+function dDelFlow(spId,flId){const sp=dFindSpec(spId);if(!sp)return;sp.flows=(sp.flows||[]).filter(x=>x.id!==flId);save();renderAll();toast('已删除');}
+function dAddFlowStep(spId,flId){const sp=dFindSpec(spId);if(!sp)return;const fl=(sp.flows||[]).find(x=>x.id===flId);if(!fl)return;const nId=nid();if(!fl.steps)fl.steps=[];fl.steps.push({id:nId,desc:''});save();renderAll();toast('已新增');focusEl(`[data-f="d-fstep"][data-i="${nId}"]`);}
+function dDelFlowStep(spId,flId,stId){const sp=dFindSpec(spId);if(!sp)return;const fl=(sp.flows||[]).find(x=>x.id===flId);if(!fl)return;fl.steps=(fl.steps||[]).filter(x=>x.id!==stId);save();renderAll();toast('已删除');}
+function dAddFlowException(spId,flId){const sp=dFindSpec(spId);if(!sp)return;const fl=(sp.flows||[]).find(x=>x.id===flId);if(!fl)return;const nId=nid();if(!fl.exceptions)fl.exceptions=[];fl.exceptions.push({id:nId,scenario:'',trigger:'',defense:'',recovery:''});save();renderAll();toast('已新增');focusEl(`[data-f="d-exscn"][data-i="${nId}"]`);}
+function dDelFlowException(spId,flId,exId){const sp=dFindSpec(spId);if(!sp)return;const fl=(sp.flows||[]).find(x=>x.id===flId);if(!fl)return;fl.exceptions=(fl.exceptions||[]).filter(x=>x.id!==exId);save();renderAll();toast('已删除');}
+// Boundaries (系统级边界)
+function dAddBoundary(spId){const sp=dFindSpec(spId);if(!sp)return;if(!sp.boundaries)sp.boundaries=[];const nId=nid();sp.boundaries.push({id:nId,scenario:'',trigger:'',defense:'',recovery:''});save();renderAll();toast('已新增');focusEl(`[data-f="d-bscn"][data-i="${nId}"]`);}
+function dDelBoundary(spId,bId){const sp=dFindSpec(spId);if(!sp)return;sp.boundaries=(sp.boundaries||[]).filter(x=>x.id!==bId);save();renderAll();toast('已删除');}
 
 // ============================================================
 // onBlur — unified edit handler for all modes
@@ -2480,14 +2571,27 @@ function onBlur(e) {
     const pg = cFindPage(ds.pg); const n = pg ? cFindNode(pg.nodes, ds.i) : null;
     if (n && n.label !== v) { n.label = v; ch = true; }
   }
-  // Mode D
+  // Mode D — specName
   else if (f === 'd-name') { const sp = dFindSpec(ds.i); if (sp && sp.specName !== v) { sp.specName = v; ch = true; } }
-  else if (f === 'd-vis') { const sp = dFindSpec(ds.sp); const it = sp?.visible.find(x => x.id === ds.i); if (it && it.text !== v) { it.text = v; ch = true; } }
-  else if (f === 'd-inter') { const sp = dFindSpec(ds.sp); const it = sp?.interactions?.find(x => x.id === ds.i); if (it && it.text !== v) { it.text = v; ch = true; } }
-  else if (f === 'd-btype') { const sp = dFindSpec(ds.sp); const b = sp?.boundaries.find(x => x.id === ds.i); if (b && b.type !== v) { b.type = v; ch = true; } }
-  else if (f === 'd-btrig') { const sp = dFindSpec(ds.sp); const b = sp?.boundaries.find(x => x.id === ds.i); if (b && b.trigger !== v) { b.trigger = v; ch = true; } }
-  else if (f === 'd-bfeed') { const sp = dFindSpec(ds.sp); const b = sp?.boundaries.find(x => x.id === ds.i); if (b && b.feedback !== v) { b.feedback = v; ch = true; } }
-  else if (f === 'd-brec') { const sp = dFindSpec(ds.sp); const b = sp?.boundaries.find(x => x.id === ds.i); if (b && b.recovery !== v) { b.recovery = v; ch = true; } }
+  // Mode D — Elements (区域)
+  else if (f === 'd-area') { const sp = dFindSpec(ds.sp); const area = (sp?.elements||[]).find(x => x.id === ds.i); if (area && area.area !== v) { area.area = v; ch = true; } }
+  else if (f === 'd-elabel') { const sp = dFindSpec(ds.sp); const area = (sp?.elements||[]).find(x => x.id === ds.area); const it = (area?.items||[]).find(x => x.id === ds.i); if (it && it.label !== v) { it.label = v; ch = true; } }
+  else if (f === 'd-edesc') { const sp = dFindSpec(ds.sp); const area = (sp?.elements||[]).find(x => x.id === ds.area); const it = (area?.items||[]).find(x => x.id === ds.i); if (it && it.desc !== v) { it.desc = v; ch = true; } }
+  // Mode D — Flows (交互流)
+  else if (f === 'd-faction') { const sp = dFindSpec(ds.sp); const fl = (sp?.flows||[]).find(x => x.id === ds.i); if (fl && fl.action !== v) { fl.action = v; ch = true; } }
+  else if (f === 'd-ftrig') { const sp = dFindSpec(ds.sp); const fl = (sp?.flows||[]).find(x => x.id === ds.i); if (fl && fl.trigger !== v) { fl.trigger = v; ch = true; } }
+  else if (f === 'd-fvalid') { const sp = dFindSpec(ds.sp); const fl = (sp?.flows||[]).find(x => x.id === ds.i); if (fl && fl.validation !== v) { fl.validation = v; ch = true; } }
+  else if (f === 'd-fstep') { const sp = dFindSpec(ds.sp); const fl = (sp?.flows||[]).find(x => x.id === ds.fl); const st = (fl?.steps||[]).find(x => x.id === ds.i); if (st && st.desc !== v) { st.desc = v; ch = true; } }
+  // Mode D — Flow Exceptions (操作级异常)
+  else if (f === 'd-exscn') { const sp = dFindSpec(ds.sp); const fl = (sp?.flows||[]).find(x => x.id === ds.fl); const ex = (fl?.exceptions||[]).find(x => x.id === ds.i); if (ex && ex.scenario !== v) { ex.scenario = v; ch = true; } }
+  else if (f === 'd-extrig') { const sp = dFindSpec(ds.sp); const fl = (sp?.flows||[]).find(x => x.id === ds.fl); const ex = (fl?.exceptions||[]).find(x => x.id === ds.i); if (ex && ex.trigger !== v) { ex.trigger = v; ch = true; } }
+  else if (f === 'd-exdef') { const sp = dFindSpec(ds.sp); const fl = (sp?.flows||[]).find(x => x.id === ds.fl); const ex = (fl?.exceptions||[]).find(x => x.id === ds.i); if (ex && ex.defense !== v) { ex.defense = v; ch = true; } }
+  else if (f === 'd-exrec') { const sp = dFindSpec(ds.sp); const fl = (sp?.flows||[]).find(x => x.id === ds.fl); const ex = (fl?.exceptions||[]).find(x => x.id === ds.i); if (ex && ex.recovery !== v) { ex.recovery = v; ch = true; } }
+  // Mode D — Boundaries (系统级边界)
+  else if (f === 'd-bscn') { const sp = dFindSpec(ds.sp); const b = (sp?.boundaries||[]).find(x => x.id === ds.i); if (b && b.scenario !== v) { b.scenario = v; ch = true; } }
+  else if (f === 'd-btrig') { const sp = dFindSpec(ds.sp); const b = (sp?.boundaries||[]).find(x => x.id === ds.i); if (b && b.trigger !== v) { b.trigger = v; ch = true; } }
+  else if (f === 'd-bdef') { const sp = dFindSpec(ds.sp); const b = (sp?.boundaries||[]).find(x => x.id === ds.i); if (b && b.defense !== v) { b.defense = v; ch = true; } }
+  else if (f === 'd-brec') { const sp = dFindSpec(ds.sp); const b = (sp?.boundaries||[]).find(x => x.id === ds.i); if (b && b.recovery !== v) { b.recovery = v; ch = true; } }
 
   if (ch) { save(); toast('已保存'); }
 }
@@ -2527,6 +2631,7 @@ function doImport() {
     if (hasContent.C) store.C = d.C;
     if (hasContent.D) store.D = d.D;
     ensureRefs(); // 兼容无 refs 字段的旧数据
+    migrateD(); // 兼容旧版 D 模块数据结构
     // 保存导入快照用于后续对比（仅记录实际导入的模式）
     if (hasContent.A) importSnapshot.A = JSON.parse(JSON.stringify(store.A));
     if (hasContent.B) importSnapshot.B = JSON.parse(JSON.stringify(store.B));
@@ -2584,12 +2689,32 @@ function exportMd() {
   // Mode D
   md += '\n---\n\n## D 交互稿\n';
   store.D.forEach(sp => {
-    md += `\n### 📱 ${sp.specName}\n#### 👁️ 可见层\n`;
-    sp.visible.forEach(v => { md += `* ${v.text}\n`; });
-    md += '#### 🔄 交互层\n';
-    sp.interactions.forEach((it, i) => { md += `${i + 1}. ${it.text}\n`; });
-    md += '#### ⚠️ 边界层\n';
-    sp.boundaries.forEach(b => { md += `* **${b.type}**：触发 — ${b.trigger}；反馈 — ${b.feedback}；恢复 — ${b.recovery}\n`; });
+    md += `\n### 📱 ${sp.specName}\n`;
+    md += '#### 🧩 元素状态与基础逻辑\n';
+    (sp.elements||[]).forEach(area => {
+      md += `\n**【${area.area}】**\n`;
+      (area.items||[]).forEach(it => { md += `* **${it.label}**：${it.desc}\n`; });
+    });
+    md += '\n#### 🖱️ 核心场景交互流\n';
+    (sp.flows||[]).forEach(fl => {
+      md += `\n**操作：${fl.action}**\n`;
+      if(fl.trigger) md += `* 触发条件：${fl.trigger}\n`;
+      if(fl.validation) md += `* 系统校验：${fl.validation}\n`;
+      if((fl.steps||[]).length) { md += '* UI 反馈：\n'; fl.steps.forEach((st,i) => { md += `  ${i+1}. ${st.desc}\n`; }); }
+      (fl.exceptions||[]).forEach(ex => {
+        md += `\n> ⚠️ **异常分支：${ex.scenario}**\n`;
+        md += `> * 触发条件：${ex.trigger}\n`;
+        md += `> * 防错设计：${ex.defense}\n`;
+        md += `> * 流程反馈：${ex.recovery}\n`;
+      });
+    });
+    md += '\n#### 🚧 系统级边界\n';
+    (sp.boundaries||[]).forEach(b => {
+      md += `\n**场景：${b.scenario}**\n`;
+      md += `* 触发条件：${b.trigger}\n`;
+      md += `* 防错设计：${b.defense}\n`;
+      md += `* 流程反馈：${b.recovery}\n`;
+    });
   });
   showExportModal('导出 Markdown', md, 'md');
 }
@@ -2918,6 +3043,7 @@ function applyShareData(data, label) {
   if (hasContent.C) store.C = data.C;
   if (hasContent.D) store.D = data.D;
   ensureRefs();
+  migrateD();
   if (hasContent.A) importSnapshot.A = JSON.parse(JSON.stringify(store.A));
   if (hasContent.B) importSnapshot.B = JSON.parse(JSON.stringify(store.B));
   if (hasContent.C) importSnapshot.C = JSON.parse(JSON.stringify(store.C));
@@ -3003,6 +3129,8 @@ try {
 
 // 确保 refs 字段存在 + 构建反向索引
 ensureRefs();
+// 迁移旧版 D 模块数据到新结构
+migrateD();
 
 save();
 renderAll();

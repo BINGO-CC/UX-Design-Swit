@@ -1,6 +1,6 @@
 # UX 设计交互编辑器 — 项目续接文档
 
-> **文档版本**：v3.5.8（2026-03-27 更新）
+> **文档版本**：v4.0.0（2026-03-28 更新）
 > **用途**：在新对话中快速恢复项目上下文，确保迭代连续性
 
 ---
@@ -18,7 +18,7 @@
 
 | 文件路径 | 说明 | 状态 |
 |---------|------|------|
-| `f:\codemake\ux-design-editor.html` | 统一交互编辑器（主文件） | ✅ 已完成 v3.4 |
+| `f:\codemake\ux-design-editor.html` | 统一交互编辑器（主文件） | ✅ 已完成 v4.0 |
 | `f:\codemake\.codemaker\skills\ux-design.md` | UX设计 Skill 指令 | ✅ 已更新（含JSON输出） |
 | `f:\codemake\PROJECT_RESUME.md` | 本文档 | ✅ 当前文件 |
 | `f:\codemake\behavior-path-editor.html` | 早期原型（仅模式B） | 🔒 已废弃 |
@@ -41,7 +41,7 @@ let store = {
   },
   B: [{ id, title, startPoint, refs: { A: [...] }, stages: [...] }],  // keyPoint 已移除
   C: [{ id, pageName, nodes: [{ id, icon, label, note, children: [...] }] }],
-  D: [{ id, specName, refs: { B: [...], C: [...] }, visible: [...], interactions: [...], boundaries: [...] }]
+  D: [{ id, specName, refs: { B: [...], C: [...] }, elements: [...], flows: [...], boundaries: [...] }]
 };
 
 // 批注存储（独立于主数据）
@@ -386,21 +386,36 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 }
 ```
 
-### 模式D（交互稿 · 静态规格层）
+### 模式D（交互稿 · 终极交付物）
 ```json
 {
   "D": [{
-    "id": "n4001", "specName": "交互说明名称（对应模块名）", "collapsed": false,
+    "id": "n4001", "specName": "交互说明名称", "collapsed": false,
     "refs": { "B": ["n2001"], "C": ["n3001"] },
-    "visible": [{ "id": "n4002", "text": "界面规格条目（布局 / 元素状态枚举 / 数据规则）" }],
+    "elements": [{
+      "id": "n4002", "area": "区域名称",
+      "items": [
+        { "id": "n4003", "label": "展示内容", "desc": "具体字段、控件类型描述" },
+        { "id": "n4004", "label": "规则分类名", "desc": "底层硬性限制描述" }
+      ]
+    }],
+    "flows": [{
+      "id": "n4010", "action": "操作名称",
+      "trigger": "玩家物理动作", "validation": "系统校验逻辑",
+      "steps": [{ "id": "n4011", "desc": "UI反馈描述" }],
+      "exceptions": [{
+        "id": "n4013", "scenario": "操作级异常场景名",
+        "trigger": "触发条件", "defense": "防错设计", "recovery": "流程反馈"
+      }]
+    }],
     "boundaries": [{
-      "id": "n4003", "type": "系统侧被动异常类型（如：接口超时 / 数据为空 / 配置缺失）",
-      "trigger": "系统侧触发条件（非用户操作）", "feedback": "降级展示 / Toast / 骨架屏", "recovery": "重试 / 兜底文案 / 客服介入"
+      "id": "n4020", "scenario": "系统级异常场景名",
+      "trigger": "系统侧触发条件", "defense": "防错设计", "recovery": "流程反馈"
     }]
   }]
 }
 ```
-> ✅ 模式 D 现包含三层：`visible[]`（界面规格）+ `interactions[]`（交互层）+ `boundaries[]`（系统边界），与 SKILLS JSON 输出完全对应。
+> ✅ 模式 D v4.0 重构为三层：`elements[]`（元素状态与基础逻辑，按区域分组）+ `flows[]`（核心场景交互流，含内嵌操作级异常 `exceptions[]`）+ `boundaries[]`（系统级边界），与 SKILLS JSON 输出完全对应。B→D 关系从"平行映射"升级为"吸收与升华"。
 
 ---
 
@@ -432,3 +447,4 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 | v3.5.6 | 2026-03-27 | 复制输出新增 `stripEmoji()` 过滤所有 emoji；修复 `bCopyStageToClipboard` 中"阶段"标题重复；`cCopyPage` 节点 icon 不再导出 emoji 改为统一 `├─` |
 | v3.5.7 | 2026-03-27 | 复制输出支持富文本格式：`copyRichText()` 同时写入 `text/html`（标题 `<strong>` 加粗）+ `text/plain`（纯文本降级），兼容 Word/Google Docs/Notion/飞书；旧浏览器自动降级 `_copyPlainFallback()` |
 | v3.5.8 | 2026-03-27 | 修复复制输出前缀重复问题：新增 `safePrefix()` 工具函数，检测字段内容是否已包含前缀避免重复拼接；分支标签改用 `↳` 前缀替代 `分支：`；`bCopyPath`/`bCopyStageToClipboard`/`dCopySpec` 中起点/阶段/触发/反馈/恢复字段全部走 safePrefix |
+| v4.0.0 | 2026-03-28 | **模式D架构重构**：①Skill更新——D定位为终极交付物(SSoT)，B→D关系从"平行映射"升级为"吸收与升华"；新增四条生成法则（名词具象化/动词物理化/黑箱透明化/防御性设计）+输出粒度规则（多项目通用）②数据结构重构——`visible[]`→`elements[]`（按区域分组，含area+items[{label,desc}]）、`interactions[]`→`flows[]`（含action/trigger/validation/steps[]+内嵌exceptions[]）、`boundaries[]`字段名升级（type→scenario, feedback→defense）③编辑器UI全面适配——三个区块独立渲染子组件（renderDArea/renderDFlow/renderDException/renderDBoundary）④旧数据自动迁移函数`migrateD()`⑤复制/导出Markdown同步更新 |
