@@ -94,7 +94,7 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 .step-item{display:flex;align-items:flex-start;gap:7px;padding:2px 0;}
 .step-item .step-num{color:var(--text2);font-size:13px;min-width:18px;text-align:right;padding-top:1px;}
 .step-item .step-drag{cursor:grab;color:var(--text2);font-size:11px;padding-top:3px;user-select:none;}
-.step-item .step-content{flex:1;}
+.step-item .step-content{flex:1;font-size:13px;}
 .step-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:2px 5px;opacity:0;transition:opacity .15s;line-height:1;}
 .step-del:hover{opacity:.7;}
 .step-item:hover .step-del{opacity:1;}
@@ -139,14 +139,13 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 
 /* Spec section (Mode D) */
 .spec-section{margin-top:14px;border-radius:6px;overflow:hidden;}
-.spec-section-header{padding:10px 14px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;}
+.spec-section-header{padding:10px 14px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:7px;user-select:none;}
 .spec-section-header.visible{background:rgba(108,140,255,.12);color:var(--accent);border:1px solid rgba(108,140,255,.2);border-radius:6px 6px 0 0;}
 .spec-section-header.interact{background:rgba(52,211,153,.12);color:var(--green);border:1px solid rgba(52,211,153,.2);border-radius:6px 6px 0 0;}
 .spec-section-header.boundary{background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.2);border-radius:6px 6px 0 0;}
 .spec-section.collapsed .spec-section-header{border-radius:6px;}
 .spec-section.collapsed .spec-section-body{display:none;}
-.spec-section-header .sec-toggle-btn{background:none;border:none;cursor:pointer;font-size:11px;padding:2px 5px;color:inherit;transition:transform .15s;display:inline-block;}
-.spec-section.collapsed .sec-toggle-btn{transform:rotate(-90deg);}
+.spec-section-header .sec-toggle-btn{background:none;border:none;cursor:pointer;font-size:11px;padding:2px 5px;color:inherit;display:inline-block;}
 .spec-section-header .sec-actions{margin-left:auto;display:flex;align-items:center;gap:4px;flex-shrink:0;}
 .spec-section-header .sec-copy-btn{background:none;border:none;color:inherit;cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;opacity:.65;transition:opacity .15s;}
 .spec-section-header .sec-copy-btn:hover{opacity:1;}
@@ -1661,8 +1660,7 @@ function dCopyBoundaries(spId) {
   copyRichText(L);
 }
 
-function dToggleSec(spId, key, evt) {
-  if(evt&&(evt.target.closest('.add-inline-btn')||evt.target.closest('.sec-copy-btn'))&&!evt.target.closest('.sec-toggle-btn'))return;
+function dToggleSec(spId, key) {
   const sp=dFindSpec(spId);if(!sp)return;
   sp[key]=!sp[key];
   renderAll();
@@ -2477,12 +2475,12 @@ function renderD() {
       <div class="card-body ${spec.collapsed?'collapsed':''}">
         <!-- 🧩 元素状态与基础逻辑 -->
         <div class="spec-section ${spec._colElem?'collapsed':''}">
-          <div class="spec-section-header visible" onclick="dToggleSec('${spec.id}','_colElem',event)">
+          <div class="spec-section-header visible">
             <span>🧩 元素状态与基础逻辑（页面内容 / 控件 / 规则约束）</span>
             <span class="sec-actions">
-              <button class="add-inline-btn" onclick="dAddArea('${spec.id}');event.stopPropagation();">＋区域</button>
-              <button class="sec-copy-btn" onclick="dCopyElements('${spec.id}');event.stopPropagation();" title="复制元素内容">⎘</button>
-              <button class="sec-toggle-btn" onclick="dToggleSec('${spec.id}','_colElem',event)" title="收起/展开">${spec._colElem?'▶':'▼'}</button>
+              <button class="add-inline-btn" onclick="dAddArea('${spec.id}')">＋区域</button>
+              <button class="sec-copy-btn" onclick="dCopyElements('${spec.id}')" title="复制元素内容">⎘</button>
+              <button class="sec-toggle-btn" onclick="dToggleSec('${spec.id}','_colElem')" title="收起/展开">${spec._colElem?'▶':'▼'}</button>
             </span>
           </div>
           <div class="spec-section-body">
@@ -2491,12 +2489,12 @@ function renderD() {
         </div>
         <!-- 🖱️ 核心场景交互流 -->
         <div class="spec-section ${spec._colFlow?'collapsed':''}">
-          <div class="spec-section-header interact" onclick="dToggleSec('${spec.id}','_colFlow',event)">
+          <div class="spec-section-header interact">
             <span>🖱️ 核心场景交互流（操作 → 校验 → 反馈 → 异常分支）</span>
             <span class="sec-actions">
-              <button class="add-inline-btn" onclick="dAddFlow('${spec.id}');event.stopPropagation();">＋操作</button>
-              <button class="sec-copy-btn" onclick="dCopyFlows('${spec.id}');event.stopPropagation();" title="复制交互流内容">⎘</button>
-              <button class="sec-toggle-btn" onclick="dToggleSec('${spec.id}','_colFlow',event)" title="收起/展开">${spec._colFlow?'▶':'▼'}</button>
+              <button class="add-inline-btn" onclick="dAddFlow('${spec.id}')">＋操作</button>
+              <button class="sec-copy-btn" onclick="dCopyFlows('${spec.id}')" title="复制交互流内容">⎘</button>
+              <button class="sec-toggle-btn" onclick="dToggleSec('${spec.id}','_colFlow')" title="收起/展开">${spec._colFlow?'▶':'▼'}</button>
             </span>
           </div>
           <div class="spec-section-body">
@@ -2505,12 +2503,12 @@ function renderD() {
         </div>
         <!-- 🚧 系统级边界 -->
         <div class="spec-section ${spec._colBound?'collapsed':''}">
-          <div class="spec-section-header boundary" onclick="dToggleSec('${spec.id}','_colBound',event)">
+          <div class="spec-section-header boundary">
             <span>🚧 系统级边界（全局异常 / 配置缺失 / 网络断连）</span>
             <span class="sec-actions">
-              <button class="add-inline-btn" onclick="dAddBoundary('${spec.id}');event.stopPropagation();">＋边界</button>
-              <button class="sec-copy-btn" onclick="dCopyBoundaries('${spec.id}');event.stopPropagation();" title="复制边界内容">⎘</button>
-              <button class="sec-toggle-btn" onclick="dToggleSec('${spec.id}','_colBound',event)" title="收起/展开">${spec._colBound?'▶':'▼'}</button>
+              <button class="add-inline-btn" onclick="dAddBoundary('${spec.id}')">＋边界</button>
+              <button class="sec-copy-btn" onclick="dCopyBoundaries('${spec.id}')" title="复制边界内容">⎘</button>
+              <button class="sec-toggle-btn" onclick="dToggleSec('${spec.id}','_colBound')" title="收起/展开">${spec._colBound?'▶':'▼'}</button>
             </span>
           </div>
           <div class="spec-section-body">
