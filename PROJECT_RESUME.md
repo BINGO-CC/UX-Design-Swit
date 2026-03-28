@@ -1,6 +1,6 @@
 # UX 设计交互编辑器 — 项目续接文档
 
-> **文档版本**：v3.4.0（2026-03-27 更新）
+> **文档版本**：v3.5.8（2026-03-27 更新）
 > **用途**：在新对话中快速恢复项目上下文，确保迭代连续性
 
 ---
@@ -83,6 +83,12 @@ const ANNO_STORAGE_KEY = 'ux_design_editor_annotations';
 | **UI** | 存储状态指示 | 工具栏绿色圆点 |
 | **UI** | 空状态引导 | 📭 图标 + 可点击导入链接 |
 | **UI** | Toast 提示（顶部居中） | `toast()` 函数 |
+| **复制** | ⎘ 复制模块内容到剪贴板（A/B/C/D各模式） | `copyRichText()` 富文本+纯文本双格式 |
+| **复制** | 标题自动加粗（粘贴至富文本编辑器） | `ClipboardItem` + `text/html` `<strong>` |
+| **复制** | 输出过滤 emoji + 防前缀重复 | `stripEmoji()` + `safePrefix()` |
+| **UI** | 全局新增按钮仅显示 ＋ 图标 | CSS `font-size:0` + `::before` |
+| **UI** | 删除按钮全局统一红色无底样式 | `.step-del` 全局基础 + 各父容器 hover 显隐 |
+| **UI** | 反馈与边界浮层黄色配色系 | `.fb-popover-btn` / `.fb-popover` / `.fb-stage-tab` |
 
 ### 2.3 代码结构（ux-design-editor.html）
 
@@ -419,3 +425,10 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 | v3.3.0 | 2026-03-27 | SKILLS对齐迭代：模式B删除 keyPoint 字段渲染；模式D恢复交互层（interactions[]）渲染区块；ux-design-rules.md 删除规则四；Skill Markdown模板同步更新 |
 | v3.4.0 | 2026-03-27 | 全局UI重构：删除按钮移至 actions 区域（收起左侧）；添加按钮移至标题右侧（inline 样式）；所有新增操作点击后自动聚焦；B阶段拖拽支持跨路径；B阶段新增复制按钮(⎘)；反馈与边界条件改为浮层形式（fb-popover），支持阶段切换Tab；去除箭头字符元素 |
 | v3.5.0 | 2026-03-27 | A.删除按钮全局统一红色+统一尺寸（step-del/del-btn/branch-header/node-actions）；B.复制(⎘)功能改为"复制模块内容到剪贴板"（纯文本，区分标题与正文），A/B/C/D各模块均支持；C1.新增操作后输入框内容清空（不再显示"请填写"等默认文本）；C2.模式D添加按钮从父级移至对应区块标题右侧（界面规格/交互层/系统边界各自 inline btn），删除原底部 add-btn；D.反馈与边界浮层固定高度（75vh），内容区自动换行不裁切 |
+| v3.5.1 | 2026-03-27 | 反馈与边界按钮及浮层配色改为黄色系（`.fb-popover-btn`/`.fb-popover`边框/标题/`.fb-stage-tab` active 态） |
+| v3.5.3 | 2026-03-27 | 条目级删除按钮样式全局统一（`.step-del` 基础样式提升至全局选择器，各父容器仅控制 opacity 显隐）；模式A「＋功能」「＋建议」按钮从父级 actions 移至对应区块标题右侧（包含功能/UX补充建议各自 inline btn），删除原底部 add-btn；`.sug-item`/`.bound-item` 预留 padding-right 防止按钮遮挡文本；浮层宽度 560→760px；阶段 Tab 区支持鼠标滚轮横滑（`wheel` 事件绑定）；浮层内分支标题删除按钮统一为 `.step-del` + `.branch-header:hover` 显隐 |
+| v3.5.4 | 2026-03-27 | 全局新增按钮（`add-inline-btn`/`add-btn`）仅显示 ＋ 图标，隐藏文字（CSS `font-size:0` + `::before` 伪元素） |
+| v3.5.5 | 2026-03-27 | `.step-del` 基础样式（background:none/border:none/color:red/opacity:0）提升至全局，`.step-item`/`.sug-item`/`.bound-item`/`.branch-header`/`.branch-item` 各自仅控制 hover opacity:1 |
+| v3.5.6 | 2026-03-27 | 复制输出新增 `stripEmoji()` 过滤所有 emoji；修复 `bCopyStageToClipboard` 中"阶段"标题重复；`cCopyPage` 节点 icon 不再导出 emoji 改为统一 `├─` |
+| v3.5.7 | 2026-03-27 | 复制输出支持富文本格式：`copyRichText()` 同时写入 `text/html`（标题 `<strong>` 加粗）+ `text/plain`（纯文本降级），兼容 Word/Google Docs/Notion/飞书；旧浏览器自动降级 `_copyPlainFallback()` |
+| v3.5.8 | 2026-03-27 | 修复复制输出前缀重复问题：新增 `safePrefix()` 工具函数，检测字段内容是否已包含前缀避免重复拼接；分支标签改用 `↳` 前缀替代 `分支：`；`bCopyPath`/`bCopyStageToClipboard`/`dCopySpec` 中起点/阶段/触发/反馈/恢复字段全部走 safePrefix |
