@@ -1,6 +1,6 @@
 # UX 设计交互编辑器 — 项目续接文档
 
-> **文档版本**：v4.0.0（2026-03-28 更新）
+> **文档版本**：v4.1.0（2026-03-28 更新）
 > **用途**：在新对话中快速恢复项目上下文，确保迭代连续性
 
 ---
@@ -448,3 +448,4 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 | v3.5.7 | 2026-03-27 | 复制输出支持富文本格式：`copyRichText()` 同时写入 `text/html`（标题 `<strong>` 加粗）+ `text/plain`（纯文本降级），兼容 Word/Google Docs/Notion/飞书；旧浏览器自动降级 `_copyPlainFallback()` |
 | v3.5.8 | 2026-03-27 | 修复复制输出前缀重复问题：新增 `safePrefix()` 工具函数，检测字段内容是否已包含前缀避免重复拼接；分支标签改用 `↳` 前缀替代 `分支：`；`bCopyPath`/`bCopyStageToClipboard`/`dCopySpec` 中起点/阶段/触发/反馈/恢复字段全部走 safePrefix |
 | v4.0.0 | 2026-03-28 | **模式D架构重构**：①Skill更新——D定位为终极交付物(SSoT)，B→D关系从"平行映射"升级为"吸收与升华"；新增四条生成法则（名词具象化/动词物理化/黑箱透明化/防御性设计）+输出粒度规则（多项目通用）②数据结构重构——`visible[]`→`elements[]`（按区域分组，含area+items[{label,desc}]）、`interactions[]`→`flows[]`（含action/trigger/validation/steps[]+内嵌exceptions[]）、`boundaries[]`字段名升级（type→scenario, feedback→defense）③编辑器UI全面适配——三个区块独立渲染子组件（renderDArea/renderDFlow/renderDException/renderDBoundary）④旧数据自动迁移函数`migrateD()`⑤复制/导出Markdown同步更新 |
+| v4.1.0 | 2026-03-28 | **模式D交互优化**：①三大区块（元素/交互流/边界）支持独立折叠收起（`dToggleSec()`+`_colElem`/`_colFlow`/`_colBound` 运行时状态）②三大区块标题栏新增 ⎘ 复制按钮（`dCopyElements`/`dCopyFlows`/`dCopyBoundaries`）③交互流中每个操作卡片新增 ⎘ 复制按钮（`dCopyFlow`）④模块D内所有新增按钮统一右对齐（`justify-content:flex-end`/`sec-actions margin-left:auto`） |

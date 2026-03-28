@@ -139,10 +139,17 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 
 /* Spec section (Mode D) */
 .spec-section{margin-top:14px;border-radius:6px;overflow:hidden;}
-.spec-section-header{padding:10px 14px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:7px;cursor:pointer;}
+.spec-section-header{padding:10px 14px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;}
 .spec-section-header.visible{background:rgba(108,140,255,.12);color:var(--accent);border:1px solid rgba(108,140,255,.2);border-radius:6px 6px 0 0;}
 .spec-section-header.interact{background:rgba(52,211,153,.12);color:var(--green);border:1px solid rgba(52,211,153,.2);border-radius:6px 6px 0 0;}
 .spec-section-header.boundary{background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.2);border-radius:6px 6px 0 0;}
+.spec-section.collapsed .spec-section-header{border-radius:6px;}
+.spec-section.collapsed .spec-section-body{display:none;}
+.spec-section-header .sec-toggle{margin-right:2px;font-size:11px;transition:transform .15s;display:inline-block;}
+.spec-section.collapsed .sec-toggle{transform:rotate(-90deg);}
+.spec-section-header .sec-actions{margin-left:auto;display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.spec-section-header .sec-copy-btn{background:none;border:none;color:inherit;cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;opacity:.65;transition:opacity .15s;}
+.spec-section-header .sec-copy-btn:hover{opacity:1;}
 .spec-section-body{padding:10px 14px;border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;background:var(--surface);}
 
 /* Module card (Mode A) */
@@ -1586,6 +1593,81 @@ function dCopySpec(spId) {
   copyRichText(L);
 }
 
+function dCopyElements(spId) {
+  const sp=dFindSpec(spId);if(!sp)return;
+  const L=[];
+  L.push({text:'🧩 元素状态与基础逻辑',bold:true});
+  L.push({text:''});
+  (sp.elements||[]).forEach(el=>{
+    L.push({text:`【${stripEmoji(el.area)}】`,bold:true,indent:'  '});
+    (el.items||[]).forEach(it=>L.push({text:`• ${stripEmoji(it.label)}：${stripEmoji(it.desc)}`,indent:'    '}));
+  });
+  copyRichText(L);
+}
+
+function dCopyFlows(spId) {
+  const sp=dFindSpec(spId);if(!sp)return;
+  const L=[];
+  L.push({text:'🖱️ 核心场景交互流',bold:true});
+  L.push({text:''});
+  (sp.flows||[]).forEach(fl=>{
+    L.push({text:`操作：${stripEmoji(fl.action)}`,bold:true,indent:'  '});
+    if(fl.trigger)L.push({text:safePrefix('触发条件：',fl.trigger),indent:'    '});
+    if(fl.validation)L.push({text:safePrefix('系统校验：',fl.validation),indent:'    '});
+    (fl.steps||[]).forEach((st,i)=>L.push({text:`${i+1}. ${stripEmoji(st.desc)}`,indent:'    '}));
+    (fl.exceptions||[]).forEach(ex=>{
+      L.push({text:`⚠️ 异常分支：${stripEmoji(ex.scenario)}`,bold:true,indent:'    '});
+      L.push({text:safePrefix('触发条件：',ex.trigger),indent:'      '});
+      L.push({text:safePrefix('防错设计：',ex.defense),indent:'      '});
+      L.push({text:safePrefix('流程反馈：',ex.recovery),indent:'      '});
+    });
+  });
+  copyRichText(L);
+}
+
+function dCopyFlow(spId, flId) {
+  const sp=dFindSpec(spId);if(!sp)return;
+  const fl=(sp.flows||[]).find(x=>x.id===flId);if(!fl)return;
+  const L=[];
+  L.push({text:`操作：${stripEmoji(fl.action)}`,bold:true});
+  if(fl.trigger)L.push({text:safePrefix('触发条件：',fl.trigger)});
+  if(fl.validation)L.push({text:safePrefix('系统校验：',fl.validation)});
+  L.push({text:''});
+  L.push({text:'UI 反馈：',bold:true});
+  (fl.steps||[]).forEach((st,i)=>L.push({text:`${i+1}. ${stripEmoji(st.desc)}`,indent:'  '}));
+  if((fl.exceptions||[]).length>0){
+    L.push({text:''});
+    (fl.exceptions||[]).forEach(ex=>{
+      L.push({text:`⚠️ 异常分支：${stripEmoji(ex.scenario)}`,bold:true});
+      L.push({text:safePrefix('触发条件：',ex.trigger),indent:'  '});
+      L.push({text:safePrefix('防错设计：',ex.defense),indent:'  '});
+      L.push({text:safePrefix('流程反馈：',ex.recovery),indent:'  '});
+    });
+  }
+  copyRichText(L);
+}
+
+function dCopyBoundaries(spId) {
+  const sp=dFindSpec(spId);if(!sp)return;
+  const L=[];
+  L.push({text:'🚧 系统级边界',bold:true});
+  L.push({text:''});
+  (sp.boundaries||[]).forEach(b=>{
+    L.push({text:`【${stripEmoji(b.scenario)}】`,bold:true,indent:'  '});
+    L.push({text:safePrefix('触发条件：',b.trigger),indent:'    '});
+    L.push({text:safePrefix('防错设计：',b.defense),indent:'    '});
+    L.push({text:safePrefix('流程反馈：',b.recovery),indent:'    '});
+  });
+  copyRichText(L);
+}
+
+function dToggleSec(spId, key, evt) {
+  if(evt&&(evt.target.closest('.add-inline-btn')||evt.target.closest('.sec-copy-btn')))return;
+  const sp=dFindSpec(spId);if(!sp)return;
+  sp[key]=!sp[key];
+  renderAll();
+}
+
 // ============================================================
 // MODE B: 行为路径
 // ============================================================
@@ -2394,30 +2476,42 @@ function renderD() {
       </div>
       <div class="card-body ${spec.collapsed?'collapsed':''}">
         <!-- 🧩 元素状态与基础逻辑 -->
-        <div class="spec-section">
-          <div class="spec-section-header visible" style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="spec-section ${spec._colElem?'collapsed':''}">
+          <div class="spec-section-header visible" onclick="dToggleSec('${spec.id}','_colElem',event)">
+            <span class="sec-toggle">▼</span>
             <span>🧩 元素状态与基础逻辑（页面内容 / 控件 / 规则约束）</span>
-            <button class="add-inline-btn" onclick="dAddArea('${spec.id}')">＋区域</button>
+            <span class="sec-actions">
+              <button class="sec-copy-btn" onclick="dCopyElements('${spec.id}');event.stopPropagation();" title="复制元素内容">⎘</button>
+              <button class="add-inline-btn" onclick="dAddArea('${spec.id}');event.stopPropagation();">＋区域</button>
+            </span>
           </div>
           <div class="spec-section-body">
             ${(spec.elements||[]).map(area=>renderDArea(spec.id,area)).join('')}
           </div>
         </div>
         <!-- 🖱️ 核心场景交互流 -->
-        <div class="spec-section">
-          <div class="spec-section-header interact" style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="spec-section ${spec._colFlow?'collapsed':''}">
+          <div class="spec-section-header interact" onclick="dToggleSec('${spec.id}','_colFlow',event)">
+            <span class="sec-toggle">▼</span>
             <span>🖱️ 核心场景交互流（操作 → 校验 → 反馈 → 异常分支）</span>
-            <button class="add-inline-btn" onclick="dAddFlow('${spec.id}')">＋操作</button>
+            <span class="sec-actions">
+              <button class="sec-copy-btn" onclick="dCopyFlows('${spec.id}');event.stopPropagation();" title="复制交互流内容">⎘</button>
+              <button class="add-inline-btn" onclick="dAddFlow('${spec.id}');event.stopPropagation();">＋操作</button>
+            </span>
           </div>
           <div class="spec-section-body">
             ${(spec.flows||[]).map(fl=>renderDFlow(spec.id,fl)).join('')}
           </div>
         </div>
         <!-- 🚧 系统级边界 -->
-        <div class="spec-section">
-          <div class="spec-section-header boundary" style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="spec-section ${spec._colBound?'collapsed':''}">
+          <div class="spec-section-header boundary" onclick="dToggleSec('${spec.id}','_colBound',event)">
+            <span class="sec-toggle">▼</span>
             <span>🚧 系统级边界（全局异常 / 配置缺失 / 网络断连）</span>
-            <button class="add-inline-btn" onclick="dAddBoundary('${spec.id}')">＋边界</button>
+            <span class="sec-actions">
+              <button class="sec-copy-btn" onclick="dCopyBoundaries('${spec.id}');event.stopPropagation();" title="复制边界内容">⎘</button>
+              <button class="add-inline-btn" onclick="dAddBoundary('${spec.id}');event.stopPropagation();">＋边界</button>
+            </span>
           </div>
           <div class="spec-section-body">
             ${(spec.boundaries||[]).map(b=>renderDBoundary(spec.id,b)).join('')}
@@ -2444,20 +2538,22 @@ function renderDArea(spId, area) {
           <button class="step-del" onclick="dDelAreaItem('${spId}','${area.id}','${it.id}')">✕</button>
         </li>`).join('')}
     </ul>
-    <button class="add-btn" style="margin-top:4px;" onclick="dAddAreaItem('${spId}','${area.id}')">+ 新增条目</button>
+    <div style="display:flex;justify-content:flex-end;margin-top:4px;"><button class="add-inline-btn" onclick="dAddAreaItem('${spId}','${area.id}')">＋条目</button></div>
   </div>`;
 }
 
 function renderDFlow(spId, fl) {
   return `<div class="bound-item" style="margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(59,130,246,.15);background:rgba(59,130,246,.04);position:relative;">
     <button class="step-del" onclick="dDelFlow('${spId}','${fl.id}')">✕</button>
-    <div style="font-weight:600;font-size:13px;color:var(--accent);">
-      操作：<span class="editable" contenteditable="true" data-f="d-faction" data-i="${fl.id}" data-sp="${spId}">${esc(fl.action)}</span>
+    <div style="font-weight:600;font-size:13px;color:var(--accent);display:flex;align-items:center;">
+      <span>操作：<span class="editable" contenteditable="true" data-f="d-faction" data-i="${fl.id}" data-sp="${spId}">${esc(fl.action)}</span></span>
+      <button onclick="dCopyFlow('${spId}','${fl.id}')" title="复制该操作内容" style="margin-left:auto;background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;flex-shrink:0;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">⎘</button>
     </div>
     <div style="font-size:13px;margin-top:3px;">触发条件：<span class="editable" contenteditable="true" data-f="d-ftrig" data-i="${fl.id}" data-sp="${spId}">${esc(fl.trigger)}</span></div>
     <div style="font-size:13px;margin-top:2px;">系统校验：<span class="editable" contenteditable="true" data-f="d-fvalid" data-i="${fl.id}" data-sp="${spId}">${esc(fl.validation)}</span></div>
-    <div style="font-size:13px;margin-top:4px;font-weight:600;">UI 反馈：
-      <button class="add-inline-btn" onclick="dAddFlowStep('${spId}','${fl.id}')" style="margin-left:6px;">＋反馈</button>
+    <div style="font-size:13px;margin-top:4px;font-weight:600;display:flex;align-items:center;justify-content:space-between;">
+      <span>UI 反馈：</span>
+      <button class="add-inline-btn" onclick="dAddFlowStep('${spId}','${fl.id}')">＋反馈</button>
     </div>
     <ul class="step-list" style="margin-top:2px;">
       ${(fl.steps||[]).map((st,i)=>`
@@ -2467,11 +2563,12 @@ function renderDFlow(spId, fl) {
         </li>`).join('')}
     </ul>
     ${(fl.exceptions||[]).length>0?`<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(248,113,113,.25);">
-      <div style="font-size:12px;font-weight:600;color:var(--orange);margin-bottom:4px;">⚠️ 异常分支
-        <button class="add-inline-btn" onclick="dAddFlowException('${spId}','${fl.id}')" style="margin-left:6px;">＋异常</button>
+      <div style="font-size:12px;font-weight:600;color:var(--orange);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;">
+        <span>⚠️ 异常分支</span>
+        <button class="add-inline-btn" onclick="dAddFlowException('${spId}','${fl.id}')">＋异常</button>
       </div>
       ${fl.exceptions.map(ex=>renderDException(spId,fl.id,ex)).join('')}
-    </div>`:`<div style="margin-top:6px;"><button class="add-inline-btn" onclick="dAddFlowException('${spId}','${fl.id}')">＋异常分支</button></div>`}
+    </div>`:`<div style="margin-top:6px;display:flex;justify-content:flex-end;"><button class="add-inline-btn" onclick="dAddFlowException('${spId}','${fl.id}')">＋异常分支</button></div>`}
   </div>`;
 }
 
