@@ -236,11 +236,10 @@ body{
 .stage-header button:hover{background:var(--surface3);color:var(--text);}
 
 /* ── Action/Feedback blocks ── */
-/* action-block 与 Mode D 交互稿操作流(flow-block)使用相同背景色 Token */
 --action-bg: rgba(95,127,255,0.05);
 --action-border: rgba(95,127,255,0.15);
 .action-block,.feedback-block{margin:6px 0;padding:8px 11px;border-radius:var(--radius-sm);font-size:13px;}
-.action-block{background:rgba(95,127,255,0.05);border:1px solid rgba(95,127,255,0.15);}
+.action-block{background:var(--accent-dim);border:1px solid rgba(95,127,255,0.15);}
 .feedback-block{background:var(--green-dim);border:1px solid rgba(76,175,137,0.18);}
 .block-label{font-size:10px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px;letter-spacing:0.05em;text-transform:uppercase;}
 .action-block .block-label{color:var(--accent);}
@@ -336,7 +335,7 @@ body{
 .add-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
 
 /* ── Annotation ── */
-.anno{display:inline-flex;align-items:center;gap:3px;background:var(--yellow-dim);border:1px solid rgba(201,150,58,0.3);border-radius:var(--radius-xs);padding:1px 7px;font-size:11px;color:var(--yellow);margin-left:6px;cursor:pointer;}
+.anno{display:inline-flex;align-items:center;gap:3px;background:var(--yellow-dim);border:1px solid rgba(201,150,58,0.28);border-radius:var(--radius-xs);padding:1px 7px;font-size:11px;color:var(--yellow);margin-left:6px;cursor:pointer;}
 .anno-btn{background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;padding:2px 4px;opacity:0;transition:opacity var(--dur-fast);}
 .step-item:hover .anno-btn,.node-row:hover .anno-btn,.card-header:hover .anno-btn{opacity:1;}
 .anno-btn:hover{color:var(--yellow);}
@@ -368,8 +367,14 @@ body{
 .ref-modal-item .ref-modal-id{font-size:11px;color:var(--text2);font-family:monospace;}
 
 /* ── Drag & Drop ── */
-.dragging{opacity:.4;transform:scale(.99);}
-.drag-over{border:1px dashed var(--accent) !important;background:var(--accent-dim) !important;}
+.dragging{opacity:.35;transform:scale(.98);box-shadow:var(--shadow-md);}
+.drag-over{
+  border:2px dashed var(--accent) !important;
+  background:var(--accent-dim) !important;
+  box-shadow:0 0 0 3px var(--accent-glow) !important;
+  transform:scale(1.005);
+  transition:transform var(--dur-fast),box-shadow var(--dur-fast) !important;
+}
 .drag-handle{cursor:grab;user-select:none;}
 .drag-handle:active{cursor:grabbing;}
 
@@ -385,6 +390,115 @@ button svg{display:block;flex-shrink:0;pointer-events:none;}
 .sec-toggle-btn{display:inline-flex;align-items:center;justify-content:center;}
 .node-actions button{display:inline-flex;align-items:center;}
 .card-header .actions button{display:inline-flex;align-items:center;}
+
+/* ── Modal utilities ── */
+.modal-sm{max-width:480px;}
+.modal-md{max-width:500px;}
+.modal-lg{max-width:600px;}
+.modal-xl{max-width:640px;}
+/* Modal 内语义布局 */
+.modal-section{margin-bottom:14px;}
+.modal-section-title{font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text);}
+.modal-empty{padding:12px;color:var(--text2);font-size:13px;}
+.modal-hint{font-size:12px;color:var(--text2);margin-bottom:12px;}
+.modal-hint strong.hl-orange{color:var(--orange);}
+.modal-hint strong.hl-text{color:var(--text);}
+.modal-hint strong.hl-red{color:var(--red);}
+.modal-h2{display:flex;align-items:center;gap:7px;}
+/* 变更详情列表 */
+.ref-change-list{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:14px;max-height:250px;overflow-y:auto;}
+.ref-change-list-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;}
+.ref-change-item{display:flex;gap:6px;align-items:flex-start;padding:4px 0;font-size:13px;border-bottom:1px solid var(--border);}
+.ref-change-item-icon{font-size:14px;min-width:18px;}
+.ref-change-item-text{color:var(--text);flex:1;}
+.ref-change-empty{font-size:13px;color:var(--text2);}
+/* 进度条 */
+.progress-bar-wrap{display:flex;align-items:center;gap:8px;}
+.progress-bar-track{flex:1;height:8px;background:var(--surface);border-radius:4px;overflow:hidden;border:1px solid var(--border);}
+.progress-bar-fill{height:100%;border-radius:4px;transition:width .3s;}
+.progress-bar-fill.green{background:var(--green);}
+.progress-bar-fill.yellow{background:var(--yellow);}
+.progress-bar-fill.red{background:var(--red);}
+.progress-bar-label{font-size:12px;font-weight:600;min-width:70px;text-align:right;}
+.progress-bar-label.green{color:var(--green);}
+.progress-bar-label.yellow{color:var(--yellow);}
+.progress-bar-label.red{color:var(--red);}
+/* 覆盖率报告 */
+.cov-section{margin-bottom:18px;}
+.cov-section-title{font-size:14px;font-weight:600;margin-bottom:6px;}
+.cov-section-title.red{color:var(--red);}
+.cov-section-title.green{color:var(--green);}
+.cov-section-empty{font-size:13px;color:var(--text2);padding:8px;}
+.cov-list{margin-top:8px;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;background:var(--bg);padding:4px;}
+.cov-list-row{display:flex;align-items:flex-start;gap:6px;padding:5px 8px;font-size:13px;border-bottom:1px solid var(--border);}
+.cov-list-icon{min-width:20px;}
+.cov-list-text{flex:1;color:var(--text);}
+.cov-list-unlinked{color:var(--orange);}
+.cov-list-changed{color:var(--orange);font-size:11px;}
+.cov-orphan-box{border:1px solid rgba(224,107,107,0.3);border-radius:6px;background:rgba(224,107,107,0.05);padding:4px;}
+.cov-orphan-row{display:flex;align-items:center;gap:6px;padding:5px 8px;font-size:13px;border-bottom:1px solid var(--border);}
+.cov-orphan-mode{min-width:20px;font-weight:600;color:var(--text2);}
+.cov-orphan-label{flex:1;color:var(--text);}
+.cov-orphan-miss{font-size:11px;color:var(--orange);}
+.modal-scroll-body{max-height:65vh;overflow-y:auto;padding-right:8px;}
+/* 覆盖率报告弹窗内的二次确认 */
+.confirm-modal-text{font-size:13px;color:var(--text2);line-height:1.7;margin:0 0 18px;}
+/* 分享面板 */
+.share-modal-label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px;}
+.share-modal-input{width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;outline:none;transition:border-color var(--dur-fast);}
+.share-modal-input:focus{border-color:var(--accent);}
+.share-modal-row{margin-bottom:8px;}
+.share-checkbox-row{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);margin-bottom:10px;}
+/* Mode A 模块内容块 */
+.mod-section-title{font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;}
+.mod-section-title.accent{color:var(--accent);}
+.mod-section-title.green{color:var(--green);}
+.sug-item-wrap{margin:5px 0;padding:7px 28px 7px 10px;border-radius:5px;background:rgba(76,175,137,0.06);border:1px solid rgba(76,175,137,0.15);position:relative;}
+.sug-reason{font-size:12px;color:var(--text2);margin-top:3px;}
+/* Mode B 内联按钮（copy/delete 统一 ghost 样式）*/
+.icon-btn{background:none;border:none;color:var(--text2);cursor:pointer;padding:2px 5px;border-radius:var(--radius-xs);display:inline-flex;align-items:center;transition:color var(--dur-fast),background var(--dur-fast);}
+.icon-btn:hover{color:var(--accent);background:var(--accent-dim);}
+.icon-btn.danger{color:var(--red);}
+.icon-btn.danger:hover{color:var(--red);background:var(--red-dim);}
+/* Mode D 区块（area/flow/boundary）*/
+.d-area-block{margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(95,127,255,0.15);background:rgba(95,127,255,0.04);position:relative;}
+.d-area-title{font-weight:600;font-size:13px;color:var(--accent);}
+.d-area-list{margin-top:4px;}
+.d-area-item-row{display:flex;align-items:baseline;gap:4px;padding:3px 0;}
+.d-area-item-label{font-weight:600;flex-shrink:0;}
+.d-area-item-sep{flex-shrink:0;color:var(--text2);}
+.d-area-item-desc{flex:1;}
+.d-flow-block{margin:6px 0;padding:8px 28px 8px 10px;border-radius:var(--radius-sm);border:1px solid rgba(95,127,255,0.15);background:rgba(95,127,255,0.05);position:relative;}
+.d-flow-title{font-weight:600;font-size:13px;color:var(--accent);display:flex;align-items:center;}
+.d-flow-meta{font-size:13px;margin-top:3px;}
+.d-flow-meta-row{margin-top:2px;}
+.d-flow-steps-title{font-size:13px;margin-top:4px;font-weight:600;display:flex;align-items:center;justify-content:space-between;}
+.d-flow-steps-list{margin-top:2px;}
+.d-exception-wrap{margin-top:6px;padding-top:6px;border-top:1px dashed rgba(224,107,107,0.25);}
+.d-exception-header{font-size:12px;font-weight:600;color:var(--orange);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;}
+.d-exception-item{margin:4px 0 0 12px;padding:6px 8px;border-radius:4px;border:1px solid rgba(224,107,107,0.2);background:rgba(224,107,107,0.04);}
+.d-exception-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.d-exception-title{font-weight:600;font-size:12px;color:var(--red);flex:1;}
+.d-exception-del{background:none;border:none;color:var(--red);cursor:pointer;padding:2px 4px;flex-shrink:0;display:inline-flex;align-items:center;border-radius:var(--radius-xs);opacity:0.6;transition:opacity var(--dur-fast),background var(--dur-fast);}
+.d-exception-del:hover{opacity:1;background:var(--red-dim);}
+.d-exception-field{font-size:12px;margin-top:2px;display:flex;align-items:flex-start;}
+.d-exception-field-label{flex-shrink:0;}
+.d-exception-field-val{flex:1;}
+.d-boundary-block{margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(224,107,107,0.15);background:rgba(224,107,107,0.04);position:relative;}
+.d-boundary-title{font-weight:600;font-size:13px;color:var(--red);}
+.d-boundary-field{font-size:13px;margin-top:3px;display:flex;align-items:flex-start;}
+.d-boundary-field-label{flex-shrink:0;}
+.d-boundary-field-val{flex:1;}
+/* FB Popover 内部区块增强 */
+.fb-section{margin-top:8px;}
+.fb-section-title{font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:6px 10px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;display:flex;align-items:center;justify-content:space-between;}
+.fb-section-title.feedback{background:var(--green-dim);color:var(--green);border:1px solid rgba(76,175,137,0.2);}
+.fb-section-title.branch{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(232,160,72,0.2);}
+.fb-section-body{padding:6px 10px 10px;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);background:var(--surface2);}
+/* 反向引用 label */
+.back-ref-label{display:inline-flex;align-items:center;gap:3px;}
+/* 树节点 depth=0 */
+.tree-node-root{margin-left:0;}
 
 /* ── prefers-reduced-motion ── */
 @media (prefers-reduced-motion: reduce) {
@@ -433,6 +547,8 @@ button svg{display:block;flex-shrink:0;pointer-events:none;}
 .modal button:hover{background:var(--surface3);border-color:var(--border3);}
 .modal button.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
 .modal button.primary:hover{background:var(--accent2);border-color:var(--accent2);}
+.modal button.danger-btn{background:var(--red);border-color:var(--red);color:#fff;}
+.modal button.danger-btn:hover{background:#c55;border-color:#c55;}
 
 /* ── Inline add button ── */
 .add-inline-btn{
@@ -781,7 +897,7 @@ function renderBackRefTags(itemId) {
   const tags = refs.map(r =>
     `<span class="back-ref-tag" onclick="jumpToRef('${r.from}','${r.fromMode}')" title="点击跳转到 ${r.fromLabel}">${r.fromMode}:${esc(r.fromLabel)}</span>`
   ).join('');
-  return `<div class="back-ref-row"><span class="back-ref-label" style="display:inline-flex;align-items:center;gap:3px;">${ICONS.pin}被引用:</span>${tags}</div>`;
+  return `<div class="back-ref-row"><span class="back-ref-label">${ICONS.pin}被引用:</span>${tags}</div>`;
 }
 
 /**
@@ -824,10 +940,10 @@ function openRefModal(itemId, itemMode) {
   if (itemMode === 'B') {
     const aModules = store.A.modules || [];
     const selectedA = new Set(item.refs.A || []);
-    sections += `<div style="margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:600;margin-bottom:6px;">📎 引用功能模块（A）</div>
+    sections += `<div class="modal-section">
+      <div class="modal-section-title">📎 引用功能模块（A）</div>
       <div class="ref-modal-list" id="refListA">
-        ${aModules.length === 0 ? '<div style="padding:12px;color:var(--text2);font-size:13px;">暂无功能模块数据</div>' :
+        ${aModules.length === 0 ? '<div class="modal-empty">暂无功能模块数据</div>' :
           aModules.map(m => `<label class="ref-modal-item">
             <input type="checkbox" value="${m.id}" ${selectedA.has(m.id) ? 'checked' : ''}>
             <span class="ref-modal-label">${esc(m.name)}</span>
@@ -840,10 +956,10 @@ function openRefModal(itemId, itemMode) {
   if (itemMode === 'D') {
     const bPaths = store.B || [];
     const selectedB = new Set(item.refs.B || []);
-    sections += `<div style="margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:600;margin-bottom:6px;">📎 引用行为路径（B）</div>
+    sections += `<div class="modal-section">
+      <div class="modal-section-title">📎 引用行为路径（B）</div>
       <div class="ref-modal-list" id="refListB">
-        ${bPaths.length === 0 ? '<div style="padding:12px;color:var(--text2);font-size:13px;">暂无行为路径数据</div>' :
+        ${bPaths.length === 0 ? '<div class="modal-empty">暂无行为路径数据</div>' :
           bPaths.map(p => `<label class="ref-modal-item">
             <input type="checkbox" value="${p.id}" ${selectedB.has(p.id) ? 'checked' : ''}>
             <span class="ref-modal-label">${esc(p.title)}</span>
@@ -854,10 +970,10 @@ function openRefModal(itemId, itemMode) {
 
     const cPages = store.C || [];
     const selectedC = new Set(item.refs.C || []);
-    sections += `<div style="margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:600;margin-bottom:6px;">📎 引用信息架构（C）</div>
+    sections += `<div class="modal-section">
+      <div class="modal-section-title">📎 引用信息架构（C）</div>
       <div class="ref-modal-list" id="refListC">
-        ${cPages.length === 0 ? '<div style="padding:12px;color:var(--text2);font-size:13px;">暂无信息架构数据</div>' :
+        ${cPages.length === 0 ? '<div class="modal-empty">暂无信息架构数据</div>' :
           cPages.map(p => `<label class="ref-modal-item">
             <input type="checkbox" value="${p.id}" ${selectedC.has(p.id) ? 'checked' : ''}>
             <span class="ref-modal-label">${esc(p.pageName)}</span>
@@ -869,9 +985,9 @@ function openRefModal(itemId, itemMode) {
 
   const ov = document.createElement('div');
   ov.className = 'modal-overlay';
-  ov.innerHTML = `<div class="modal" style="max-width:480px;">
-    <h2 style="display:flex;align-items:center;gap:7px;">${ICONS.link} 管理引用关系</h2>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">选择该${itemMode === 'B' ? '路径' : '交互稿'}所关联的上游模块，建立引用后可跳转导航和变更检测</p>
+  ov.innerHTML = `<div class="modal modal-sm">
+    <h2 class="modal-h2">${ICONS.link} 管理引用关系</h2>
+    <p class="modal-hint">选择该${itemMode === 'B' ? '路径' : '交互稿'}所关联的上游模块，建立引用后可跳转导航和变更检测</p>
     ${sections}
     <div class="m-actions">
       <button onclick="this.closest('.modal-overlay').remove()">取消</button>
@@ -945,19 +1061,19 @@ function showRefChangeDetail(targetId, targetMode, targetLabel) {
 
   const ov = document.createElement('div');
   ov.className = 'modal-overlay';
-  ov.innerHTML = `<div class="modal" style="max-width:500px;">
-    <h2 style="display:flex;align-items:center;gap:7px;">${ICONS.warning} 引用变更详情</h2>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">
-      <strong style="color:var(--orange);">${targetMode}:${esc(resolved.label)}</strong> 的内容已发生变更
+  ov.innerHTML = `<div class="modal modal-md">
+    <h2 class="modal-h2">${ICONS.warning} 引用变更详情</h2>
+    <p class="modal-hint">
+      <strong class="hl-orange">${targetMode}:${esc(resolved.label)}</strong> 的内容已发生变更
     </p>
-    <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:14px;max-height:250px;overflow-y:auto;">
-      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;">变更内容：</div>
+    <div class="ref-change-list">
+      <div class="ref-change-list-title">变更内容：</div>
       ${changes.length > 0 ? changes.map(c => `
-        <div style="display:flex;gap:6px;align-items:flex-start;padding:4px 0;font-size:13px;border-bottom:1px solid var(--border);">
-          <span style="color:${c.color};font-size:14px;min-width:18px;">${c.icon}</span>
-          <span style="color:var(--text);flex:1;">${esc(c.text)}</span>
+        <div class="ref-change-item">
+          <span class="ref-change-item-icon" style="color:${c.color};">${c.icon}</span>
+          <span class="ref-change-item-text">${esc(c.text)}</span>
         </div>
-      `).join('') : '<div style="font-size:13px;color:var(--text2);">内容结构已变更（详细差异请跳转查看）</div>'}
+      `).join('') : '<div class="ref-change-empty">内容结构已变更（详细差异请跳转查看）</div>'}
     </div>
     <div class="m-actions">
       <button onclick="this.closest('.modal-overlay').remove()">关闭</button>
@@ -1089,14 +1205,14 @@ function generateCoverageReport() {
  * 渲染进度条
  */
 function renderProgressBar(covered, total) {
-  if (total === 0) return '<span style="color:var(--text2);font-size:12px;">无数据</span>';
+  if (total === 0) return '<span class="progress-bar-label">无数据</span>';
   const pct = Math.round((covered / total) * 100);
-  const color = pct === 100 ? 'var(--green)' : pct >= 60 ? 'var(--yellow)' : 'var(--red)';
-  return `<div style="display:flex;align-items:center;gap:8px;">
-    <div style="flex:1;height:8px;background:var(--surface);border-radius:4px;overflow:hidden;border:1px solid var(--border);">
-      <div style="width:${pct}%;height:100%;background:${color};border-radius:4px;transition:width .3s;"></div>
+  const colorCls = pct === 100 ? 'green' : pct >= 60 ? 'yellow' : 'red';
+  return `<div class="progress-bar-wrap">
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill ${colorCls}" style="width:${pct}%;"></div>
     </div>
-    <span style="font-size:12px;font-weight:600;color:${color};min-width:70px;text-align:right;">${covered}/${total} (${pct}%)</span>
+    <span class="progress-bar-label ${colorCls}">${covered}/${total} (${pct}%)</span>
   </div>`;
 }
 
@@ -1108,47 +1224,47 @@ function showCoverageReport() {
   const report = generateCoverageReport();
 
   const renderSection = (title, data, arrow) => {
-    if (data.total === 0) return `<div style="margin-bottom:18px;">
-      <div style="font-size:14px;font-weight:600;margin-bottom:6px;">${title}</div>
-      <div style="font-size:13px;color:var(--text2);padding:8px;">暂无数据</div>
+    if (data.total === 0) return `<div class="cov-section">
+      <div class="cov-section-title">${title}</div>
+      <div class="cov-section-empty">暂无数据</div>
     </div>`;
 
-    return `<div style="margin-bottom:18px;">
-      <div style="font-size:14px;font-weight:600;margin-bottom:6px;">${title}</div>
+    return `<div class="cov-section">
+      <div class="cov-section-title">${title}</div>
       ${renderProgressBar(data.covered, data.total)}
-      <div style="margin-top:8px;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;background:var(--bg);padding:4px;">
+      <div class="cov-list">
         ${data.items.map(item => {
           const icon = item.linked ? ICONS.check : ICONS.warning;
-          const targetStr = item.linked ? ` → ${item.targets.join(', ')}` : ' → <span style="color:var(--orange);">(未关联)</span>';
-          const changeStr = item.changed ? ' <span style="color:var(--orange);font-size:11px;">🔄已变更</span>' : '';
-          return `<div style="display:flex;align-items:flex-start;gap:6px;padding:5px 8px;font-size:13px;border-bottom:1px solid var(--border);">
-            <span style="min-width:20px;">${icon}</span>
-            <span style="flex:1;color:var(--text);">${esc(item.source)}${targetStr}${changeStr}</span>
+          const targetStr = item.linked ? ` → ${item.targets.join(', ')}` : ' → <span class="cov-list-unlinked">(未关联)</span>';
+          const changeStr = item.changed ? ' <span class="cov-list-changed">🔄已变更</span>' : '';
+          return `<div class="cov-list-row">
+            <span class="cov-list-icon">${icon}</span>
+            <span class="cov-list-text">${esc(item.source)}${targetStr}${changeStr}</span>
           </div>`;
         }).join('')}
       </div>
     </div>`;
   };
 
-  const orphanSection = report.orphans.length > 0 ? `<div style="margin-bottom:18px;">
-    <div style="font-size:14px;font-weight:600;color:var(--red);margin-bottom:6px;">🔴 未被引用的孤立节点</div>
-    <div style="border:1px solid rgba(248,113,113,.3);border-radius:6px;background:rgba(248,113,113,.05);padding:4px;">
-      ${report.orphans.map(o => `<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;font-size:13px;border-bottom:1px solid var(--border);">
-        <span style="min-width:20px;font-weight:600;color:var(--text2);">${o.mode}</span>
-        <span style="flex:1;color:var(--text);">${esc(o.label)}</span>
-        <span style="font-size:11px;color:var(--orange);">${o.missing}</span>
+  const orphanSection = report.orphans.length > 0 ? `<div class="cov-section">
+    <div class="cov-section-title red">🔴 未被引用的孤立节点</div>
+    <div class="cov-orphan-box">
+      ${report.orphans.map(o => `<div class="cov-orphan-row">
+        <span class="cov-orphan-mode">${o.mode}</span>
+        <span class="cov-orphan-label">${esc(o.label)}</span>
+        <span class="cov-orphan-miss">${o.missing}</span>
       </div>`).join('')}
     </div>
-  </div>` : `<div style="margin-bottom:18px;">
-    <div style="font-size:14px;font-weight:600;color:var(--green);margin-bottom:6px;">✅ 无孤立节点</div>
-    <div style="font-size:13px;color:var(--text2);padding:8px;">所有模块/路径/页面均已被引用</div>
+  </div>` : `<div class="cov-section">
+    <div class="cov-section-title green">✅ 无孤立节点</div>
+    <div class="cov-section-empty">所有模块/路径/页面均已被引用</div>
   </div>`;
 
   const ov = document.createElement('div');
   ov.className = 'modal-overlay';
-  ov.innerHTML = `<div class="modal" style="max-width:600px;">
-    <h2 style="display:flex;align-items:center;gap:7px;">${ICONS.chart} 引用覆盖率报告</h2>
-    <div style="max-height:65vh;overflow-y:auto;padding-right:8px;">
+  ov.innerHTML = `<div class="modal modal-lg">
+    <h2 class="modal-h2">${ICONS.chart} 引用覆盖率报告</h2>
+    <div class="modal-scroll-body">
       ${renderSection('B → A 覆盖率（行为路径 → 功能模块）', report.BA, '→')}
       ${renderSection('D → B 覆盖率（交互稿 → 行为路径）', report.DB, '→')}
       ${renderSection('D → C 覆盖率（交互稿 → 信息架构）', report.DC, '→')}
@@ -1242,14 +1358,14 @@ function clearStorage() {
   const ov = document.createElement('div');
   ov.className = 'modal-overlay';
   ov.innerHTML = `
-    <div class="modal" style="max-width:400px;">
+    <div class="modal modal-sm">
       <h2>🗑️ 清除数据</h2>
-      <p style="font-size:13px;color:var(--text2);line-height:1.7;margin:0 0 18px;">
-        此操作将清除<strong style="color:var(--text);">四个模式（A/B/C/D）下的所有数据</strong>，包括批注、引用关系、导入快照等，且<strong style="color:#e74c3c;">无法撤销</strong>。<br>确定要继续吗？
+      <p class="confirm-modal-text">
+        此操作将清除<strong class="hl-text">四个模式（A/B/C/D）下的所有数据</strong>，包括批注、引用关系、导入快照等，且<strong class="hl-red">无法撤销</strong>。<br>确定要继续吗？
       </p>
       <div class="m-actions">
         <button onclick="this.closest('.modal-overlay').remove()">取消</button>
-        <button class="primary" style="background:#e74c3c;border-color:#e74c3c;" onclick="this.closest('.modal-overlay').remove();doClearStorage()">确认清除</button>
+        <button class="primary danger-btn" onclick="this.closest('.modal-overlay').remove();doClearStorage()">确认清除</button>
       </div>
     </div>`;
   document.body.appendChild(ov);
@@ -1620,7 +1736,7 @@ function renderA() {
         </div>
       </div>
       <div class="card-body">
-        <div style="margin-top:10px;font-size:13px;font-weight:600;color:var(--accent);">主目标</div>
+        <div class="mod-section-title accent" style="margin-top:10px;">主目标</div>
         <ul class="step-list">${A.goals.main.map((g,i) => `
           <li class="step-item">
             <span class="step-num">${i+1}.</span>
@@ -1628,7 +1744,7 @@ function renderA() {
             <button class="step-del" onclick="aDelGoal('main','${g.id}')" aria-label="删除">${ICONS.x}</button>
           </li>`).join('')}
         </ul>
-        <div style="margin-top:12px;font-size:13px;font-weight:600;color:var(--purple);">隐性需求</div>
+        <div class="mod-section-title" style="margin-top:12px;color:var(--purple);">隐性需求</div>
         <ul class="step-list">${A.goals.hidden.map((g,i) => `
           <li class="step-item">
             <span class="step-num">•</span>
@@ -1638,7 +1754,7 @@ function renderA() {
         </ul>
       </div>
     </div>
-    <div style="font-size:14px;font-weight:600;margin:16px 0 10px;display:flex;align-items:center;gap:8px;">${ICONS.modules} 功能模块拆解与优化建议<button class="add-inline-btn" onclick="aAddModule()">＋新增模块</button></div>
+    <div class="mod-section-title" style="font-size:14px;margin:16px 0 10px;gap:8px;">${ICONS.modules} 功能模块拆解与优化建议<button class="add-inline-btn" onclick="aAddModule()">＋新增模块</button></div>
     ${A.modules.map(m => renderModule(m)).join('')}
   `;
 }
@@ -1655,13 +1771,13 @@ function renderModule(m) {
         ${renderBackRefTags(m.id)}
       </div>
       <div class="actions">
-        <button onclick="aCopyMod('${m.id}')" title="复制模块内容" style="background:none;border:none;color:var(--text2);cursor:pointer;padding:3px 5px;border-radius:4px;display:inline-flex;align-items:center;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">${ICONS.copy}</button>
+        <button class="icon-btn" onclick="aCopyMod('${m.id}')" title="复制模块内容">${ICONS.copy}</button>
         <button class="del-btn" onclick="if(confirm('删除该模块？'))aDelMod('${m.id}')" title="删除模块">🗑</button>
         <button onclick="aToggleMod('${m.id}')" title="${m.collapsed?'展开':'收起'}">${m.collapsed ? ICONS.chevronRight : ICONS.chevronDown}</button>
       </div>
     </div>
     <div class="card-body ${m.collapsed ? 'collapsed' : ''}">
-      <div style="margin-top:10px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;">
+      <div class="mod-section-title" style="margin-top:10px;">
         <span>包含功能</span>
         <button class="add-inline-btn" onclick="aAddFeat('${m.id}')">＋功能</button>
       </div>
@@ -1672,15 +1788,15 @@ function renderModule(m) {
           <button class="step-del" onclick="aDelFeat('${m.id}','${f.id}')" aria-label="删除">${ICONS.x}</button>
         </li>`).join('')}
       </ul>
-      <div style="margin-top:12px;font-size:13px;font-weight:600;color:var(--green);display:flex;align-items:center;justify-content:space-between;">
+      <div class="mod-section-title green" style="margin-top:12px;">
         <span>✨ UX 补充建议</span>
         <button class="add-inline-btn" onclick="aAddSug('${m.id}')">＋建议</button>
       </div>
       ${m.suggestions.map(s => `
-        <div class="sug-item" style="margin:5px 0;padding:7px 28px 7px 10px;border-radius:5px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.15);position:relative;">
+        <div class="sug-item sug-item-wrap">
           <button class="step-del" onclick="aDelSug('${m.id}','${s.id}')" aria-label="删除">${ICONS.x}</button>
           <div class="editable" contenteditable="true" data-f="a-sug" data-i="${s.id}" data-mod="${m.id}">${esc(s.text)}</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:3px;">依据：<span class="editable" contenteditable="true" data-f="a-sugr" data-i="${s.id}" data-mod="${m.id}">${esc(s.reason)}</span></div>
+          <div class="sug-reason">依据：<span class="editable" contenteditable="true" data-f="a-sugr" data-i="${s.id}" data-mod="${m.id}">${esc(s.reason)}</span></div>
         </div>`).join('')}
     </div>
   </div>`;
@@ -2136,7 +2252,7 @@ function renderB() {
         </div>
         <div class="actions">
           <button class="ref-link-btn" onclick="openRefModal('${path.id}','B')" title="管理引用关系">${ICONS.link}</button>
-          <button onclick="bCopyPath('${path.id}')" title="复制路径内容" style="background:none;border:none;color:var(--text2);cursor:pointer;padding:3px 5px;border-radius:4px;display:inline-flex;align-items:center;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">${ICONS.copy}</button>
+          <button class="icon-btn" onclick="bCopyPath('${path.id}')" title="复制路径内容">${ICONS.copy}</button>
           <button class="add-inline-btn" onclick="bAddStage('${path.id}')">＋阶段</button>
           <button class="del-btn" onclick="if(confirm('删除该路径？'))bDelPath('${path.id}')" title="删除路径">🗑</button>
           <button onclick="bToggle('${path.id}')" title="${path.collapsed?'展开':'收起'}">${path.collapsed?ICONS.chevronRight:ICONS.chevronDown}</button>
@@ -2147,22 +2263,22 @@ function renderB() {
         <button class="add-btn" onclick="bAddStage('${path.id}')">+ 新增阶段</button>
       </div>
     </div>`).join('') +
-    '<div style="display:flex;align-items:center;gap:8px;margin-top:12px;"><button class="add-btn" style="flex:1;" onclick="bAddPath()">+ 新增路径</button></div>';
+    '<div style="margin-top:12px;"><button class="add-btn" onclick="bAddPath()">+ 新增路径</button></div>';
 }
 
 function renderBStage(pid,stage,si) {
   const fbCount = stage.feedbacks.length + stage.branches.reduce((acc,b)=>acc+b.items.length,0);
   return `<div class="stage" data-stage="${stage.id}" data-path="${pid}">
     <div class="stage-header">
-      <span class="drag-handle" style="color:var(--text3);">${ICONS.drag}</span>
-      <span style="display:inline-flex;align-items:center;color:var(--accent);opacity:0.7;">${ICONS.stage}</span>
+      <span class="drag-handle">${ICONS.drag}</span>
+      <span class="icon-btn" style="pointer-events:none;color:var(--accent);opacity:0.7;">${ICONS.stage}</span>
       <span class="stage-title">阶段 ${si+1}：<span class="editable" contenteditable="true" data-f="b-stitle" data-i="${stage.id}" data-p="${pid}">${esc(stage.title)}</span></span>
       <button class="fb-popover-btn" onclick="openFbPopover('${pid}','${stage.id}')" style="display:inline-flex;align-items:center;gap:5px;">${ICONS.feedback} 反馈与边界 ${fbCount>0?'<span style="opacity:.6;font-weight:400;">('+stage.feedbacks.length+'+'+stage.branches.length+')</span>':''}</button>
-      <button onclick="bCopyStageToClipboard('${pid}','${stage.id}')" title="复制阶段内容到剪贴板" style="background:none;border:none;color:var(--text2);cursor:pointer;padding:2px 5px;border-radius:var(--radius-xs);display:inline-flex;align-items:center;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">${ICONS.copy}</button>
-      <button onclick="if(confirm('删除该阶段？'))bDelStage('${pid}','${stage.id}')" title="删除阶段" aria-label="删除阶段" style="background:none;border:none;color:var(--red);cursor:pointer;padding:2px 5px;border-radius:var(--radius-xs);display:inline-flex;align-items:center;transition:background var(--dur-fast);" onmouseover="this.style.background='var(--red-dim)'" onmouseout="this.style.background='none'">${ICONS.trash}</button>
+      <button class="icon-btn" onclick="bCopyStageToClipboard('${pid}','${stage.id}')" title="复制阶段内容到剪贴板">${ICONS.copy}</button>
+      <button class="icon-btn danger" onclick="if(confirm('删除该阶段？'))bDelStage('${pid}','${stage.id}')" title="删除阶段" aria-label="删除阶段">${ICONS.trash}</button>
     </div>
     <div class="action-block">
-      <div class="block-label" style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="block-label" style="justify-content:space-between;">
         <span style="display:inline-flex;align-items:center;gap:5px;">${ICONS.user} 用户操作</span>
         <button class="add-inline-btn" onclick="bAddStep('${pid}','${stage.id}','actions')">＋操作</button>
       </div>
@@ -2178,12 +2294,12 @@ function renderBStage(pid,stage,si) {
 
 function renderBBranch(pid,sid,b) {
   return `<div class="branch"><div class="branch-header">
-    <span style="color:var(--orange);display:inline-flex;align-items:center;">${ICONS.arrowRight}</span>
+    <span class="icon-btn" style="pointer-events:none;color:var(--orange);">${ICONS.arrowRight}</span>
     <span class="branch-title editable" contenteditable="true" data-f="b-blabel" data-i="${b.id}" data-s="${sid}" data-p="${pid}">${esc(b.label)}</span>
-    <button onclick="bDelBranch('${pid}','${sid}','${b.id}')" aria-label="删除分支" style="background:none;border:none;color:var(--red);cursor:pointer;padding:2px 5px;border-radius:var(--radius-xs);display:inline-flex;align-items:center;">${ICONS.x}</button>
+    <button class="icon-btn danger step-del" onclick="bDelBranch('${pid}','${sid}','${b.id}')" aria-label="删除分支">${ICONS.x}</button>
   </div>
   ${b.items.map(it=>`<div class="branch-item"><span class="bullet">•</span>
-    <span class="editable" contenteditable="true" style="flex:1" data-f="b-bitem" data-i="${it.id}" data-b="${b.id}" data-s="${sid}" data-p="${pid}">${esc(it.text)}</span>
+    <span class="editable" contenteditable="true" style="flex:1;" data-f="b-bitem" data-i="${it.id}" data-b="${b.id}" data-s="${sid}" data-p="${pid}">${esc(it.text)}</span>
     <button class="step-del" onclick="bDelBItem('${pid}','${sid}','${b.id}','${it.id}')" aria-label="删除">${ICONS.x}</button>
   </div>`).join('')}
   <button class="add-btn" onclick="bAddBItem('${pid}','${sid}','${b.id}')">+ 新增分支项</button>
@@ -2252,7 +2368,7 @@ function renderFbPopover() {
   const branchesHtml = stage.branches.map(b => `
     <div class="branch">
       <div class="branch-header">
-        <span style="color:var(--orange);">👉</span>
+        <span class="icon-btn" style="pointer-events:none;color:var(--orange);">${ICONS.arrowRight}</span>
         <span class="branch-title editable" contenteditable="true" data-f="b-blabel" data-i="${b.id}" data-s="${stage.id}" data-p="${pid}">${esc(b.label)}</span>
         <button class="step-del" onclick="bDelBranch('${pid}','${stage.id}','${b.id}');renderFbPopover()" aria-label="删除">${ICONS.x}</button>
       </div>
@@ -2271,16 +2387,24 @@ function renderFbPopover() {
       </div>
       <div class="fb-stage-tabs">${tabsHtml}</div>
       <div class="fb-popover-body">
-        <div class="feedback-block" style="margin-bottom:10px;">
-          <div class="block-label" style="display:flex;align-items:center;justify-content:space-between;">
-            <span>💻 系统反馈</span>
+        <div class="fb-section">
+          <div class="fb-section-title feedback">
+            <span style="display:inline-flex;align-items:center;gap:5px;">${ICONS.feedback} 系统反馈</span>
             <button class="add-inline-btn" onclick="bAddStepInPopover('${pid}','${stage.id}','feedbacks')">＋新增反馈</button>
           </div>
-          <ul class="step-list">${feedbacksHtml}</ul>
+          <div class="fb-section-body">
+            <ul class="step-list">${feedbacksHtml}</ul>
+          </div>
         </div>
-        <div style="font-size:13px;font-weight:600;color:var(--orange);margin-bottom:6px;">👉 分支条件</div>
-        ${branchesHtml}
-        <button class="add-btn" onclick="bAddBranchInPopover('${pid}','${stage.id}')">+ 新增分支</button>
+        <div class="fb-section">
+          <div class="fb-section-title branch">
+            <span style="display:inline-flex;align-items:center;gap:5px;">${ICONS.arrowRight} 分支条件</span>
+            <button class="add-btn" onclick="bAddBranchInPopover('${pid}','${stage.id}')" style="margin-top:0;border-color:var(--orange);color:var(--orange);">＋新增分支</button>
+          </div>
+          <div class="fb-section-body">
+            ${branchesHtml}
+          </div>
+        </div>
       </div>
     </div>
   </div>`;
@@ -2503,7 +2627,7 @@ function renderC() {
           ${renderBackRefTags(page.id)}
         </div>
         <div class="actions">
-          <button onclick="cCopyPage('${page.id}')" title="复制页面内容" style="background:none;border:none;color:var(--text2);cursor:pointer;padding:3px 5px;border-radius:4px;display:inline-flex;align-items:center;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">${ICONS.copy}</button>
+          <button class="icon-btn" onclick="cCopyPage('${page.id}')" title="复制页面内容">${ICONS.copy}</button>
           <button class="add-inline-btn" onclick="cAddNode('${page.id}',null)">＋节点</button>
           <button class="del-btn" onclick="if(confirm('删除该页面架构？'))cDelPage('${page.id}')" title="删除页面">🗑</button>
           <button onclick="cToggle('${page.id}')" title="${page.collapsed?'展开':'收起'}">${page.collapsed?ICONS.chevronRight:ICONS.chevronDown}</button>
@@ -2514,7 +2638,7 @@ function renderC() {
         <button class="add-btn" onclick="cAddNode('${page.id}',null)">+ 新增根节点</button>
       </div>
     </div>`).join('') +
-    '<div style="display:flex;align-items:center;gap:8px;margin-top:12px;"><button class="add-btn" style="flex:1;" onclick="cAddPage()">+ 新增页面架构</button></div>';
+    '<div style="margin-top:12px;"><button class="add-btn" onclick="cAddPage()">+ 新增页面架构</button></div>';
 }
 
 function renderCNode(pageId,node,depth) {
@@ -2737,7 +2861,7 @@ function renderD() {
         </div>
         <div class="actions">
           <button class="ref-link-btn" onclick="openRefModal('${spec.id}','D')" title="管理引用关系">${ICONS.link}</button>
-          <button onclick="dCopySpec('${spec.id}')" title="复制交互稿内容" style="background:none;border:none;color:var(--text2);cursor:pointer;padding:3px 5px;border-radius:4px;display:inline-flex;align-items:center;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">${ICONS.copy}</button>
+          <button class="icon-btn" onclick="dCopySpec('${spec.id}')" title="复制交互稿内容">${ICONS.copy}</button>
           <button class="del-btn" onclick="if(confirm('删除？'))dDelSpec('${spec.id}')" title="删除">🗑</button>
           <button onclick="dToggle('${spec.id}')" title="${spec.collapsed?'展开':'收起'}">${spec.collapsed?ICONS.chevronRight:ICONS.chevronDown}</button>
         </div>
@@ -2787,21 +2911,21 @@ function renderD() {
         </div>
       </div>
     </div>`).join('') +
-    '<div style="display:flex;align-items:center;gap:8px;margin-top:12px;"><button class="add-btn" style="flex:1;" onclick="dAddSpec()">+ 新增交互说明</button></div>';
+    '<div style="margin-top:12px;"><button class="add-btn" onclick="dAddSpec()">+ 新增交互说明</button></div>';
 }
 
 // ====== D: 渲染子组件 ======
 function renderDArea(spId, area) {
-  return `<div class="bound-item" style="margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(99,102,241,.15);background:rgba(99,102,241,.04);position:relative;">
+  return `<div class="bound-item d-area-block">
     <button class="step-del" onclick="dDelArea('${spId}','${area.id}')" aria-label="删除">${ICONS.x}</button>
-    <div style="font-weight:600;font-size:13px;color:var(--accent);">
+    <div class="d-area-title">
       【<span class="editable" contenteditable="true" data-f="d-area" data-i="${area.id}" data-sp="${spId}">${esc(area.area)}</span>】
     </div>
-    <ul class="step-list" style="margin-top:4px;">
+    <ul class="step-list d-area-list">
       ${(area.items||[]).map(it=>`
         <li class="step-item"><span class="step-num">•</span>
-          <span class="editable" contenteditable="true" style="font-weight:600;min-width:50px;" data-f="d-elabel" data-i="${it.id}" data-area="${area.id}" data-sp="${spId}">${esc(it.label)}</span>
-          <span style="margin:0 4px;color:var(--text2);">：</span>
+          <span class="editable d-area-item-label" contenteditable="true" data-f="d-elabel" data-i="${it.id}" data-area="${area.id}" data-sp="${spId}">${esc(it.label)}</span>
+          <span class="d-area-item-sep">：</span>
           <span class="step-content editable" contenteditable="true" data-f="d-edesc" data-i="${it.id}" data-area="${area.id}" data-sp="${spId}">${esc(it.desc)}</span>
           <button class="step-del" onclick="dDelAreaItem('${spId}','${area.id}','${it.id}')" aria-label="删除">${ICONS.x}</button>
         </li>`).join('')}
@@ -2811,27 +2935,27 @@ function renderDArea(spId, area) {
 }
 
 function renderDFlow(spId, fl) {
-  return `<div class="bound-item" style="margin:6px 0;padding:8px 28px 8px 10px;border-radius:var(--radius-sm);border:1px solid rgba(95,127,255,0.15);background:rgba(95,127,255,0.05);position:relative;">
+  return `<div class="bound-item d-flow-block">
     <button class="step-del" onclick="dDelFlow('${spId}','${fl.id}')" aria-label="删除">${ICONS.x}</button>
-    <div style="font-weight:600;font-size:13px;color:var(--accent);display:flex;align-items:center;">
+    <div class="d-flow-title">
       <span>操作：<span class="editable" contenteditable="true" data-f="d-faction" data-i="${fl.id}" data-sp="${spId}">${esc(fl.action)}</span></span>
-      <button onclick="dCopyFlow('${spId}','${fl.id}')" title="复制该操作内容" style="margin-left:auto;background:none;border:none;color:var(--text2);cursor:pointer;padding:2px 5px;border-radius:4px;flex-shrink:0;display:inline-flex;align-items:center;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">${ICONS.copy}</button>
+      <button class="icon-btn" onclick="dCopyFlow('${spId}','${fl.id}')" title="复制该操作内容" style="margin-left:auto;">${ICONS.copy}</button>
     </div>
-    <div style="font-size:13px;margin-top:3px;">触发条件：<span class="editable" contenteditable="true" data-f="d-ftrig" data-i="${fl.id}" data-sp="${spId}">${esc(fl.trigger)}</span></div>
-    <div style="font-size:13px;margin-top:2px;">系统校验：<span class="editable" contenteditable="true" data-f="d-fvalid" data-i="${fl.id}" data-sp="${spId}">${esc(fl.validation)}</span></div>
-    <div style="font-size:13px;margin-top:4px;font-weight:600;display:flex;align-items:center;justify-content:space-between;">
+    <div class="d-flow-meta">触发条件：<span class="editable" contenteditable="true" data-f="d-ftrig" data-i="${fl.id}" data-sp="${spId}">${esc(fl.trigger)}</span></div>
+    <div class="d-flow-meta d-flow-meta-row">系统校验：<span class="editable" contenteditable="true" data-f="d-fvalid" data-i="${fl.id}" data-sp="${spId}">${esc(fl.validation)}</span></div>
+    <div class="d-flow-steps-title">
       <span>UI 反馈：</span>
       <button class="add-inline-btn" onclick="dAddFlowStep('${spId}','${fl.id}')">＋反馈</button>
     </div>
-    <ul class="step-list" style="margin-top:2px;">
+    <ul class="step-list d-flow-steps-list">
       ${(fl.steps||[]).map((st,i)=>`
         <li class="step-item"><span class="step-num">${i+1}.</span>
           <span class="step-content editable" contenteditable="true" data-f="d-fstep" data-i="${st.id}" data-fl="${fl.id}" data-sp="${spId}">${esc(st.desc)}</span>
           <button class="step-del" onclick="dDelFlowStep('${spId}','${fl.id}','${st.id}')" aria-label="删除">${ICONS.x}</button>
         </li>`).join('')}
     </ul>
-    ${(fl.exceptions||[]).length>0?`<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(248,113,113,.25);">
-      <div style="font-size:12px;font-weight:600;color:var(--orange);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;">
+    ${(fl.exceptions||[]).length>0?`<div class="d-exception-wrap">
+      <div class="d-exception-header">
         <span>异常分支</span>
         <button class="add-inline-btn" onclick="dAddFlowException('${spId}','${fl.id}')">＋异常</button>
       </div>
@@ -2841,26 +2965,26 @@ function renderDFlow(spId, fl) {
 }
 
 function renderDException(spId, flId, ex) {
-  return `<div style="margin:4px 0 0 12px;padding:6px 8px;border-radius:4px;border:1px solid rgba(248,113,113,.2);background:rgba(248,113,113,.04);">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-      <div style="font-weight:600;font-size:12px;color:var(--red);flex:1;"><span class="editable" contenteditable="true" data-f="d-exscn" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.scenario)}</span></div>
-      <button style="background:none;border:none;color:var(--red);cursor:pointer;padding:2px 4px;flex-shrink:0;display:inline-flex;align-items:center;border-radius:var(--radius-xs);opacity:0.6;transition:opacity var(--dur-fast),background var(--dur-fast);" onmouseover="this.style.opacity='1';this.style.background='var(--red-dim)'" onmouseout="this.style.opacity='0.6';this.style.background='none'" onclick="dDelFlowException('${spId}','${flId}','${ex.id}')" title="删除此异常分支" aria-label="删除">${ICONS.x}</button>
+  return `<div class="d-exception-item">
+    <div class="d-exception-title-row">
+      <div class="d-exception-title"><span class="editable" contenteditable="true" data-f="d-exscn" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.scenario)}</span></div>
+      <button class="d-exception-del" onclick="dDelFlowException('${spId}','${flId}','${ex.id}')" title="删除此异常分支" aria-label="删除">${ICONS.x}</button>
     </div>
-    <div style="font-size:12px;margin-top:2px;display:flex;align-items:flex-start;"><span style="flex-shrink:0;">触发条件：</span><span class="editable" contenteditable="true" data-f="d-extrig" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}" style="flex:1;">${esc(ex.trigger)}</span></div>
-    <div style="font-size:12px;margin-top:1px;display:flex;align-items:flex-start;"><span style="flex-shrink:0;">防错设计：</span><span class="editable" contenteditable="true" data-f="d-exdef" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}" style="flex:1;">${esc(ex.defense)}</span></div>
-    <div style="font-size:12px;margin-top:1px;display:flex;align-items:flex-start;"><span style="flex-shrink:0;">流程反馈：</span><span class="editable" contenteditable="true" data-f="d-exrec" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}" style="flex:1;">${esc(ex.recovery)}</span></div>
+    <div class="d-exception-field"><span class="d-exception-field-label">触发条件：</span><span class="editable d-exception-field-val" contenteditable="true" data-f="d-extrig" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.trigger)}</span></div>
+    <div class="d-exception-field"><span class="d-exception-field-label">防错设计：</span><span class="editable d-exception-field-val" contenteditable="true" data-f="d-exdef" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.defense)}</span></div>
+    <div class="d-exception-field"><span class="d-exception-field-label">流程反馈：</span><span class="editable d-exception-field-val" contenteditable="true" data-f="d-exrec" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.recovery)}</span></div>
   </div>`;
 }
 
 function renderDBoundary(spId, b) {
-  return `<div class="bound-item" style="margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(248,113,113,.15);background:rgba(248,113,113,.04);position:relative;">
+  return `<div class="bound-item d-boundary-block">
     <button class="step-del" onclick="dDelBoundary('${spId}','${b.id}')" aria-label="删除">${ICONS.x}</button>
-    <div style="font-weight:600;font-size:13px;color:var(--red);">
+    <div class="d-boundary-title">
       <span class="editable" contenteditable="true" data-f="d-bscn" data-i="${b.id}" data-sp="${spId}">${esc(b.scenario)}</span>
     </div>
-    <div style="font-size:13px;margin-top:3px;display:flex;align-items:flex-start;"><span style="flex-shrink:0;">触发条件：</span><span class="editable" contenteditable="true" data-f="d-btrig" data-i="${b.id}" data-sp="${spId}" style="flex:1;">${esc(b.trigger)}</span></div>
-    <div style="font-size:13px;margin-top:2px;display:flex;align-items:flex-start;"><span style="flex-shrink:0;">防错设计：</span><span class="editable" contenteditable="true" data-f="d-bdef" data-i="${b.id}" data-sp="${spId}" style="flex:1;">${esc(b.defense)}</span></div>
-    <div style="font-size:13px;margin-top:2px;display:flex;align-items:flex-start;"><span style="flex-shrink:0;">流程反馈：</span><span class="editable" contenteditable="true" data-f="d-brec" data-i="${b.id}" data-sp="${spId}" style="flex:1;">${esc(b.recovery)}</span></div>
+    <div class="d-boundary-field"><span class="d-boundary-field-label">触发条件：</span><span class="editable d-boundary-field-val" contenteditable="true" data-f="d-btrig" data-i="${b.id}" data-sp="${spId}">${esc(b.trigger)}</span></div>
+    <div class="d-boundary-field"><span class="d-boundary-field-label">防错设计：</span><span class="editable d-boundary-field-val" contenteditable="true" data-f="d-bdef" data-i="${b.id}" data-sp="${spId}">${esc(b.defense)}</span></div>
+    <div class="d-boundary-field"><span class="d-boundary-field-label">流程反馈：</span><span class="editable d-boundary-field-val" contenteditable="true" data-f="d-brec" data-i="${b.id}" data-sp="${spId}">${esc(b.recovery)}</span></div>
   </div>`;
 }
 
@@ -3186,14 +3310,14 @@ var LZString=function(){function o(o,r){if(!t[o]){t[o]={};for(var n=0;n<o.length
 function openShareCodeManager() {
   const ov = document.createElement('div');
   ov.className = 'modal-overlay';
-  ov.innerHTML = `<div class="modal" style="max-width:460px;">
+  ov.innerHTML = `<div class="modal modal-sm">
     <h2>📤 导出分享文件</h2>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">下载 .uxshare 文件发送给对方，对方拖入编辑器即可加载</p>
-    <div style="margin-bottom:8px;">
-      <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px;">文件名（可选）：</label>
-      <input id="shareFileName" type="text" placeholder="如: 科技2.0-v3" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;" maxlength="50">
+    <p class="modal-hint">下载 .uxshare 文件发送给对方，对方拖入编辑器即可加载</p>
+    <div class="share-modal-row">
+      <label class="share-modal-label">文件名（可选）：</label>
+      <input id="shareFileName" type="text" placeholder="如: 科技2.0-v3" class="share-modal-input" maxlength="50">
     </div>
-    <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;margin-bottom:10px;">
+    <label class="share-checkbox-row">
       <input type="checkbox" id="shareSelectedOnly" style="accent-color:var(--accent);" onchange="onShareModeToggle()"> 仅导出当前模式（${MODE_LABELS[activeMode]}）
     </label>
     <div class="m-actions">

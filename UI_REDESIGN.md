@@ -487,6 +487,7 @@ Logo 图标: SVG 菱形（替换 emoji 🎨）
 | v1.0.0 | 2026-03-30 | 创建文档，完成设计系统规范定义 |
 | v1.1.0 | 2026-03-30 | Phase 1-5 全面重构：Notion Dark 主题、CSS Token、SVG 图标替换 Emoji、组件样式升级 |
 | v1.2.0 | 2026-03-30 | Icon System 统一：新增 `ICONS` JS 对象（Heroicons Outline 规范），替换全局 ⠿/▶▼/⎘/✕/🔗/📍/⚠️/✅/📭/🧩 共 40+ 处 |
+| v1.3.0 | 2026-03-30 | 四项高/中优先级待办全部完成：①硬编码颜色精调②Mode D inline style 全面清理（新增30+语义CSS类：`.d-area-block`/`.d-flow-block`/`.d-exception-item`/`.d-boundary-block`/`.icon-btn`等）③FB Popover视觉升级（`.fb-section`/`.fb-section-title.feedback/.branch`/`.fb-section-body`独立区块）④拖拽视觉精化（`.drag-over`加粗边框+光晕+scale微动效） |
 
 ---
 

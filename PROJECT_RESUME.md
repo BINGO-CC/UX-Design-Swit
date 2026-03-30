@@ -285,7 +285,8 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 > 请按顺序完成以下准备步骤，**不得跳过**：
 > 1. 阅读项目强制执行规则：`f:\codemake\.codemaker\rules`
 > 2. 阅读项目续接文档：`f:\codemake\PROJECT_RESUME.md`，了解项目背景、技术架构和已实现功能
-> 3. 阅读主代码文件：`f:\codemake\ux-design-editor.html`，了解当前实现
+> 3. 阅读视觉设计规范：`f:\codemake\UI_REDESIGN.md`，了解 Notion Dark 设计系统与组件规范（**所有 UI 新增/修改必须遵守此规范**）
+> 4. 阅读主代码文件：`f:\codemake\ux-design-editor.html`，了解当前实现
 > 
 > 准备完成后，请帮我完成：[你的具体需求]
 
