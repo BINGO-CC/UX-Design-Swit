@@ -135,8 +135,18 @@ body{
 .tab-bar .actions-right button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 .tab-bar .actions-right .sep{width:1px;height:16px;background:var(--border);flex-shrink:0;}
 .undo-redo{display:flex;gap:2px;}
-.undo-redo button{padding:4px 8px;font-size:12px;}
-.undo-redo button:disabled{opacity:.25;cursor:not-allowed;}
+.undo-redo button{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:var(--radius-sm);
+  border:1px solid var(--border2);
+  background:transparent;color:var(--text2);
+  cursor:pointer;font-size:12px;font-weight:500;
+  transition:background var(--dur-fast),border-color var(--dur-fast),color var(--dur-fast);
+  font-family:inherit;
+}
+.undo-redo button:hover{background:var(--surface3);border-color:var(--border3);color:var(--text);}
+.undo-redo button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.undo-redo button:disabled{opacity:.28;cursor:not-allowed;}
 .undo-redo button:disabled:hover{background:transparent;border-color:var(--border2);color:var(--text2);}
 
 /* ── Dropdown ── */
