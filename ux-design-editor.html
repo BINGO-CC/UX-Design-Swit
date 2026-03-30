@@ -107,8 +107,8 @@ body{
 .toolbar .sep{width:1px;height:18px;background:var(--border);flex-shrink:0;}
 
 /* ── Toolbar Tabs（内嵌在 Toolbar 内）── */
-.toolbar-tabs{display:flex;align-items:center;gap:2px;margin-left:4px;}
-.toolbar-tabs .mode-tab{font-size:13px;padding:4px 12px;}
+.toolbar-tabs{display:flex;align-items:center;gap:6px;margin-left:8px;}
+.toolbar-tabs .mode-tab{font-size:13px;padding:5px 14px;}
 
 /* ── Tab Bar（第二行：操作区）── */
 .tab-bar{
@@ -174,14 +174,16 @@ body{
 /* ── Mode Tabs ── */
 .mode-tab{
   padding:5px 13px;cursor:pointer;
-  font-size:13px;font-weight:500;
-  color:var(--text2);border-radius:var(--radius-sm);
+  font-size:13px;font-weight:600;
+  color:var(--text3);border-radius:var(--radius-sm);
   transition:background var(--dur-fast),color var(--dur-fast);
   white-space:nowrap;letter-spacing:0.01em;
   line-height:1.5;
+  /* 用 outline 代替 background 变化，彻底消除尺寸位移 */
+  outline:1px solid transparent;
 }
-.mode-tab:hover{background:var(--surface2);color:var(--text);}
-.mode-tab.active{background:var(--surface3);color:var(--text);font-weight:600;}
+.mode-tab:hover{background:var(--surface2);color:var(--text2);}
+.mode-tab.active{background:var(--surface3);color:var(--text);outline-color:var(--border2);}
 
 /* ── Container ── */
 .container{max-width:900px;margin:0 auto;padding:20px 20px 60px;}
@@ -1864,15 +1866,12 @@ function renderA() {
     return;
   }
   el.innerHTML = `
+    <div class="mod-section-title" style="font-size:14px;margin:4px 0 10px;gap:8px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> 核心目标拆解
+      <button class="add-inline-btn" onclick="aAddGoal('main')">＋主目标</button>
+      <button class="add-inline-btn" onclick="aAddGoal('hidden')">＋隐性需求</button>
+    </div>
     <div class="card">
-      <div class="card-header">
-        <div class="info"><div class="title">🎯 核心目标拆解</div></div>
-        <div class="actions">
-          <button class="add-inline-btn" onclick="aAddGoal('main')">＋主目标</button>
-          <button class="add-inline-btn" onclick="aAddGoal('hidden')">＋隐性需求</button>
-        </div>
-      </div>
-      <div class="card-body">
+      <div class="card-body" style="padding-top:12px;">
         <div class="mod-section-title accent" style="margin-top:10px;">主目标</div>
         <ul class="step-list">${A.goals.main.map((g,i) => `
           <li class="step-item">
