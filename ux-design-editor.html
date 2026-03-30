@@ -288,7 +288,7 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
     <div class="dropdown" id="exportJsonDropdown">
       <button id="exportJsonBtn">📤 导出 ▾</button>
       <div class="dropdown-menu" id="exportJsonMenu">
-        <button onclick="exportJsonModDiff()">导出该模块修改部分JSON</button>
+        <button onclick="copyAsPrompt()">复制为 Prompt</button>
         <button onclick="exportJsonModFull()">导出全部JSON</button>
         <button onclick="exportMd()">导出MarkDown</button>
         <button onclick="showCoverageReport()">📊 引用覆盖率报告</button>
@@ -2832,86 +2832,39 @@ function exportJsonModFull() {
   showExportModal(`导出 ${MODE_LABELS[m]} 全部 JSON`, JSON.stringify(data, null, 2), 'json');
 }
 
-function exportJsonModDiff() {
+// ====== 复制为 Prompt ======
+const NEXT_MODE_MAP = { A: 'B', B: 'D' }; // A→B, B→D, D无下游
+function copyAsPrompt() {
   closeExportDropdown();
   const m = activeMode;
-  const current = JSON.stringify(store[m]);
-  const snapshot = JSON.stringify(importSnapshot[m] || (m === 'A' ? {} : []));
-
-  if (current === snapshot) {
-    toast('该模块无修改内容');
+  const next = NEXT_MODE_MAP[m];
+  if (!next) {
+    toast('交互稿为终极交付物，无下游模式');
     return;
   }
-
-  // 使用 diff 对比产出变更数据
-  const diffResult = computeDiff(store[m], importSnapshot[m] || (m === 'A' ? {} : []), m);
   const data = {};
-  data[m] = diffResult;
-  showExportModal(`导出 ${MODE_LABELS[m]} 修改内容`, JSON.stringify(data, null, 2), 'json');
-}
-
-function computeDiff(current, original, mode) {
-  // 对于数组类型 (B/C/D)，找出新增和修改的项
-  if (Array.isArray(current)) {
-    const origMap = {};
-    (original || []).forEach(item => { if (item.id) origMap[item.id] = JSON.stringify(item); });
-    const changed = [];
-    current.forEach(item => {
-      if (!item.id || !origMap[item.id]) {
-        // 新增的项
-        changed.push({ ...item, _diff: 'added' });
-      } else if (origMap[item.id] !== JSON.stringify(item)) {
-        // 修改过的项
-        changed.push({ ...item, _diff: 'modified' });
-      }
-    });
-    // 检测删除的项
-    const curIds = new Set(current.map(item => item.id));
-    (original || []).forEach(item => {
-      if (item.id && !curIds.has(item.id)) {
-        changed.push({ id: item.id, _diff: 'deleted', _original: item });
-      }
-    });
-    return changed;
-  }
-
-  // 对于对象类型 (A)，逐字段对比
-  if (typeof current === 'object' && current !== null) {
-    const result = {};
-    const allKeys = new Set([...Object.keys(current || {}), ...Object.keys(original || {})]);
-    allKeys.forEach(key => {
-      const curVal = JSON.stringify(current[key]);
-      const origVal = JSON.stringify((original || {})[key]);
-      if (curVal !== origVal) {
-        result[key] = current[key];
-      }
-    });
-    if (Object.keys(result).length === 0) return current;
-    return result;
-  }
-
-  return current;
+  data[m] = store[m];
+  const prompt = `/UX-NEXT ${next}\n\n以下是${MODE_LABELS[m]}的数据：\n\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\``;
+  navigator.clipboard.writeText(prompt).then(() => {
+    toast(`已复制 /UX-NEXT ${next} Prompt`);
+  }).catch(() => {
+    // 降级：弹窗展示供手动复制
+    showExportModal(`复制为 Prompt（/UX-NEXT ${next}）`, prompt, 'txt');
+  });
 }
 
 // ====== 导出下拉菜单 ======
-function isModuleDirty() {
-  const m = activeMode;
-  const current = JSON.stringify(store[m]);
-  const snapshot = JSON.stringify(importSnapshot[m] || (m === 'A' ? {} : []));
-  return current !== snapshot;
-}
-
 function toggleExportDropdown(e) {
   e.stopPropagation();
   const dd = document.getElementById('exportJsonDropdown');
-  // 更新差异导出按钮状态
-  const diffBtn = dd.querySelector('.dropdown-menu button:first-child');
-  if (isModuleDirty()) {
-    diffBtn.classList.remove('disabled');
-    diffBtn.onclick = exportJsonModDiff;
+  // 更新 Prompt 按钮状态（D模式无下游，置灰）
+  const promptBtn = dd.querySelector('.dropdown-menu button:first-child');
+  if (NEXT_MODE_MAP[activeMode]) {
+    promptBtn.classList.remove('disabled');
+    promptBtn.onclick = copyAsPrompt;
   } else {
-    diffBtn.classList.add('disabled');
-    diffBtn.onclick = () => { toast('当前未存在任何修改'); };
+    promptBtn.classList.add('disabled');
+    promptBtn.onclick = () => { toast('交互稿为终极交付物，无下游模式'); };
   }
   dd.classList.toggle('open');
 }
