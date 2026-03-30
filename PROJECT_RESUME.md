@@ -1,6 +1,6 @@
 # UX 设计交互编辑器 — 项目续接文档
 
-> **文档版本**：v4.1.3（2026-03-30 更新）
+> **文档版本**：v4.1.4（2026-03-30 更新）
 > **用途**：在新对话中快速恢复项目上下文，确保迭代连续性
 
 ---
@@ -452,3 +452,4 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 | v4.1.1 | 2026-03-28 | **模式D BUG修复**：①区块收起按钮响应区域修正——移除 `spec-section-header` 的 `onclick`，仅 `sec-toggle-btn` 按钮本身可触发折叠/展开；移除 header 的 `cursor:pointer`；简化 `dToggleSec()` 去除 event 参数 ②收起箭头方向修正——移除 CSS `.spec-section.collapsed .sec-toggle-btn{transform:rotate(-90deg)}`，箭头字符自身已正确（收起▶/展开▼）③UI反馈条目删除按钮修复——`.bound-item .step-del` 改为 `.bound-item > .step-del`（直接子元素选择器），避免嵌套在 `step-item` 内的删除按钮被强制 `position:absolute` 飞到卡片右上角 ④UI反馈条目字体统一——`.step-item .step-content` 新增 `font-size:13px`，与触发条件/系统校验等保持一致 |
 | v4.1.2 | 2026-03-30 | **模式D复制输出Emoji修复**：移除复制函数中硬编码的 emoji（🧩/🖱️/🚧/⚠️），统一输出纯文本标题（元素状态与基础逻辑/核心场景交互流/系统级边界/异常分支） |
 | v4.1.3 | 2026-03-30 | **模式D渲染Emoji修复**：①移除异常分支标题 `⚠️` emoji ②移除每个异常情境卡片标题前的 `⚠️` emoji ③修复异常卡片间距（`margin:4px 0 4px` → `margin:4px 0 0`）消除多余空行 |
+| v4.1.4 | 2026-03-30 | **模式D复制格式优化**：核心场景交互流复制输出时，每个操作（flow）之间增加空行分隔，便于浏览（`dCopySpec`/`dCopyFlows` 两处） |

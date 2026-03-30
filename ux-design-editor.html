@@ -1565,7 +1565,7 @@ function dCopySpec(spId) {
   }
   if(sp.flows&&sp.flows.length){
     L.push({text:'核心场景交互流：',bold:true});
-    sp.flows.forEach(fl=>{
+    sp.flows.forEach((fl,idx,arr)=>{
       L.push({text:`操作：${stripEmoji(fl.action)}`,bold:true,indent:'  '});
       if(fl.trigger)L.push({text:safePrefix('触发条件：',fl.trigger),indent:'    '});
       if(fl.validation)L.push({text:safePrefix('系统校验：',fl.validation),indent:'    '});
@@ -1576,6 +1576,7 @@ function dCopySpec(spId) {
         L.push({text:safePrefix('防错设计：',ex.defense),indent:'      '});
         L.push({text:safePrefix('流程反馈：',ex.recovery),indent:'      '});
       });
+      if(idx<arr.length-1)L.push({text:''});
     });
     L.push({text:''});
   }
@@ -1609,7 +1610,8 @@ function dCopyFlows(spId) {
   const L=[];
   L.push({text:'核心场景交互流',bold:true});
   L.push({text:''});
-  (sp.flows||[]).forEach(fl=>{
+  const flows=sp.flows||[];
+  flows.forEach((fl,idx)=>{
     L.push({text:`操作：${stripEmoji(fl.action)}`,bold:true,indent:'  '});
     if(fl.trigger)L.push({text:safePrefix('触发条件：',fl.trigger),indent:'    '});
     if(fl.validation)L.push({text:safePrefix('系统校验：',fl.validation),indent:'    '});
@@ -1620,6 +1622,7 @@ function dCopyFlows(spId) {
       L.push({text:safePrefix('防错设计：',ex.defense),indent:'      '});
       L.push({text:safePrefix('流程反馈：',ex.recovery),indent:'      '});
     });
+    if(idx<flows.length-1)L.push({text:''});
   });
   copyRichText(L);
 }
