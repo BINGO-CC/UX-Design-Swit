@@ -236,10 +236,13 @@ body{
 .stage-header button:hover{background:var(--surface3);color:var(--text);}
 
 /* ── Action/Feedback blocks ── */
+/* action-block 与 Mode D 交互稿操作流(flow-block)使用相同背景色 Token */
+--action-bg: rgba(95,127,255,0.05);
+--action-border: rgba(95,127,255,0.15);
 .action-block,.feedback-block{margin:6px 0;padding:8px 11px;border-radius:var(--radius-sm);font-size:13px;}
-.action-block{background:var(--accent-dim);border:1px solid rgba(95,127,255,0.18);}
+.action-block{background:rgba(95,127,255,0.05);border:1px solid rgba(95,127,255,0.15);}
 .feedback-block{background:var(--green-dim);border:1px solid rgba(76,175,137,0.18);}
-.block-label{font-size:10px;font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:5px;letter-spacing:0.06em;text-transform:uppercase;}
+.block-label{font-size:10px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px;letter-spacing:0.05em;text-transform:uppercase;}
 .action-block .block-label{color:var(--accent);}
 .feedback-block .block-label{color:var(--green);}
 
@@ -576,6 +579,16 @@ const ICONS = {
   empty: `<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>`,
   // 统计报告
   chart: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+  // 阶段（层叠/流程步骤）
+  stage: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`,
+  // 用户操作（人像）
+  user: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+  // 反馈与边界（双向箭头）
+  feedback: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>`,
+  // 分支选项（向右箭头）
+  arrowRight: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`,
+  // 删除（垃圾桶）
+  trash: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`,
 };
 
 // ====== State ======
@@ -2141,16 +2154,16 @@ function renderBStage(pid,stage,si) {
   const fbCount = stage.feedbacks.length + stage.branches.reduce((acc,b)=>acc+b.items.length,0);
   return `<div class="stage" data-stage="${stage.id}" data-path="${pid}">
     <div class="stage-header">
-      <span class="drag-handle" style="color:var(--text2);">${ICONS.drag}</span>
-      <span style="font-size:16px;">🌊</span>
+      <span class="drag-handle" style="color:var(--text3);">${ICONS.drag}</span>
+      <span style="display:inline-flex;align-items:center;color:var(--accent);opacity:0.7;">${ICONS.stage}</span>
       <span class="stage-title">阶段 ${si+1}：<span class="editable" contenteditable="true" data-f="b-stitle" data-i="${stage.id}" data-p="${pid}">${esc(stage.title)}</span></span>
-      <button class="fb-popover-btn" onclick="openFbPopover('${pid}','${stage.id}')">🔄 反馈与边界 ${fbCount>0?'<span style="opacity:.7;font-weight:400;">('+stage.feedbacks.length+'+'+stage.branches.length+')</span>':''}</button>
-      <button onclick="bCopyStageToClipboard('${pid}','${stage.id}')" title="复制阶段内容到剪贴板" style="background:none;border:none;color:var(--text2);cursor:pointer;padding:2px 5px;border-radius:4px;display:inline-flex;align-items:center;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">${ICONS.copy}</button>
-      <button onclick="if(confirm('删除该阶段？'))bDelStage('${pid}','${stage.id}')" title="删除阶段" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;">🗑</button>
+      <button class="fb-popover-btn" onclick="openFbPopover('${pid}','${stage.id}')" style="display:inline-flex;align-items:center;gap:5px;">${ICONS.feedback} 反馈与边界 ${fbCount>0?'<span style="opacity:.6;font-weight:400;">('+stage.feedbacks.length+'+'+stage.branches.length+')</span>':''}</button>
+      <button onclick="bCopyStageToClipboard('${pid}','${stage.id}')" title="复制阶段内容到剪贴板" style="background:none;border:none;color:var(--text2);cursor:pointer;padding:2px 5px;border-radius:var(--radius-xs);display:inline-flex;align-items:center;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">${ICONS.copy}</button>
+      <button onclick="if(confirm('删除该阶段？'))bDelStage('${pid}','${stage.id}')" title="删除阶段" aria-label="删除阶段" style="background:none;border:none;color:var(--red);cursor:pointer;padding:2px 5px;border-radius:var(--radius-xs);display:inline-flex;align-items:center;transition:background var(--dur-fast);" onmouseover="this.style.background='var(--red-dim)'" onmouseout="this.style.background='none'">${ICONS.trash}</button>
     </div>
     <div class="action-block">
       <div class="block-label" style="display:flex;align-items:center;justify-content:space-between;">
-        <span>👤 用户操作</span>
+        <span style="display:inline-flex;align-items:center;gap:5px;">${ICONS.user} 用户操作</span>
         <button class="add-inline-btn" onclick="bAddStep('${pid}','${stage.id}','actions')">＋操作</button>
       </div>
       <ul class="step-list">${stage.actions.map((a,i)=>`
@@ -2165,7 +2178,7 @@ function renderBStage(pid,stage,si) {
 
 function renderBBranch(pid,sid,b) {
   return `<div class="branch"><div class="branch-header">
-    <span style="color:var(--orange);">👉</span>
+    <span style="color:var(--orange);display:inline-flex;align-items:center;">${ICONS.arrowRight}</span>
     <span class="branch-title editable" contenteditable="true" data-f="b-blabel" data-i="${b.id}" data-s="${sid}" data-p="${pid}">${esc(b.label)}</span>
     <button onclick="bDelBranch('${pid}','${sid}','${b.id}')" aria-label="删除分支" style="background:none;border:none;color:var(--red);cursor:pointer;padding:2px 5px;border-radius:var(--radius-xs);display:inline-flex;align-items:center;">${ICONS.x}</button>
   </div>
@@ -2798,7 +2811,7 @@ function renderDArea(spId, area) {
 }
 
 function renderDFlow(spId, fl) {
-  return `<div class="bound-item" style="margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(59,130,246,.15);background:rgba(59,130,246,.04);position:relative;">
+  return `<div class="bound-item" style="margin:6px 0;padding:8px 28px 8px 10px;border-radius:var(--radius-sm);border:1px solid rgba(95,127,255,0.15);background:rgba(95,127,255,0.05);position:relative;">
     <button class="step-del" onclick="dDelFlow('${spId}','${fl.id}')" aria-label="删除">${ICONS.x}</button>
     <div style="font-weight:600;font-size:13px;color:var(--accent);display:flex;align-items:center;">
       <span>操作：<span class="editable" contenteditable="true" data-f="d-faction" data-i="${fl.id}" data-sp="${spId}">${esc(fl.action)}</span></span>
