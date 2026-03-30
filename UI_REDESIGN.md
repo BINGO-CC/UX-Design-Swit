@@ -490,7 +490,49 @@ Logo 图标: SVG 菱形（替换 emoji 🎨）
 
 ---
 
-## 八、预交付检查清单
+## 八、新对话续接指南
+
+> 下次开启新对话想继续迭代视觉，只需在对话开头说：
+
+```
+我正在迭代"UX设计交互编辑器"项目的视觉重构。
+请先阅读 UI_REDESIGN.md，了解已完成的设计系统与当前进度，然后继续迭代。
+```
+
+### 当前已完成内容（截至 v1.2.0）
+
+| Phase | 状态 | 内容 |
+|-------|------|------|
+| Phase 1：CSS Token | ✅ 完成 | Notion Dark 色彩系统，5级背景，4级文字，动效变量 |
+| Phase 2：组件升级 | ✅ 完成 | Toolbar/TabBar/Card/Button/Editable 全部重写 |
+| Phase 3：浮层弹窗 | ✅ 完成 | Modal/Toast/FB Popover(紫色系)/Dropdown |
+| Phase 4：HTML模板 | ✅ 完成 | emoji→SVG，aria-label，按钮结构优化 |
+| Phase 5：微交互 | ✅ 完成 | cubic-bezier 缓动，hover 反馈，prefers-reduced-motion |
+| Icon System | ✅ 完成 | `ICONS` JS对象(Heroicons Outline)，全局40+处替换 |
+| Mode B 风格对齐 | ✅ 完成 | action-block 与 Mode D flow 背景色统一，阶段/操作 SVG 图标 |
+
+### 待迭代方向（可选项）
+
+| 优先级 | 方向 | 说明 |
+|-------|------|------|
+| 🔴 高 | 暗色主题可读性精调 | 扫描所有硬编码颜色，统一替换为 CSS Token |
+| 🔴 高 | Mode D 交互稿 inline style 清理 | 大量 `style=""` 内联样式改为 CSS class |
+| 🟡 中 | FB Popover 视觉优化 | 弹窗内 feedback/branch 区块视觉层次提升 |
+| 🟡 中 | 卡片拖拽视觉反馈 | `.drag-over` 样式更精细，拖拽时阴影动效 |
+| 🟢 低 | 空状态插画 | 各模式定制化空状态（目前共用同一 SVG） |
+| 🟢 低 | 亮色主题支持 | `@media (prefers-color-scheme: light)` |
+
+### 关键文件速查
+
+| 文件 | 说明 |
+|-----|------|
+| `ux-design-editor.html` | 主文件，CSS 在行 10-430，ICONS 对象在行 ~547 |
+| `UI_REDESIGN.md` | **本文档**，视觉设计系统规范 |
+| `PROJECT_RESUME.md` | 主项目续接文档（功能迭代用） |
+
+---
+
+## 九、预交付检查清单
 
 > 参考 `ui-ux-pro-max-skill` Pre-Delivery Checklist
 
