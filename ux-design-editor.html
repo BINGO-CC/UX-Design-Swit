@@ -310,6 +310,10 @@ body{
 .spec-section-header .sec-copy-btn{background:none;border:none;color:inherit;cursor:pointer;font-size:12px;padding:2px 5px;border-radius:var(--radius-xs);opacity:.5;transition:opacity var(--dur-fast);}
 .spec-section-header .sec-copy-btn:hover{opacity:1;}
 .spec-section-body{padding:10px 13px;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);background:var(--surface);}
+/* 区块底板与标题同色系 */
+.spec-section-header.visible + .spec-section-body{background:rgba(95,127,255,0.04);border-color:rgba(95,127,255,0.18);}
+.spec-section-header.interact + .spec-section-body{background:rgba(76,175,137,0.04);border-color:rgba(76,175,137,0.18);}
+.spec-section-header.boundary + .spec-section-body{background:rgba(224,107,107,0.04);border-color:rgba(224,107,107,0.18);}
 
 /* ── Module priority (Mode A) ── */
 .module-priority{
