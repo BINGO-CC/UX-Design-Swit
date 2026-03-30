@@ -1,6 +1,6 @@
 # UX 设计交互编辑器 — 项目续接文档
 
-> **文档版本**：v4.2.1（2026-03-30 更新）
+> **文档版本**：v4.3.0（2026-03-30 更新）
 > **用途**：在新对话中快速恢复项目上下文，确保迭代连续性
 > ⚠️ **视觉规范**：所有 UI 新增/修改必须遵守 `UI_REDESIGN.md`（Notion Dark 设计系统 v1.3.0）
 
@@ -420,3 +420,9 @@ let refFingerprints = {};  // 引用指纹（持久化，用于变更检测）
 | v4.1.7 | 2026-03-30 | **模式D异常分支删除按钮修复**：删除按钮从绝对定位改为与标题同行 flex 布局，右对齐 + 常驻显示（opacity:0.6） |
 | v4.1.8 | 2026-03-30 | **TAB精简**：移除顶部 TAB 的 A/B/C/D 前缀，仅保留中文名称（策划案分析/行为路径/信息架构/交互稿） |
 | v4.2.0 | 2026-03-30 | **增量工作流 + 复制为 Prompt**：①Skill 新增 `/UX-NEXT B` 和 `/UX-NEXT D` 增量续接指令执行规范（含输入格式、执行逻辑、refs 自动关联、输出规则）②编辑器导出菜单删除"导出该模块修改部分JSON"，新增"复制为 Prompt"（首位）——模式A生成 `/UX-NEXT B` + A数据，模式B生成 `/UX-NEXT D` + B数据，模式D置灰③清理 `exportJsonModDiff`/`computeDiff`/`isModuleDirty` 等废弃函数 |
+| v4.2.1 | 2026-03-30 | **视觉色系修复（一）**：模式D三区块底板颜色与标题同色系——visible(蓝)/interact(绿)/boundary(红)，使用CSS相邻选择器 `.spec-section-header.X + .spec-section-body` 实现 |
+| v4.2.2 | 2026-03-30 | **视觉色系修复（二）**：模式B `action-block` 蓝底透明度从0.14统一降至0.04，与模式D元素区块色调一致 |
+| v4.2.3 | 2026-03-30 | **视觉色系修复（三）**：模式D操作卡片（`d-flow-block`）颜色跟随所在区块色系——flows区绿色/boundaries区红色，去除硬编码蓝色 |
+| v4.2.4 | 2026-03-30 | **色系对换**：交互稿模块 visible(元素状态)↔interact(交互流) 色系互换——元素状态改为绿色系，核心场景交互流改为蓝色系 |
+| v4.2.5 | 2026-03-30 | **图标统一**：全部4处父级卡片删除按钮（`del-btn`）从 🗑 emoji 改为 `ICONS.x` SVG，与子级条目删除图标统一 |
+| v4.3.0 | 2026-03-30 | **UX Pro Max 全面优化**：①`contenteditable:focus` 新增蓝底+底部蓝线聚焦态 ②`.step-del`/`add-inline-btn` 触控区扩大至min-height:28px ③`.card-header` 加 cursor:pointer ④卡片增加 box-shadow 层次感 + border-left 色条 ⑤新增 `@keyframes fadeSlideIn` 条目淡入动画 ⑥Toolbar重构：TAB内嵌品牌行（绝对居中）/操作栏三组分隔/撤销重做独立样式 ⑦Undo Toast替换confirm()——底部悬浮+3s红色进度条倒计时+可取消（5处父级删除全覆盖）⑧品牌图标从星形改为Layout线框图 ⑨TAB active态改为accent蓝底+蓝字+inset描边，彻底消除切换位移 ⑩模式A「核心目标拆解」独立为section标题（紫色系），新增按钮移至主目标/隐性需求子标题右侧；「功能模块拆解」标题改蓝色系，双模块色彩拉开感官 ⑪自定义滚动条（5px overlay悬浮，不占额外宽度） ⑫品牌icon加 display:inline-flex 修复垂直对齐 |
