@@ -1779,7 +1779,7 @@ function renderModule(m) {
       </div>
       <div class="actions">
         <button class="icon-btn" onclick="aCopyMod('${m.id}')" title="复制模块内容">${ICONS.copy}</button>
-        <button class="del-btn" onclick="if(confirm('删除该模块？'))aDelMod('${m.id}')" title="删除模块">🗑</button>
+        <button class="del-btn" onclick="if(confirm('删除该模块？'))aDelMod('${m.id}')" title="删除模块">${ICONS.x}</button>
         <button onclick="aToggleMod('${m.id}')" title="${m.collapsed?'展开':'收起'}">${m.collapsed ? ICONS.chevronRight : ICONS.chevronDown}</button>
       </div>
     </div>
@@ -2261,7 +2261,7 @@ function renderB() {
           <button class="ref-link-btn" onclick="openRefModal('${path.id}','B')" title="管理引用关系">${ICONS.link}</button>
           <button class="icon-btn" onclick="bCopyPath('${path.id}')" title="复制路径内容">${ICONS.copy}</button>
           <button class="add-inline-btn" onclick="bAddStage('${path.id}')">＋阶段</button>
-          <button class="del-btn" onclick="if(confirm('删除该路径？'))bDelPath('${path.id}')" title="删除路径">🗑</button>
+          <button class="del-btn" onclick="if(confirm('删除该路径？'))bDelPath('${path.id}')" title="删除路径">${ICONS.x}</button>
           <button onclick="bToggle('${path.id}')" title="${path.collapsed?'展开':'收起'}">${path.collapsed?ICONS.chevronRight:ICONS.chevronDown}</button>
         </div>
       </div>
@@ -2636,7 +2636,7 @@ function renderC() {
         <div class="actions">
           <button class="icon-btn" onclick="cCopyPage('${page.id}')" title="复制页面内容">${ICONS.copy}</button>
           <button class="add-inline-btn" onclick="cAddNode('${page.id}',null)">＋节点</button>
-          <button class="del-btn" onclick="if(confirm('删除该页面架构？'))cDelPage('${page.id}')" title="删除页面">🗑</button>
+          <button class="del-btn" onclick="if(confirm('删除该页面架构？'))cDelPage('${page.id}')" title="删除页面">${ICONS.x}</button>
           <button onclick="cToggle('${page.id}')" title="${page.collapsed?'展开':'收起'}">${page.collapsed?ICONS.chevronRight:ICONS.chevronDown}</button>
         </div>
       </div>
@@ -2869,7 +2869,7 @@ function renderD() {
         <div class="actions">
           <button class="ref-link-btn" onclick="openRefModal('${spec.id}','D')" title="管理引用关系">${ICONS.link}</button>
           <button class="icon-btn" onclick="dCopySpec('${spec.id}')" title="复制交互稿内容">${ICONS.copy}</button>
-          <button class="del-btn" onclick="if(confirm('删除？'))dDelSpec('${spec.id}')" title="删除">🗑</button>
+          <button class="del-btn" onclick="if(confirm('删除？'))dDelSpec('${spec.id}')" title="删除">${ICONS.x}</button>
           <button onclick="dToggle('${spec.id}')" title="${spec.collapsed?'展开':'收起'}">${spec.collapsed?ICONS.chevronRight:ICONS.chevronDown}</button>
         </div>
       </div>
