@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "ui-ux-pro-max-skill": {
+      "source": "api/git/@ui-ux-pro-max-skill",
+      "sourceType": "git",
+      "computedHash": "792952c4f5f7e3c16cb311501e06c6d5e3b98980fa7c6e7b464f279dceb86919"
+    }
+  }
+}
