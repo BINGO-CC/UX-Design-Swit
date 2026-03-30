@@ -300,8 +300,8 @@ body{
   letter-spacing:0.05em;text-transform:uppercase;
   display:flex;align-items:center;gap:7px;user-select:none;
 }
-.spec-section-header.visible{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(95,127,255,0.2);border-radius:var(--radius-sm) var(--radius-sm) 0 0;}
-.spec-section-header.interact{background:var(--green-dim);color:var(--green);border:1px solid rgba(76,175,137,0.2);border-radius:var(--radius-sm) var(--radius-sm) 0 0;}
+.spec-section-header.visible{background:var(--green-dim);color:var(--green);border:1px solid rgba(76,175,137,0.2);border-radius:var(--radius-sm) var(--radius-sm) 0 0;}
+.spec-section-header.interact{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(95,127,255,0.2);border-radius:var(--radius-sm) var(--radius-sm) 0 0;}
 .spec-section-header.boundary{background:var(--red-dim);color:var(--red);border:1px solid rgba(224,107,107,0.2);border-radius:var(--radius-sm) var(--radius-sm) 0 0;}
 .spec-section.collapsed .spec-section-header{border-radius:var(--radius-sm);}
 .spec-section.collapsed .spec-section-body{display:none;}
@@ -311,8 +311,8 @@ body{
 .spec-section-header .sec-copy-btn:hover{opacity:1;}
 .spec-section-body{padding:10px 13px;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);background:var(--surface);}
 /* 区块底板与标题同色系 */
-.spec-section-header.visible + .spec-section-body{background:rgba(95,127,255,0.04);border-color:rgba(95,127,255,0.18);}
-.spec-section-header.interact + .spec-section-body{background:rgba(76,175,137,0.04);border-color:rgba(76,175,137,0.18);}
+.spec-section-header.visible + .spec-section-body{background:rgba(76,175,137,0.04);border-color:rgba(76,175,137,0.18);}
+.spec-section-header.interact + .spec-section-body{background:rgba(95,127,255,0.04);border-color:rgba(95,127,255,0.18);}
 .spec-section-header.boundary + .spec-section-body{background:rgba(224,107,107,0.04);border-color:rgba(224,107,107,0.18);}
 
 /* ── Module priority (Mode A) ── */
@@ -465,7 +465,7 @@ button svg{display:block;flex-shrink:0;pointer-events:none;}
 .icon-btn.danger{color:var(--red);}
 .icon-btn.danger:hover{color:var(--red);background:var(--red-dim);}
 /* Mode D 区块（area/flow/boundary）*/
-.d-area-block{margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(95,127,255,0.15);background:rgba(95,127,255,0.04);position:relative;}
+.d-area-block{margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(76,175,137,0.15);background:rgba(76,175,137,0.04);position:relative;}
 .d-area-title{font-weight:600;font-size:13px;color:var(--accent);}
 .d-area-list{margin-top:4px;}
 .d-area-item-row{display:flex;align-items:baseline;gap:4px;padding:3px 0;}
@@ -474,7 +474,7 @@ button svg{display:block;flex-shrink:0;pointer-events:none;}
 .d-area-item-desc{flex:1;}
 .d-flow-block{margin:6px 0;padding:8px 28px 8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-raised);position:relative;}
 /* flows 区块内：绿色系；boundaries 区块内：红色系 */
-.spec-section-header.interact + .spec-section-body .d-flow-block{background:rgba(76,175,137,0.05);border-color:rgba(76,175,137,0.2);}
+.spec-section-header.interact + .spec-section-body .d-flow-block{background:rgba(95,127,255,0.05);border-color:rgba(95,127,255,0.2);}
 .spec-section-header.boundary + .spec-section-body .d-flow-block{background:rgba(224,107,107,0.05);border-color:rgba(224,107,107,0.2);}
 .d-flow-title{font-weight:600;font-size:13px;color:var(--accent);display:flex;align-items:center;}
 .d-flow-meta{font-size:13px;margin-top:3px;}
