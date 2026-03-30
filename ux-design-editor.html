@@ -106,18 +106,21 @@ body{
 .toolbar button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 .toolbar .sep{width:1px;height:18px;background:var(--border);flex-shrink:0;}
 
-/* ── Tab Bar ── */
+/* ── Toolbar Tabs（内嵌在 Toolbar 内）── */
+.toolbar-tabs{display:flex;align-items:center;gap:2px;margin-left:4px;}
+.toolbar-tabs .mode-tab{font-size:13px;padding:4px 12px;}
+
+/* ── Tab Bar（第二行：操作区）── */
 .tab-bar{
   display:flex;align-items:center;
-  height:40px;
-  background:rgba(25,25,25,0.88);
+  height:38px;
+  background:rgba(22,22,22,0.90);
   backdrop-filter:blur(16px);
   -webkit-backdrop-filter:blur(16px);
   border-bottom:1px solid var(--border);
   padding:0 16px;
   position:sticky;top:44px;z-index:99;
 }
-.tab-bar .tabs-left{display:flex;align-items:center;flex:1;gap:2px;}
 .tab-bar .actions-right{display:flex;align-items:center;gap:4px;}
 .tab-bar .actions-right button{
   display:inline-flex;align-items:center;gap:5px;
@@ -609,45 +612,42 @@ button svg{display:block;flex-shrink:0;pointer-events:none;}
 </head>
 <body>
 
+<!-- ── Toolbar Row 1：品牌 + TAB 导航 + 存储状态 ── -->
 <div class="toolbar">
   <h1>
     <span class="brand-icon" aria-hidden="true">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
     </span>
-    UX 设计交互编辑器
+    UX Editor
   </h1>
   <div class="sep"></div>
-  <button id="shareLinkBtn" title="分享：导出/导入 .uxshare 文件" aria-label="分享文件">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-    分享
-  </button>
-  <button id="clearStorageBtn" title="清除所有本地数据" aria-label="清除数据">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
-    清除数据
-  </button>
-</div>
-
-<div class="tab-bar">
-  <div class="tabs-left">
+  <!-- TAB 内嵌至 Toolbar -->
+  <div class="toolbar-tabs">
     <div class="mode-tab active" data-mode="A">策划案分析</div>
     <div class="mode-tab" data-mode="B">行为路径</div>
     <div class="mode-tab" data-mode="C" style="display:none;">信息架构</div>
     <div class="mode-tab" data-mode="D">交互稿</div>
   </div>
-  <div class="actions-right">
-    <div class="storage-status" id="storageStatus" title="数据自动保存到浏览器">
-      <span class="storage-dot"></span>
-      <span>已保存</span>
-    </div>
-    <div class="undo-redo">
-      <button id="undoBtn" disabled title="撤销 Ctrl+Z" aria-label="撤销">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/></svg>
-      </button>
-      <button id="redoBtn" disabled title="重做 Ctrl+Y" aria-label="重做">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 019-9 9 9 0 016 2.3L21 13"/></svg>
-      </button>
-    </div>
-    <div class="sep"></div>
+  <!-- 右侧：存储状态 -->
+  <div class="storage-status" id="storageStatus" title="数据自动保存到浏览器" style="margin-left:auto;">
+    <span class="storage-dot"></span>
+    <span>已保存</span>
+  </div>
+</div>
+
+<!-- ── Toolbar Row 2：操作栏（分三组）── -->
+<div class="tab-bar">
+  <!-- 组1：历史 -->
+  <div class="undo-redo">
+    <button id="undoBtn" disabled title="撤销 Ctrl+Z" aria-label="撤销">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/></svg>
+    </button>
+    <button id="redoBtn" disabled title="重做 Ctrl+Y" aria-label="重做">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 019-9 9 9 0 016 2.3L21 13"/></svg>
+    </button>
+  </div>
+  <div class="actions-right" style="margin-left:auto;">
+    <!-- 组2：数据 -->
     <button id="importBtn" aria-label="导入 JSON">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       导入
@@ -665,6 +665,16 @@ button svg{display:block;flex-shrink:0;pointer-events:none;}
         <button onclick="showCoverageReport()">引用覆盖率报告</button>
       </div>
     </div>
+    <div class="sep"></div>
+    <!-- 组3：分享 / 危险操作 -->
+    <button id="shareLinkBtn" title="分享：导出/导入 .uxshare 文件" aria-label="分享文件">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      分享
+    </button>
+    <button id="clearStorageBtn" title="清除所有本地数据" aria-label="清除数据" style="color:var(--red);border-color:rgba(224,107,107,0.25);">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+      清除数据
+    </button>
   </div>
 </div>
 
