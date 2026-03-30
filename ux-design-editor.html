@@ -2562,7 +2562,7 @@ function renderDFlow(spId, fl) {
     </ul>
     ${(fl.exceptions||[]).length>0?`<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(248,113,113,.25);">
       <div style="font-size:12px;font-weight:600;color:var(--orange);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;">
-        <span>⚠️ 异常分支</span>
+        <span>异常分支</span>
         <button class="add-inline-btn" onclick="dAddFlowException('${spId}','${fl.id}')">＋异常</button>
       </div>
       ${fl.exceptions.map(ex=>renderDException(spId,fl.id,ex)).join('')}
@@ -2571,10 +2571,10 @@ function renderDFlow(spId, fl) {
 }
 
 function renderDException(spId, flId, ex) {
-  return `<div style="margin:4px 0 4px 12px;padding:6px 24px 6px 8px;border-radius:4px;border:1px solid rgba(248,113,113,.2);background:rgba(248,113,113,.04);position:relative;">
+  return `<div style="margin:4px 0 0 12px;padding:6px 24px 6px 8px;border-radius:4px;border:1px solid rgba(248,113,113,.2);background:rgba(248,113,113,.04);position:relative;">
     <button class="step-del" onclick="dDelFlowException('${spId}','${flId}','${ex.id}')">✕</button>
     <div style="font-weight:600;font-size:12px;color:var(--red);">
-      ⚠️ <span class="editable" contenteditable="true" data-f="d-exscn" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.scenario)}</span>
+      <span class="editable" contenteditable="true" data-f="d-exscn" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.scenario)}</span>
     </div>
     <div style="font-size:12px;margin-top:2px;">触发条件：<span class="editable" contenteditable="true" data-f="d-extrig" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.trigger)}</span></div>
     <div style="font-size:12px;margin-top:1px;">防错设计：<span class="editable" contenteditable="true" data-f="d-exdef" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.defense)}</span></div>
