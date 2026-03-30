@@ -376,6 +376,13 @@ body{
 .storage-dot.unsaved{background:var(--orange);animation:pulse 1.4s ease-in-out infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 
+/* ── SVG Icon Utilities ── */
+button svg{display:block;flex-shrink:0;pointer-events:none;}
+.drag-handle{display:inline-flex;align-items:center;justify-content:center;}
+.sec-toggle-btn{display:inline-flex;align-items:center;justify-content:center;}
+.node-actions button{display:inline-flex;align-items:center;}
+.card-header .actions button{display:inline-flex;align-items:center;}
+
 /* ── prefers-reduced-motion ── */
 @media (prefers-reduced-motion: reduce) {
   *{transition:none !important;animation:none !important;}
@@ -544,6 +551,33 @@ function toast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
 }
 
+// ====== Icon System (Heroicons Outline 24px) ======
+const ICONS = {
+  // 删除 / 关闭
+  x: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  // 拖拽手柄（六点网格）
+  drag: `<svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor" aria-hidden="true"><circle cx="4" cy="2.5" r="1.2"/><circle cx="8" cy="2.5" r="1.2"/><circle cx="4" cy="7" r="1.2"/><circle cx="8" cy="7" r="1.2"/><circle cx="4" cy="11.5" r="1.2"/><circle cx="8" cy="11.5" r="1.2"/></svg>`,
+  // 折叠 / 展开
+  chevronDown:  `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>`,
+  chevronRight: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>`,
+  // 复制
+  copy: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`,
+  // 链接 / 引用关系
+  link: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>`,
+  // 定位 / 被引用
+  pin: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  // 警告
+  warning: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-1px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  // 成功
+  check: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg>`,
+  // 模块
+  modules: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>`,
+  // 空状态
+  empty: `<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>`,
+  // 统计报告
+  chart: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+};
+
 // ====== State ======
 let store = { A: {}, B: [], C: [], D: [] };
 let importSnapshot = { A: {}, B: [], C: [], D: [] }; // 导入时的快照，用于对比修改
@@ -708,11 +742,11 @@ function renderRefTags(item, itemMode) {
     (item.refs[targetMode] || []).forEach(targetId => {
       const resolved = resolveRefTarget(targetId);
       if (!resolved) {
-        tags.push(`<span class="ref-tag deleted" title="引用目标已删除">⚠️ <span class="ref-mode">${targetMode}:</span>(已删除)</span>`);
+        tags.push(`<span class="ref-tag deleted" title="引用目标已删除">${ICONS.warning} <span class="ref-mode">${targetMode}:</span>(已删除)</span>`);
       } else {
         const changed = hasRefChanged(targetId, resolved.obj);
         const cls = changed ? 'ref-tag changed' : 'ref-tag';
-        const prefix = changed ? '⚠️ ' : '';
+        const prefix = changed ? ICONS.warning + ' ' : '';
         const onclick = changed
           ? `showRefChangeDetail('${targetId}','${resolved.mode}','${esc(resolved.label).replace(/'/g,"\\&#39;")}')`
           : `jumpToRef('${targetId}','${resolved.mode}')`;
@@ -734,7 +768,7 @@ function renderBackRefTags(itemId) {
   const tags = refs.map(r =>
     `<span class="back-ref-tag" onclick="jumpToRef('${r.from}','${r.fromMode}')" title="点击跳转到 ${r.fromLabel}">${r.fromMode}:${esc(r.fromLabel)}</span>`
   ).join('');
-  return `<div class="back-ref-row"><span class="back-ref-label">📍被引用:</span>${tags}</div>`;
+  return `<div class="back-ref-row"><span class="back-ref-label" style="display:inline-flex;align-items:center;gap:3px;">${ICONS.pin}被引用:</span>${tags}</div>`;
 }
 
 /**
@@ -823,7 +857,7 @@ function openRefModal(itemId, itemMode) {
   const ov = document.createElement('div');
   ov.className = 'modal-overlay';
   ov.innerHTML = `<div class="modal" style="max-width:480px;">
-    <h2>🔗 管理引用关系</h2>
+    <h2 style="display:flex;align-items:center;gap:7px;">${ICONS.link} 管理引用关系</h2>
     <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">选择该${itemMode === 'B' ? '路径' : '交互稿'}所关联的上游模块，建立引用后可跳转导航和变更检测</p>
     ${sections}
     <div class="m-actions">
@@ -899,7 +933,7 @@ function showRefChangeDetail(targetId, targetMode, targetLabel) {
   const ov = document.createElement('div');
   ov.className = 'modal-overlay';
   ov.innerHTML = `<div class="modal" style="max-width:500px;">
-    <h2>⚠️ 引用变更详情</h2>
+    <h2 style="display:flex;align-items:center;gap:7px;">${ICONS.warning} 引用变更详情</h2>
     <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">
       <strong style="color:var(--orange);">${targetMode}:${esc(resolved.label)}</strong> 的内容已发生变更
     </p>
@@ -1071,7 +1105,7 @@ function showCoverageReport() {
       ${renderProgressBar(data.covered, data.total)}
       <div style="margin-top:8px;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;background:var(--bg);padding:4px;">
         ${data.items.map(item => {
-          const icon = item.linked ? '✅' : '⚠️';
+          const icon = item.linked ? ICONS.check : ICONS.warning;
           const targetStr = item.linked ? ` → ${item.targets.join(', ')}` : ' → <span style="color:var(--orange);">(未关联)</span>';
           const changeStr = item.changed ? ' <span style="color:var(--orange);font-size:11px;">🔄已变更</span>' : '';
           return `<div style="display:flex;align-items:flex-start;gap:6px;padding:5px 8px;font-size:13px;border-bottom:1px solid var(--border);">
@@ -1100,7 +1134,7 @@ function showCoverageReport() {
   const ov = document.createElement('div');
   ov.className = 'modal-overlay';
   ov.innerHTML = `<div class="modal" style="max-width:600px;">
-    <h2>📊 引用覆盖率报告</h2>
+    <h2 style="display:flex;align-items:center;gap:7px;">${ICONS.chart} 引用覆盖率报告</h2>
     <div style="max-height:65vh;overflow-y:auto;padding-right:8px;">
       ${renderSection('B → A 覆盖率（行为路径 → 功能模块）', report.BA, '→')}
       ${renderSection('D → B 覆盖率（交互稿 → 行为路径）', report.DB, '→')}
@@ -1130,7 +1164,7 @@ function exportCoverageReportMd() {
     const pct = Math.round((data.covered / data.total) * 100);
     md += `**覆盖率：${data.covered}/${data.total} (${pct}%)**\n\n`;
     data.items.forEach(item => {
-      const icon = item.linked ? '✅' : '⚠️';
+        const icon = item.linked ? ICONS.check : ICONS.warning;
       const target = item.linked ? item.targets.join(', ') : '(未关联)';
       const change = item.changed ? ' 🔄已变更' : '';
       md += `- ${icon} ${item.source} → ${target}${change}\n`;
@@ -1551,7 +1585,7 @@ function isStoreEmpty() {
 
 function renderEmptyState() {
   return `<div class="empty-state">
-    <div class="empty-icon">📭</div>
+    <div class="empty-icon">${ICONS.empty}</div>
     <div class="empty-text">暂无数据<br><span class="empty-action" onclick="importJSON()">点击此处 📥 导入 JSON</span></div>
   </div>`;
 }
@@ -1578,7 +1612,7 @@ function renderA() {
           <li class="step-item">
             <span class="step-num">${i+1}.</span>
             <span class="step-content editable" contenteditable="true" data-f="a-main" data-i="${g.id}">${esc(g.text)}</span>
-            <button class="step-del" onclick="aDelGoal('main','${g.id}')">✕</button>
+            <button class="step-del" onclick="aDelGoal('main','${g.id}')" aria-label="删除">${ICONS.x}</button>
           </li>`).join('')}
         </ul>
         <div style="margin-top:12px;font-size:13px;font-weight:600;color:var(--purple);">隐性需求</div>
@@ -1586,12 +1620,12 @@ function renderA() {
           <li class="step-item">
             <span class="step-num">•</span>
             <span class="step-content editable" contenteditable="true" data-f="a-hidden" data-i="${g.id}">${esc(g.text)}</span>
-            <button class="step-del" onclick="aDelGoal('hidden','${g.id}')">✕</button>
+            <button class="step-del" onclick="aDelGoal('hidden','${g.id}')" aria-label="删除">${ICONS.x}</button>
           </li>`).join('')}
         </ul>
       </div>
     </div>
-    <div style="font-size:15px;font-weight:600;margin:16px 0 10px;display:flex;align-items:center;gap:8px;">🧩 功能模块拆解与优化建议<button class="add-inline-btn" onclick="aAddModule()">＋新增模块</button></div>
+    <div style="font-size:14px;font-weight:600;margin:16px 0 10px;display:flex;align-items:center;gap:8px;">${ICONS.modules} 功能模块拆解与优化建议<button class="add-inline-btn" onclick="aAddModule()">＋新增模块</button></div>
     ${A.modules.map(m => renderModule(m)).join('')}
   `;
 }
@@ -1608,9 +1642,9 @@ function renderModule(m) {
         ${renderBackRefTags(m.id)}
       </div>
       <div class="actions">
-        <button onclick="aCopyMod('${m.id}')" title="复制模块内容" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:3px 5px;border-radius:4px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">⎘</button>
+        <button onclick="aCopyMod('${m.id}')" title="复制模块内容" style="background:none;border:none;color:var(--text2);cursor:pointer;padding:3px 5px;border-radius:4px;display:inline-flex;align-items:center;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">${ICONS.copy}</button>
         <button class="del-btn" onclick="if(confirm('删除该模块？'))aDelMod('${m.id}')" title="删除模块">🗑</button>
-        <button onclick="aToggleMod('${m.id}')">${m.collapsed ? '▶' : '▼'}</button>
+        <button onclick="aToggleMod('${m.id}')" title="${m.collapsed?'展开':'收起'}">${m.collapsed ? ICONS.chevronRight : ICONS.chevronDown}</button>
       </div>
     </div>
     <div class="card-body ${m.collapsed ? 'collapsed' : ''}">
@@ -1622,7 +1656,7 @@ function renderModule(m) {
         <li class="step-item">
           <span class="step-num">${i+1}.</span>
           <span class="step-content editable" contenteditable="true" data-f="a-feat" data-i="${f.id}" data-mod="${m.id}">${esc(f.text)}</span>
-          <button class="step-del" onclick="aDelFeat('${m.id}','${f.id}')">✕</button>
+          <button class="step-del" onclick="aDelFeat('${m.id}','${f.id}')" aria-label="删除">${ICONS.x}</button>
         </li>`).join('')}
       </ul>
       <div style="margin-top:12px;font-size:13px;font-weight:600;color:var(--green);display:flex;align-items:center;justify-content:space-between;">
@@ -1631,7 +1665,7 @@ function renderModule(m) {
       </div>
       ${m.suggestions.map(s => `
         <div class="sug-item" style="margin:5px 0;padding:7px 28px 7px 10px;border-radius:5px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.15);position:relative;">
-          <button class="step-del" onclick="aDelSug('${m.id}','${s.id}')">✕</button>
+          <button class="step-del" onclick="aDelSug('${m.id}','${s.id}')" aria-label="删除">${ICONS.x}</button>
           <div class="editable" contenteditable="true" data-f="a-sug" data-i="${s.id}" data-mod="${m.id}">${esc(s.text)}</div>
           <div style="font-size:12px;color:var(--text2);margin-top:3px;">依据：<span class="editable" contenteditable="true" data-f="a-sugr" data-i="${s.id}" data-mod="${m.id}">${esc(s.reason)}</span></div>
         </div>`).join('')}
@@ -2080,7 +2114,7 @@ function renderB() {
   el.innerHTML = store.B.map((path,pi) => `
     <div class="card" data-path="${path.id}" draggable="true">
       <div class="card-header">
-        <span class="drag-handle">⠿</span>
+        <span class="drag-handle">${ICONS.drag}</span>
         <div class="info">
           <div class="title editable" contenteditable="true" data-f="b-title" data-i="${path.id}">${esc(path.title)}${renderAnno(path.id)}</div>
           <div class="meta">【起点】<span class="editable" contenteditable="true" data-f="b-start" data-i="${path.id}">${esc(path.startPoint)}</span></div>
@@ -2088,11 +2122,11 @@ function renderB() {
           ${renderBackRefTags(path.id)}
         </div>
         <div class="actions">
-          <button class="ref-link-btn" onclick="openRefModal('${path.id}','B')" title="管理引用关系">🔗</button>
-          <button onclick="bCopyPath('${path.id}')" title="复制路径内容" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:3px 5px;border-radius:4px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">⎘</button>
+          <button class="ref-link-btn" onclick="openRefModal('${path.id}','B')" title="管理引用关系">${ICONS.link}</button>
+          <button onclick="bCopyPath('${path.id}')" title="复制路径内容" style="background:none;border:none;color:var(--text2);cursor:pointer;padding:3px 5px;border-radius:4px;display:inline-flex;align-items:center;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">${ICONS.copy}</button>
           <button class="add-inline-btn" onclick="bAddStage('${path.id}')">＋阶段</button>
           <button class="del-btn" onclick="if(confirm('删除该路径？'))bDelPath('${path.id}')" title="删除路径">🗑</button>
-          <button onclick="bToggle('${path.id}')">${path.collapsed?'▶':'▼'}</button>
+          <button onclick="bToggle('${path.id}')" title="${path.collapsed?'展开':'收起'}">${path.collapsed?ICONS.chevronRight:ICONS.chevronDown}</button>
         </div>
       </div>
       <div class="card-body ${path.collapsed?'collapsed':''}">
@@ -2107,11 +2141,11 @@ function renderBStage(pid,stage,si) {
   const fbCount = stage.feedbacks.length + stage.branches.reduce((acc,b)=>acc+b.items.length,0);
   return `<div class="stage" data-stage="${stage.id}" data-path="${pid}">
     <div class="stage-header">
-      <span class="drag-handle" style="font-size:13px;color:var(--text2);">⠿</span>
+      <span class="drag-handle" style="color:var(--text2);">${ICONS.drag}</span>
       <span style="font-size:16px;">🌊</span>
       <span class="stage-title">阶段 ${si+1}：<span class="editable" contenteditable="true" data-f="b-stitle" data-i="${stage.id}" data-p="${pid}">${esc(stage.title)}</span></span>
       <button class="fb-popover-btn" onclick="openFbPopover('${pid}','${stage.id}')">🔄 反馈与边界 ${fbCount>0?'<span style="opacity:.7;font-weight:400;">('+stage.feedbacks.length+'+'+stage.branches.length+')</span>':''}</button>
-      <button onclick="bCopyStageToClipboard('${pid}','${stage.id}')" title="复制阶段内容到剪贴板" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">⎘</button>
+      <button onclick="bCopyStageToClipboard('${pid}','${stage.id}')" title="复制阶段内容到剪贴板" style="background:none;border:none;color:var(--text2);cursor:pointer;padding:2px 5px;border-radius:4px;display:inline-flex;align-items:center;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">${ICONS.copy}</button>
       <button onclick="if(confirm('删除该阶段？'))bDelStage('${pid}','${stage.id}')" title="删除阶段" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;">🗑</button>
     </div>
     <div class="action-block">
@@ -2122,7 +2156,7 @@ function renderBStage(pid,stage,si) {
       <ul class="step-list">${stage.actions.map((a,i)=>`
         <li class="step-item"><span class="step-num">${i+1}.</span>
           <span class="step-content editable" contenteditable="true" data-f="b-step" data-i="${a.id}" data-s="${stage.id}" data-p="${pid}" data-t="actions">${esc(a.text)}</span>
-          <button class="step-del" onclick="bDelStep('${pid}','${stage.id}','actions','${a.id}')">✕</button>
+          <button class="step-del" onclick="bDelStep('${pid}','${stage.id}','actions','${a.id}')" aria-label="删除">${ICONS.x}</button>
         </li>`).join('')}
       </ul>
     </div>
@@ -2133,11 +2167,11 @@ function renderBBranch(pid,sid,b) {
   return `<div class="branch"><div class="branch-header">
     <span style="color:var(--orange);">👉</span>
     <span class="branch-title editable" contenteditable="true" data-f="b-blabel" data-i="${b.id}" data-s="${sid}" data-p="${pid}">${esc(b.label)}</span>
-    <button onclick="bDelBranch('${pid}','${sid}','${b.id}')">✕</button>
+    <button onclick="bDelBranch('${pid}','${sid}','${b.id}')" aria-label="删除分支" style="background:none;border:none;color:var(--red);cursor:pointer;padding:2px 5px;border-radius:var(--radius-xs);display:inline-flex;align-items:center;">${ICONS.x}</button>
   </div>
   ${b.items.map(it=>`<div class="branch-item"><span class="bullet">•</span>
     <span class="editable" contenteditable="true" style="flex:1" data-f="b-bitem" data-i="${it.id}" data-b="${b.id}" data-s="${sid}" data-p="${pid}">${esc(it.text)}</span>
-    <button class="step-del" onclick="bDelBItem('${pid}','${sid}','${b.id}','${it.id}')">✕</button>
+    <button class="step-del" onclick="bDelBItem('${pid}','${sid}','${b.id}','${it.id}')" aria-label="删除">${ICONS.x}</button>
   </div>`).join('')}
   <button class="add-btn" onclick="bAddBItem('${pid}','${sid}','${b.id}')">+ 新增分支项</button>
   </div>`;
@@ -2199,7 +2233,7 @@ function renderFbPopover() {
   const feedbacksHtml = stage.feedbacks.map(f => `
     <li class="step-item"><span class="step-num">•</span>
       <span class="step-content editable" contenteditable="true" data-f="b-step" data-i="${f.id}" data-s="${stage.id}" data-p="${pid}" data-t="feedbacks">${esc(f.text)}</span>
-      <button class="step-del" onclick="bDelStep('${pid}','${stage.id}','feedbacks','${f.id}');renderFbPopover()">✕</button>
+          <button class="step-del" onclick="bDelStep('${pid}','${stage.id}','feedbacks','${f.id}');renderFbPopover()" aria-label="删除">${ICONS.x}</button>
     </li>`).join('');
 
   const branchesHtml = stage.branches.map(b => `
@@ -2207,11 +2241,11 @@ function renderFbPopover() {
       <div class="branch-header">
         <span style="color:var(--orange);">👉</span>
         <span class="branch-title editable" contenteditable="true" data-f="b-blabel" data-i="${b.id}" data-s="${stage.id}" data-p="${pid}">${esc(b.label)}</span>
-        <button class="step-del" onclick="bDelBranch('${pid}','${stage.id}','${b.id}');renderFbPopover()">✕</button>
+        <button class="step-del" onclick="bDelBranch('${pid}','${stage.id}','${b.id}');renderFbPopover()" aria-label="删除">${ICONS.x}</button>
       </div>
       ${b.items.map(it=>`<div class="branch-item"><span class="bullet">•</span>
         <span class="editable" contenteditable="true" style="flex:1" data-f="b-bitem" data-i="${it.id}" data-b="${b.id}" data-s="${stage.id}" data-p="${pid}">${esc(it.text)}</span>
-        <button class="step-del" onclick="bDelBItem('${pid}','${stage.id}','${b.id}','${it.id}');renderFbPopover()">✕</button>
+        <button class="step-del" onclick="bDelBItem('${pid}','${stage.id}','${b.id}','${it.id}');renderFbPopover()" aria-label="删除">${ICONS.x}</button>
       </div>`).join('')}
       <button class="add-btn" onclick="bAddBItemInPopover('${pid}','${stage.id}','${b.id}')">+ 新增分支项</button>
     </div>`).join('');
@@ -2220,7 +2254,7 @@ function renderFbPopover() {
     <div class="fb-popover">
       <div class="fb-popover-head">
         <h3>🔄 反馈与边界条件</h3>
-        <button class="fb-popover-close" onclick="closeFbPopover()">✕</button>
+        <button class="fb-popover-close" onclick="closeFbPopover()" aria-label="关闭">${ICONS.x}</button>
       </div>
       <div class="fb-stage-tabs">${tabsHtml}</div>
       <div class="fb-popover-body">
@@ -2450,16 +2484,16 @@ function renderC() {
   el.innerHTML = store.C.map(page => `
     <div class="card" data-page="${page.id}">
       <div class="card-header">
-        <span class="drag-handle">⠿</span>
+        <span class="drag-handle">${ICONS.drag}</span>
         <div class="info">
           <div class="title">🏗️ <span class="editable" contenteditable="true" data-f="c-page" data-i="${page.id}">${esc(page.pageName)}</span></div>
           ${renderBackRefTags(page.id)}
         </div>
         <div class="actions">
-          <button onclick="cCopyPage('${page.id}')" title="复制页面内容" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:3px 5px;border-radius:4px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">⎘</button>
+          <button onclick="cCopyPage('${page.id}')" title="复制页面内容" style="background:none;border:none;color:var(--text2);cursor:pointer;padding:3px 5px;border-radius:4px;display:inline-flex;align-items:center;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">${ICONS.copy}</button>
           <button class="add-inline-btn" onclick="cAddNode('${page.id}',null)">＋节点</button>
           <button class="del-btn" onclick="if(confirm('删除该页面架构？'))cDelPage('${page.id}')" title="删除页面">🗑</button>
-          <button onclick="cToggle('${page.id}')">${page.collapsed?'▶':'▼'}</button>
+          <button onclick="cToggle('${page.id}')" title="${page.collapsed?'展开':'收起'}">${page.collapsed?ICONS.chevronRight:ICONS.chevronDown}</button>
         </div>
       </div>
       <div class="card-body ${page.collapsed?'collapsed':''}">
@@ -2480,7 +2514,7 @@ function renderCNode(pageId,node,depth) {
       <span class="node-actions">
         <button onclick="cAddNode('${pageId}','${node.id}')" title="添加子节点">＋</button>
         <button onclick="cEditNote('${pageId}','${node.id}')" title="编辑备注">📝</button>
-        <button class="del-btn" onclick="cDelNode('${pageId}','${node.id}')" title="删除">✕</button>
+        <button class="del-btn" onclick="cDelNode('${pageId}','${node.id}')" title="删除" aria-label="删除">${ICONS.x}</button>
       </span>
     </div>
     ${(node.children||[]).map(c=>renderCNode(pageId,c,depth+1)).join('')}
@@ -2689,10 +2723,10 @@ function renderD() {
           ${renderRefTags(spec, 'D')}
         </div>
         <div class="actions">
-          <button class="ref-link-btn" onclick="openRefModal('${spec.id}','D')" title="管理引用关系">🔗</button>
-          <button onclick="dCopySpec('${spec.id}')" title="复制交互稿内容" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:3px 5px;border-radius:4px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">⎘</button>
+          <button class="ref-link-btn" onclick="openRefModal('${spec.id}','D')" title="管理引用关系">${ICONS.link}</button>
+          <button onclick="dCopySpec('${spec.id}')" title="复制交互稿内容" style="background:none;border:none;color:var(--text2);cursor:pointer;padding:3px 5px;border-radius:4px;display:inline-flex;align-items:center;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">${ICONS.copy}</button>
           <button class="del-btn" onclick="if(confirm('删除？'))dDelSpec('${spec.id}')" title="删除">🗑</button>
-          <button onclick="dToggle('${spec.id}')">${spec.collapsed?'▶':'▼'}</button>
+          <button onclick="dToggle('${spec.id}')" title="${spec.collapsed?'展开':'收起'}">${spec.collapsed?ICONS.chevronRight:ICONS.chevronDown}</button>
         </div>
       </div>
       <div class="card-body ${spec.collapsed?'collapsed':''}">
@@ -2702,8 +2736,8 @@ function renderD() {
             <span>🧩 元素状态与基础逻辑（页面内容 / 控件 / 规则约束）</span>
             <span class="sec-actions">
               <button class="add-inline-btn" onclick="dAddArea('${spec.id}')">＋区域</button>
-              <button class="sec-copy-btn" onclick="dCopyElements('${spec.id}')" title="复制元素内容">⎘</button>
-              <button class="sec-toggle-btn" onclick="dToggleSec('${spec.id}','_colElem')" title="收起/展开">${spec._colElem?'▶':'▼'}</button>
+              <button class="sec-copy-btn" onclick="dCopyElements('${spec.id}')" title="复制元素内容">${ICONS.copy}</button>
+              <button class="sec-toggle-btn" onclick="dToggleSec('${spec.id}','_colElem')" title="收起/展开">${spec._colElem?ICONS.chevronRight:ICONS.chevronDown}</button>
             </span>
           </div>
           <div class="spec-section-body">
@@ -2716,8 +2750,8 @@ function renderD() {
             <span>🖱️ 核心场景交互流（操作 → 校验 → 反馈 → 异常分支）</span>
             <span class="sec-actions">
               <button class="add-inline-btn" onclick="dAddFlow('${spec.id}')">＋操作</button>
-              <button class="sec-copy-btn" onclick="dCopyFlows('${spec.id}')" title="复制交互流内容">⎘</button>
-              <button class="sec-toggle-btn" onclick="dToggleSec('${spec.id}','_colFlow')" title="收起/展开">${spec._colFlow?'▶':'▼'}</button>
+              <button class="sec-copy-btn" onclick="dCopyFlows('${spec.id}')" title="复制交互流内容">${ICONS.copy}</button>
+              <button class="sec-toggle-btn" onclick="dToggleSec('${spec.id}','_colFlow')" title="收起/展开">${spec._colFlow?ICONS.chevronRight:ICONS.chevronDown}</button>
             </span>
           </div>
           <div class="spec-section-body">
@@ -2730,8 +2764,8 @@ function renderD() {
             <span>🚧 系统级边界（全局异常 / 配置缺失 / 网络断连）</span>
             <span class="sec-actions">
               <button class="add-inline-btn" onclick="dAddBoundary('${spec.id}')">＋边界</button>
-              <button class="sec-copy-btn" onclick="dCopyBoundaries('${spec.id}')" title="复制边界内容">⎘</button>
-              <button class="sec-toggle-btn" onclick="dToggleSec('${spec.id}','_colBound')" title="收起/展开">${spec._colBound?'▶':'▼'}</button>
+              <button class="sec-copy-btn" onclick="dCopyBoundaries('${spec.id}')" title="复制边界内容">${ICONS.copy}</button>
+              <button class="sec-toggle-btn" onclick="dToggleSec('${spec.id}','_colBound')" title="收起/展开">${spec._colBound?ICONS.chevronRight:ICONS.chevronDown}</button>
             </span>
           </div>
           <div class="spec-section-body">
@@ -2746,7 +2780,7 @@ function renderD() {
 // ====== D: 渲染子组件 ======
 function renderDArea(spId, area) {
   return `<div class="bound-item" style="margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(99,102,241,.15);background:rgba(99,102,241,.04);position:relative;">
-    <button class="step-del" onclick="dDelArea('${spId}','${area.id}')">✕</button>
+    <button class="step-del" onclick="dDelArea('${spId}','${area.id}')" aria-label="删除">${ICONS.x}</button>
     <div style="font-weight:600;font-size:13px;color:var(--accent);">
       【<span class="editable" contenteditable="true" data-f="d-area" data-i="${area.id}" data-sp="${spId}">${esc(area.area)}</span>】
     </div>
@@ -2756,7 +2790,7 @@ function renderDArea(spId, area) {
           <span class="editable" contenteditable="true" style="font-weight:600;min-width:50px;" data-f="d-elabel" data-i="${it.id}" data-area="${area.id}" data-sp="${spId}">${esc(it.label)}</span>
           <span style="margin:0 4px;color:var(--text2);">：</span>
           <span class="step-content editable" contenteditable="true" data-f="d-edesc" data-i="${it.id}" data-area="${area.id}" data-sp="${spId}">${esc(it.desc)}</span>
-          <button class="step-del" onclick="dDelAreaItem('${spId}','${area.id}','${it.id}')">✕</button>
+          <button class="step-del" onclick="dDelAreaItem('${spId}','${area.id}','${it.id}')" aria-label="删除">${ICONS.x}</button>
         </li>`).join('')}
     </ul>
     <div style="display:flex;justify-content:flex-end;margin-top:4px;"><button class="add-inline-btn" onclick="dAddAreaItem('${spId}','${area.id}')">＋条目</button></div>
@@ -2765,10 +2799,10 @@ function renderDArea(spId, area) {
 
 function renderDFlow(spId, fl) {
   return `<div class="bound-item" style="margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(59,130,246,.15);background:rgba(59,130,246,.04);position:relative;">
-    <button class="step-del" onclick="dDelFlow('${spId}','${fl.id}')">✕</button>
+    <button class="step-del" onclick="dDelFlow('${spId}','${fl.id}')" aria-label="删除">${ICONS.x}</button>
     <div style="font-weight:600;font-size:13px;color:var(--accent);display:flex;align-items:center;">
       <span>操作：<span class="editable" contenteditable="true" data-f="d-faction" data-i="${fl.id}" data-sp="${spId}">${esc(fl.action)}</span></span>
-      <button onclick="dCopyFlow('${spId}','${fl.id}')" title="复制该操作内容" style="margin-left:auto;background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;flex-shrink:0;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">⎘</button>
+      <button onclick="dCopyFlow('${spId}','${fl.id}')" title="复制该操作内容" style="margin-left:auto;background:none;border:none;color:var(--text2);cursor:pointer;padding:2px 5px;border-radius:4px;flex-shrink:0;display:inline-flex;align-items:center;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">${ICONS.copy}</button>
     </div>
     <div style="font-size:13px;margin-top:3px;">触发条件：<span class="editable" contenteditable="true" data-f="d-ftrig" data-i="${fl.id}" data-sp="${spId}">${esc(fl.trigger)}</span></div>
     <div style="font-size:13px;margin-top:2px;">系统校验：<span class="editable" contenteditable="true" data-f="d-fvalid" data-i="${fl.id}" data-sp="${spId}">${esc(fl.validation)}</span></div>
@@ -2780,7 +2814,7 @@ function renderDFlow(spId, fl) {
       ${(fl.steps||[]).map((st,i)=>`
         <li class="step-item"><span class="step-num">${i+1}.</span>
           <span class="step-content editable" contenteditable="true" data-f="d-fstep" data-i="${st.id}" data-fl="${fl.id}" data-sp="${spId}">${esc(st.desc)}</span>
-          <button class="step-del" onclick="dDelFlowStep('${spId}','${fl.id}','${st.id}')">✕</button>
+          <button class="step-del" onclick="dDelFlowStep('${spId}','${fl.id}','${st.id}')" aria-label="删除">${ICONS.x}</button>
         </li>`).join('')}
     </ul>
     ${(fl.exceptions||[]).length>0?`<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(248,113,113,.25);">
@@ -2797,7 +2831,7 @@ function renderDException(spId, flId, ex) {
   return `<div style="margin:4px 0 0 12px;padding:6px 8px;border-radius:4px;border:1px solid rgba(248,113,113,.2);background:rgba(248,113,113,.04);">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
       <div style="font-weight:600;font-size:12px;color:var(--red);flex:1;"><span class="editable" contenteditable="true" data-f="d-exscn" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.scenario)}</span></div>
-      <button style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;padding:2px 4px;opacity:0.6;flex-shrink:0;" onclick="dDelFlowException('${spId}','${flId}','${ex.id}')" title="删除此异常分支">✕</button>
+      <button style="background:none;border:none;color:var(--red);cursor:pointer;padding:2px 4px;flex-shrink:0;display:inline-flex;align-items:center;border-radius:var(--radius-xs);opacity:0.6;transition:opacity var(--dur-fast),background var(--dur-fast);" onmouseover="this.style.opacity='1';this.style.background='var(--red-dim)'" onmouseout="this.style.opacity='0.6';this.style.background='none'" onclick="dDelFlowException('${spId}','${flId}','${ex.id}')" title="删除此异常分支" aria-label="删除">${ICONS.x}</button>
     </div>
     <div style="font-size:12px;margin-top:2px;display:flex;align-items:flex-start;"><span style="flex-shrink:0;">触发条件：</span><span class="editable" contenteditable="true" data-f="d-extrig" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}" style="flex:1;">${esc(ex.trigger)}</span></div>
     <div style="font-size:12px;margin-top:1px;display:flex;align-items:flex-start;"><span style="flex-shrink:0;">防错设计：</span><span class="editable" contenteditable="true" data-f="d-exdef" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}" style="flex:1;">${esc(ex.defense)}</span></div>
@@ -2807,7 +2841,7 @@ function renderDException(spId, flId, ex) {
 
 function renderDBoundary(spId, b) {
   return `<div class="bound-item" style="margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(248,113,113,.15);background:rgba(248,113,113,.04);position:relative;">
-    <button class="step-del" onclick="dDelBoundary('${spId}','${b.id}')">✕</button>
+    <button class="step-del" onclick="dDelBoundary('${spId}','${b.id}')" aria-label="删除">${ICONS.x}</button>
     <div style="font-weight:600;font-size:13px;color:var(--red);">
       <span class="editable" contenteditable="true" data-f="d-bscn" data-i="${b.id}" data-sp="${spId}">${esc(b.scenario)}</span>
     </div>
