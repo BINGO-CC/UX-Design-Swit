@@ -561,6 +561,46 @@ button svg{display:block;flex-shrink:0;pointer-events:none;}
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+/* ── Undo Delete Toast ── */
+.undo-toast{
+  position:fixed;bottom:24px;left:50%;
+  transform:translateX(-50%) translateY(16px);
+  background:var(--surface2);
+  border:1px solid var(--border2);
+  border-radius:10px;
+  padding:0;
+  z-index:450;
+  box-shadow:var(--shadow-lg);
+  min-width:260px;max-width:360px;
+  overflow:hidden;
+  opacity:0;pointer-events:none;
+  transition:opacity var(--dur-base) var(--ease),transform var(--dur-base) var(--ease);
+}
+.undo-toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+.undo-toast-body{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 14px;
+}
+.undo-toast-msg{flex:1;font-size:12px;color:var(--text2);}
+.undo-toast-msg strong{color:var(--text);font-weight:500;}
+.undo-toast-cancel{
+  flex-shrink:0;
+  background:var(--surface3);border:1px solid var(--border2);
+  color:var(--text);font-size:12px;font-weight:500;
+  padding:4px 11px;border-radius:var(--radius-xs);
+  cursor:pointer;font-family:inherit;
+  transition:background var(--dur-fast),border-color var(--dur-fast);
+}
+.undo-toast-cancel:hover{background:var(--surface4);border-color:var(--border3);}
+/* 进度条倒计时 */
+.undo-toast-bar{
+  height:2px;
+  background:var(--red);
+  transform-origin:left;
+  transform:scaleX(1);
+  transition:transform linear;
+}
+
 /* ── Modal ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:300;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
 .modal{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:22px;width:90%;max-width:640px;max-height:82vh;overflow-y:auto;box-shadow:var(--shadow-xl);}
@@ -686,6 +726,13 @@ button svg{display:block;flex-shrink:0;pointer-events:none;}
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="undo-toast" id="undoToast">
+  <div class="undo-toast-body">
+    <span class="undo-toast-msg" id="undoToastMsg">即将删除</span>
+    <button class="undo-toast-cancel" id="undoToastCancel">撤销</button>
+  </div>
+  <div class="undo-toast-bar" id="undoToastBar"></div>
+</div>
 
 <script>
 // ====== Core Utils ======
@@ -704,6 +751,51 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
 }
+
+// ── Undo Delete Toast ──
+let _undoTimer = null;
+let _undoRafId = null;
+function pendingDel(label, execFn, delay = 3000) {
+  // 如有上一个待删除，立即执行
+  if (_undoTimer) {
+    clearTimeout(_undoTimer);
+    clearAnimationFrame(_undoRafId);
+    _undoTimer = null;
+    document.getElementById('undoToast').classList.remove('show');
+  }
+  const toastEl = document.getElementById('undoToast');
+  const msgEl   = document.getElementById('undoToastMsg');
+  const barEl   = document.getElementById('undoToastBar');
+  const cancelEl = document.getElementById('undoToastCancel');
+  msgEl.innerHTML = `即将删除 <strong>${label}</strong>`;
+  // 进度条动画
+  barEl.style.transition = 'none';
+  barEl.style.transform  = 'scaleX(1)';
+  toastEl.classList.add('show');
+  // 下一帧启动进度条
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      barEl.style.transition = `transform ${delay}ms linear`;
+      barEl.style.transform  = 'scaleX(0)';
+    });
+  });
+  // 撤销按钮
+  const newCancel = cancelEl.cloneNode(true);
+  cancelEl.parentNode.replaceChild(newCancel, cancelEl);
+  newCancel.onclick = () => {
+    clearTimeout(_undoTimer);
+    _undoTimer = null;
+    toastEl.classList.remove('show');
+    toast('已取消删除');
+  };
+  // 倒计时后真正执行
+  _undoTimer = setTimeout(() => {
+    _undoTimer = null;
+    toastEl.classList.remove('show');
+    execFn();
+  }, delay);
+}
+function clearAnimationFrame(id) { if (id) cancelAnimationFrame(id); }
 
 // ====== Icon System (Heroicons Outline 24px) ======
 const ICONS = {
@@ -1807,7 +1899,7 @@ function renderModule(m) {
       </div>
       <div class="actions">
         <button class="icon-btn" onclick="aCopyMod('${m.id}')" title="复制模块内容">${ICONS.copy}</button>
-        <button class="del-btn" onclick="if(confirm('删除该模块？'))aDelMod('${m.id}')" title="删除模块">${ICONS.x}</button>
+        <button class="del-btn" onclick="pendingDel('功能模块', ()=>aDelMod('${m.id}'))" title="删除模块">${ICONS.x}</button>
         <button onclick="aToggleMod('${m.id}')" title="${m.collapsed?'展开':'收起'}">${m.collapsed ? ICONS.chevronRight : ICONS.chevronDown}</button>
       </div>
     </div>
@@ -2289,7 +2381,7 @@ function renderB() {
           <button class="ref-link-btn" onclick="openRefModal('${path.id}','B')" title="管理引用关系">${ICONS.link}</button>
           <button class="icon-btn" onclick="bCopyPath('${path.id}')" title="复制路径内容">${ICONS.copy}</button>
           <button class="add-inline-btn" onclick="bAddStage('${path.id}')">＋阶段</button>
-          <button class="del-btn" onclick="if(confirm('删除该路径？'))bDelPath('${path.id}')" title="删除路径">${ICONS.x}</button>
+          <button class="del-btn" onclick="pendingDel('行为路径', ()=>bDelPath('${path.id}'))" title="删除路径">${ICONS.x}</button>
           <button onclick="bToggle('${path.id}')" title="${path.collapsed?'展开':'收起'}">${path.collapsed?ICONS.chevronRight:ICONS.chevronDown}</button>
         </div>
       </div>
@@ -2310,7 +2402,7 @@ function renderBStage(pid,stage,si) {
       <span class="stage-title">阶段 ${si+1}：<span class="editable" contenteditable="true" data-f="b-stitle" data-i="${stage.id}" data-p="${pid}">${esc(stage.title)}</span></span>
       <button class="fb-popover-btn" onclick="openFbPopover('${pid}','${stage.id}')" style="display:inline-flex;align-items:center;gap:5px;">${ICONS.feedback} 反馈与边界 ${fbCount>0?'<span style="opacity:.6;font-weight:400;">('+stage.feedbacks.length+'+'+stage.branches.length+')</span>':''}</button>
       <button class="icon-btn" onclick="bCopyStageToClipboard('${pid}','${stage.id}')" title="复制阶段内容到剪贴板">${ICONS.copy}</button>
-      <button class="icon-btn danger" onclick="if(confirm('删除该阶段？'))bDelStage('${pid}','${stage.id}')" title="删除阶段" aria-label="删除阶段">${ICONS.trash}</button>
+      <button class="icon-btn danger" onclick="pendingDel('交互阶段', ()=>bDelStage('${pid}','${stage.id}'))" title="删除阶段" aria-label="删除阶段">${ICONS.trash}</button>
     </div>
     <div class="action-block">
       <div class="block-label" style="justify-content:space-between;">
@@ -2664,7 +2756,7 @@ function renderC() {
         <div class="actions">
           <button class="icon-btn" onclick="cCopyPage('${page.id}')" title="复制页面内容">${ICONS.copy}</button>
           <button class="add-inline-btn" onclick="cAddNode('${page.id}',null)">＋节点</button>
-          <button class="del-btn" onclick="if(confirm('删除该页面架构？'))cDelPage('${page.id}')" title="删除页面">${ICONS.x}</button>
+          <button class="del-btn" onclick="pendingDel('页面架构', ()=>cDelPage('${page.id}'))" title="删除页面">${ICONS.x}</button>
           <button onclick="cToggle('${page.id}')" title="${page.collapsed?'展开':'收起'}">${page.collapsed?ICONS.chevronRight:ICONS.chevronDown}</button>
         </div>
       </div>
@@ -2897,7 +2989,7 @@ function renderD() {
         <div class="actions">
           <button class="ref-link-btn" onclick="openRefModal('${spec.id}','D')" title="管理引用关系">${ICONS.link}</button>
           <button class="icon-btn" onclick="dCopySpec('${spec.id}')" title="复制交互稿内容">${ICONS.copy}</button>
-          <button class="del-btn" onclick="if(confirm('删除？'))dDelSpec('${spec.id}')" title="删除">${ICONS.x}</button>
+          <button class="del-btn" onclick="pendingDel('交互稿', ()=>dDelSpec('${spec.id}'))" title="删除">${ICONS.x}</button>
           <button onclick="dToggle('${spec.id}')" title="${spec.collapsed?'展开':'收起'}">${spec.collapsed?ICONS.chevronRight:ICONS.chevronDown}</button>
         </div>
       </div>
