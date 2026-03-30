@@ -472,7 +472,10 @@ button svg{display:block;flex-shrink:0;pointer-events:none;}
 .d-area-item-label{font-weight:600;flex-shrink:0;}
 .d-area-item-sep{flex-shrink:0;color:var(--text2);}
 .d-area-item-desc{flex:1;}
-.d-flow-block{margin:6px 0;padding:8px 28px 8px 10px;border-radius:var(--radius-sm);border:1px solid rgba(95,127,255,0.15);background:rgba(95,127,255,0.05);position:relative;}
+.d-flow-block{margin:6px 0;padding:8px 28px 8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-raised);position:relative;}
+/* flows 区块内：绿色系；boundaries 区块内：红色系 */
+.spec-section-header.interact + .spec-section-body .d-flow-block{background:rgba(76,175,137,0.05);border-color:rgba(76,175,137,0.2);}
+.spec-section-header.boundary + .spec-section-body .d-flow-block{background:rgba(224,107,107,0.05);border-color:rgba(224,107,107,0.2);}
 .d-flow-title{font-weight:600;font-size:13px;color:var(--accent);display:flex;align-items:center;}
 .d-flow-meta{font-size:13px;margin-top:3px;}
 .d-flow-meta-row{margin-top:2px;}
