@@ -1571,7 +1571,7 @@ function dCopySpec(spId) {
       if(fl.validation)L.push({text:safePrefix('系统校验：',fl.validation),indent:'    '});
       (fl.steps||[]).forEach((st,i)=>L.push({text:`${i+1}. ${stripEmoji(st.desc)}`,indent:'    '}));
       (fl.exceptions||[]).forEach(ex=>{
-        L.push({text:`⚠️ 异常分支：${stripEmoji(ex.scenario)}`,bold:true,indent:'    '});
+        L.push({text:`异常分支：${stripEmoji(ex.scenario)}`,bold:true,indent:'    '});
         L.push({text:safePrefix('触发条件：',ex.trigger),indent:'      '});
         L.push({text:safePrefix('防错设计：',ex.defense),indent:'      '});
         L.push({text:safePrefix('流程反馈：',ex.recovery),indent:'      '});
@@ -1595,7 +1595,7 @@ function dCopySpec(spId) {
 function dCopyElements(spId) {
   const sp=dFindSpec(spId);if(!sp)return;
   const L=[];
-  L.push({text:'🧩 元素状态与基础逻辑',bold:true});
+  L.push({text:'元素状态与基础逻辑',bold:true});
   L.push({text:''});
   (sp.elements||[]).forEach(el=>{
     L.push({text:`【${stripEmoji(el.area)}】`,bold:true,indent:'  '});
@@ -1607,7 +1607,7 @@ function dCopyElements(spId) {
 function dCopyFlows(spId) {
   const sp=dFindSpec(spId);if(!sp)return;
   const L=[];
-  L.push({text:'🖱️ 核心场景交互流',bold:true});
+  L.push({text:'核心场景交互流',bold:true});
   L.push({text:''});
   (sp.flows||[]).forEach(fl=>{
     L.push({text:`操作：${stripEmoji(fl.action)}`,bold:true,indent:'  '});
@@ -1615,7 +1615,7 @@ function dCopyFlows(spId) {
     if(fl.validation)L.push({text:safePrefix('系统校验：',fl.validation),indent:'    '});
     (fl.steps||[]).forEach((st,i)=>L.push({text:`${i+1}. ${stripEmoji(st.desc)}`,indent:'    '}));
     (fl.exceptions||[]).forEach(ex=>{
-      L.push({text:`⚠️ 异常分支：${stripEmoji(ex.scenario)}`,bold:true,indent:'    '});
+      L.push({text:`异常分支：${stripEmoji(ex.scenario)}`,bold:true,indent:'    '});
       L.push({text:safePrefix('触发条件：',ex.trigger),indent:'      '});
       L.push({text:safePrefix('防错设计：',ex.defense),indent:'      '});
       L.push({text:safePrefix('流程反馈：',ex.recovery),indent:'      '});
@@ -1637,7 +1637,7 @@ function dCopyFlow(spId, flId) {
   if((fl.exceptions||[]).length>0){
     L.push({text:''});
     (fl.exceptions||[]).forEach(ex=>{
-      L.push({text:`⚠️ 异常分支：${stripEmoji(ex.scenario)}`,bold:true});
+      L.push({text:`异常分支：${stripEmoji(ex.scenario)}`,bold:true});
       L.push({text:safePrefix('触发条件：',ex.trigger),indent:'  '});
       L.push({text:safePrefix('防错设计：',ex.defense),indent:'  '});
       L.push({text:safePrefix('流程反馈：',ex.recovery),indent:'  '});
@@ -1649,7 +1649,7 @@ function dCopyFlow(spId, flId) {
 function dCopyBoundaries(spId) {
   const sp=dFindSpec(spId);if(!sp)return;
   const L=[];
-  L.push({text:'🚧 系统级边界',bold:true});
+  L.push({text:'系统级边界',bold:true});
   L.push({text:''});
   (sp.boundaries||[]).forEach(b=>{
     L.push({text:`【${stripEmoji(b.scenario)}】`,bold:true,indent:'  '});
