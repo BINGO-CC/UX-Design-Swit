@@ -1,0 +1,3941 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UX 设计交互编辑器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* === 背景层级（Notion Dark）=== */
+  --bg:#191919;
+  --surface:#202020;
+  --surface2:#2b2b2b;
+  --surface3:#333333;
+  --surface4:#3d3d3d;
+
+  /* === 边框（极细，低对比）=== */
+  --border:rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.12);
+  --border3:rgba(255,255,255,0.20);
+
+  /* === 文字（4级层次）=== */
+  --text:rgba(255,255,255,0.87);
+  --text2:rgba(255,255,255,0.50);
+  --text3:rgba(255,255,255,0.28);
+  --text4:rgba(255,255,255,0.14);
+
+  /* === 强调色 === */
+  --accent:#5f7fff;
+  --accent2:#4a6ee0;
+  --accent-dim:rgba(95,127,255,0.14);
+  --accent-glow:rgba(95,127,255,0.20);
+
+  /* === 语义色 === */
+  --green:#4caf89;
+  --green-dim:rgba(76,175,137,0.12);
+  --green-glow:rgba(76,175,137,0.12);
+  --orange:#e8a048;
+  --orange-dim:rgba(232,160,72,0.12);
+  --red:#e06b6b;
+  --red-dim:rgba(224,107,107,0.12);
+  --yellow:#c9963a;
+  --yellow-dim:rgba(201,150,58,0.14);
+  --purple:#9b87d4;
+  --purple-dim:rgba(155,135,212,0.12);
+
+  /* === 尺寸 === */
+  --radius:8px;
+  --radius-sm:5px;
+  --radius-xs:3px;
+
+  /* === 阴影 === */
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg:0 8px 28px rgba(0,0,0,0.55);
+  --shadow-xl:0 16px 48px rgba(0,0,0,0.65);
+
+  /* === 动效 === */
+  --dur-fast:120ms;
+  --dur-base:180ms;
+  --dur-slow:280ms;
+  --ease:cubic-bezier(0.16,1,0.3,1);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Inter',-apple-system,'PingFang SC','Microsoft YaHei','Segoe UI',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.65;
+  font-size:14px;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  overflow-y:overlay; /* 滚动条悬浮于内容上，不占额外宽度 */
+  scrollbar-gutter:stable; /* 兜底：防止布局抖动 */
+}
+/* 自定义滚动条 — 细条悬浮风格 */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:99px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.22);}
+
+/* ── Toolbar ── */
+.toolbar{
+  position:sticky;top:0;z-index:100;
+  height:44px;
+  background:rgba(25,25,25,0.92);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  padding:0 20px;
+  display:flex;align-items:center;gap:8px;
+  /* 允许 toolbar-tabs 绝对居中 */
+  position:relative;
+}
+.toolbar h1{
+  font-size:14px;font-weight:600;
+  flex-shrink:0;
+  letter-spacing:0.02em;
+  color:var(--text);
+  display:flex;align-items:center;gap:7px;
+}
+.toolbar h1 .brand-icon{color:var(--accent);flex-shrink:0;display:inline-flex;align-items:center;}
+.toolbar button{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 11px;border-radius:var(--radius-sm);
+  border:1px solid var(--border2);
+  background:transparent;color:var(--text2);
+  cursor:pointer;font-size:12px;font-weight:500;
+  transition:background var(--dur-fast),border-color var(--dur-fast),color var(--dur-fast);
+  font-family:inherit;white-space:nowrap;
+}
+.toolbar button:hover{background:var(--surface3);border-color:var(--border3);color:var(--text);}
+.toolbar button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.toolbar .sep{width:1px;height:18px;background:var(--border);flex-shrink:0;}
+
+/* ── Toolbar Tabs（绝对居中于 Toolbar）── */
+.toolbar-tabs{
+  display:flex;align-items:center;
+  gap:6px;
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  pointer-events:auto;
+}
+.toolbar-tabs .mode-tab{
+  padding:5px 18px !important;
+  font-size:13px !important;
+}
+
+/* ── Tab Bar（第二行：操作区）── */
+.tab-bar{
+  display:flex;align-items:center;
+  height:38px;
+  background:rgba(22,22,22,0.90);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  padding:0 16px;
+  position:sticky;top:44px;z-index:99;
+}
+.tab-bar .actions-right{display:flex;align-items:center;gap:4px;}
+.tab-bar .actions-right button{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:var(--radius-sm);
+  border:1px solid var(--border2);
+  background:transparent;color:var(--text2);
+  cursor:pointer;font-size:12px;font-weight:500;
+  transition:background var(--dur-fast),border-color var(--dur-fast),color var(--dur-fast);
+  white-space:nowrap;font-family:inherit;
+}
+.tab-bar .actions-right button:hover{background:var(--surface3);border-color:var(--border3);color:var(--text);}
+.tab-bar .actions-right button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.tab-bar .actions-right .sep{width:1px;height:16px;background:var(--border);flex-shrink:0;}
+.undo-redo{display:flex;gap:2px;}
+.undo-redo button{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:var(--radius-sm);
+  border:1px solid var(--border2);
+  background:transparent;color:var(--text2);
+  cursor:pointer;font-size:12px;font-weight:500;
+  transition:background var(--dur-fast),border-color var(--dur-fast),color var(--dur-fast);
+  font-family:inherit;
+}
+.undo-redo button:hover{background:var(--surface3);border-color:var(--border3);color:var(--text);}
+.undo-redo button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.undo-redo button:disabled{opacity:.28;cursor:not-allowed;}
+.undo-redo button:disabled:hover{background:transparent;border-color:var(--border2);color:var(--text2);}
+
+/* ── Dropdown ── */
+.dropdown{position:relative;display:inline-block;}
+.dropdown-menu{
+  display:none;position:absolute;top:100%;right:0;margin-top:5px;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--radius);box-shadow:var(--shadow-lg);
+  z-index:200;min-width:210px;overflow:hidden;
+  padding:3px;
+}
+.dropdown-menu button{
+  display:flex;align-items:center;width:100%;
+  padding:8px 13px;border:none;border-radius:var(--radius-sm);
+  background:transparent;color:var(--text);font-size:13px;
+  text-align:left;cursor:pointer;
+  transition:background var(--dur-fast),color var(--dur-fast);
+  font-family:inherit;
+}
+.dropdown-menu button:hover{background:var(--surface3);color:var(--text);}
+.dropdown-menu button.disabled{opacity:.3;cursor:not-allowed;}
+.dropdown-menu button.disabled:hover{background:transparent;}
+.dropdown.open .dropdown-menu{display:block;}
+
+/* ── Mode Tabs ── */
+.mode-tab{
+  padding:5px 13px;cursor:pointer;
+  font-size:13px;font-weight:600;
+  color:var(--text3);border-radius:var(--radius-sm);
+  transition:background var(--dur-fast),color var(--dur-fast),box-shadow var(--dur-fast);
+  white-space:nowrap;letter-spacing:0.01em;
+  line-height:1.5;
+  /* box-shadow inset 不占空间，彻底消除位移 */
+  box-shadow:inset 0 0 0 1px transparent;
+}
+.mode-tab:hover{background:var(--surface2);color:var(--text2);}
+.mode-tab.active{
+  background:var(--accent-dim);
+  color:var(--accent);
+  box-shadow:inset 0 0 0 1px rgba(95,127,255,0.35);
+}
+
+/* ── Container ── */
+.container{max-width:900px;margin:0 auto;padding:20px 20px 60px;}
+.mode-panel{display:none;}
+.mode-panel.active{display:block;}
+
+/* ── Editable ── */
+.editable{
+  cursor:text;padding:2px 4px;border-radius:var(--radius-xs);
+  transition:background var(--dur-fast),box-shadow var(--dur-fast),border-color var(--dur-fast);
+  outline:none;min-height:1.65em;
+  border-bottom:1px solid transparent;
+}
+.editable:hover{background:var(--surface2);}
+.editable:focus,.editable:focus-visible{
+  background:rgba(95,127,255,0.06);
+  box-shadow:0 0 0 1.5px var(--accent);
+  border-bottom-color:var(--accent);
+}
+
+/* ── Card ── */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  margin-bottom:10px;
+  overflow:hidden;
+  box-shadow:0 1px 4px rgba(0,0,0,0.28);
+  transition:border-color var(--dur-base),box-shadow var(--dur-base);
+}
+.card:hover{border-color:var(--border2);box-shadow:0 4px 16px rgba(0,0,0,0.42);}
+.card-header{
+  padding:12px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-start;gap:10px;
+  cursor:pointer;
+}
+/* 卡片左侧色条 — Level 1 层级感 */
+.card{border-left:3px solid var(--border2);}
+.card:hover{border-left-color:var(--accent);}
+.card-header .drag-handle{color:var(--text3);font-size:13px;cursor:grab;user-select:none;padding-top:3px;}
+.card-header .info{flex:1;}
+.card-header .title{font-size:14px;font-weight:600;color:var(--text);}
+.card-header .meta{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.5;}
+.card-header .actions{display:flex;gap:3px;}
+.card-header .actions button{
+  display:inline-flex;align-items:center;
+  background:transparent;border:none;color:var(--text2);
+  cursor:pointer;font-size:13px;padding:3px 6px;border-radius:var(--radius-xs);
+  transition:background var(--dur-fast),color var(--dur-fast);
+}
+.card-header .actions button:hover{background:var(--surface3);color:var(--text);}
+.card-header .actions button.del-btn{color:var(--red) !important;}
+.card-header .actions button.del-btn:hover{background:var(--red-dim) !important;color:var(--red) !important;}
+.card-body{padding:0 16px 14px;}
+.card-body.collapsed{display:none;}
+
+/* ── Stage (Mode B) ── */
+.stage{
+  margin-top:12px;
+  border-left:2px solid var(--border3);
+  padding-left:14px;position:relative;
+}
+.stage-header{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.stage-header .stage-title{font-weight:600;font-size:13px;flex:1;color:var(--text);}
+.stage-header button{
+  display:inline-flex;align-items:center;
+  background:transparent;border:none;color:var(--text2);
+  cursor:pointer;font-size:12px;padding:2px 6px;border-radius:var(--radius-xs);
+  transition:background var(--dur-fast),color var(--dur-fast);font-family:inherit;
+}
+.stage-header button:hover{background:var(--surface3);color:var(--text);}
+
+/* ── Action/Feedback blocks ── */
+--action-bg: rgba(95,127,255,0.05);
+--action-border: rgba(95,127,255,0.15);
+.action-block,.feedback-block{margin:6px 0;padding:8px 11px;border-radius:var(--radius-sm);font-size:13px;}
+.action-block{background:rgba(95,127,255,0.04);border:1px solid rgba(95,127,255,0.15);}
+.feedback-block{background:var(--green-dim);border:1px solid rgba(76,175,137,0.18);}
+.block-label{font-size:10px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px;letter-spacing:0.05em;text-transform:uppercase;}
+.action-block .block-label{color:var(--accent);}
+.feedback-block .block-label{color:var(--green);}
+
+/* ── 新增条目淡入动画 ── */
+@keyframes fadeSlideIn{
+  from{opacity:0;transform:translateY(5px);}
+  to{opacity:1;transform:translateY(0);}
+}
+.step-item,.sug-item,.bound-item,.branch,.d-area-block,.d-flow-block,.node-row{
+  animation:fadeSlideIn var(--dur-base) var(--ease) both;
+}
+
+/* ── Step items ── */
+.step-list{list-style:none;}
+.step-item{display:flex;align-items:flex-start;gap:7px;padding:3px 0;}
+.step-item .step-num{color:var(--text3);font-size:11px;min-width:18px;text-align:right;padding-top:3px;}
+.step-item .step-drag{cursor:grab;color:var(--text3);font-size:11px;padding-top:3px;user-select:none;}
+.step-item .step-content{flex:1;font-size:13px;line-height:1.65;}
+.step-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:11px;padding:4px 7px;min-height:28px;min-width:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-xs);opacity:0;transition:opacity var(--dur-fast),background var(--dur-fast);line-height:1;}
+.step-del:hover{opacity:1;background:var(--red-dim);}
+.step-item:hover .step-del{opacity:0.5;}
+.sug-item .step-del{position:absolute;top:6px;right:6px;}
+.sug-item:hover .step-del{opacity:0.5;}
+.bound-item > .step-del{position:absolute;top:7px;right:7px;}
+.bound-item:hover > .step-del{opacity:0.5;}
+.branch-header:hover .step-del{opacity:0.5;}
+.branch-item:hover .step-del{opacity:0.5;}
+
+/* ── FB wrapper (Mode B legacy) ── */
+.fb-wrapper{margin:6px 0;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;}
+.fb-wrapper-header{display:flex;align-items:center;gap:7px;padding:7px 11px;background:var(--surface2);cursor:pointer;user-select:none;font-size:12px;font-weight:600;color:var(--purple);}
+.fb-wrapper-header:hover{background:var(--surface3);}
+.fb-wrapper-header .fb-toggle{font-size:10px;transition:transform var(--dur-base);}
+.fb-wrapper-body{padding:4px 10px 10px;}
+.fb-wrapper-body.collapsed{display:none;}
+
+/* ── Branch ── */
+.branch{margin:6px 0;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);}
+.branch-header{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.branch-header .branch-title{font-weight:600;font-size:13px;color:var(--orange);flex:1;}
+.branch-header button{background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:var(--radius-xs);}
+.branch-header button:hover{background:var(--red-dim);}
+.branch-header:hover .step-del{opacity:0.5;}
+.branch-item{display:flex;gap:5px;padding:2px 0;font-size:13px;}
+.branch-item .bullet{color:var(--text3);min-width:14px;}
+
+/* ── Tree node (Mode C) ── */
+.tree-node{margin-left:20px;border-left:1px dashed var(--border2);padding-left:12px;margin-top:6px;}
+.tree-node.root{margin-left:0;border-left:none;padding-left:0;}
+.node-row{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:var(--radius-xs);transition:background var(--dur-fast);}
+.node-row:hover{background:var(--surface2);}
+.node-icon{font-size:14px;min-width:20px;text-align:center;}
+.node-label{flex:1;font-size:13px;}
+.node-note{font-size:12px;color:var(--text2);font-style:italic;}
+.node-actions button{background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:2px 4px;opacity:0;transition:opacity var(--dur-fast);}
+.node-row:hover .node-actions button{opacity:1;}
+.node-actions button:hover{color:var(--accent);}
+.node-actions button.del-btn{color:var(--red);}
+.node-actions button.del-btn:hover{color:var(--red);background:var(--red-dim);}
+
+/* ── Spec section (Mode D) ── */
+.spec-section{margin-top:12px;border-radius:var(--radius-sm);overflow:hidden;}
+.spec-section-header{
+  padding:9px 13px;font-weight:600;font-size:11px;
+  letter-spacing:0.05em;text-transform:uppercase;
+  display:flex;align-items:center;gap:7px;user-select:none;
+}
+.spec-section-header.visible{background:var(--green-dim);color:var(--green);border:1px solid rgba(76,175,137,0.2);border-radius:var(--radius-sm) var(--radius-sm) 0 0;}
+.spec-section-header.interact{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(95,127,255,0.2);border-radius:var(--radius-sm) var(--radius-sm) 0 0;}
+.spec-section-header.boundary{background:var(--red-dim);color:var(--red);border:1px solid rgba(224,107,107,0.2);border-radius:var(--radius-sm) var(--radius-sm) 0 0;}
+.spec-section.collapsed .spec-section-header{border-radius:var(--radius-sm);}
+.spec-section.collapsed .spec-section-body{display:none;}
+.spec-section-header .sec-toggle-btn{background:none;border:none;cursor:pointer;font-size:11px;padding:2px 5px;color:inherit;display:inline-flex;align-items:center;}
+.spec-section-header .sec-actions{margin-left:auto;display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.spec-section-header .sec-copy-btn{background:none;border:none;color:inherit;cursor:pointer;font-size:12px;padding:2px 5px;border-radius:var(--radius-xs);opacity:.5;transition:opacity var(--dur-fast);}
+.spec-section-header .sec-copy-btn:hover{opacity:1;}
+.spec-section-body{padding:10px 13px;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);background:var(--surface);}
+/* 区块底板与标题同色系 */
+.spec-section-header.visible + .spec-section-body{background:rgba(76,175,137,0.04);border-color:rgba(76,175,137,0.18);}
+.spec-section-header.interact + .spec-section-body{background:rgba(95,127,255,0.04);border-color:rgba(95,127,255,0.18);}
+.spec-section-header.boundary + .spec-section-body{background:rgba(224,107,107,0.04);border-color:rgba(224,107,107,0.18);}
+
+/* ── Module priority (Mode A) ── */
+/* 功能点双维标注角标 */
+.feat-tag{display:inline-flex;align-items:center;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600;line-height:1.5;white-space:nowrap;flex-shrink:0;}
+.feat-tag.layer-tag{background:rgba(99,179,237,0.15);color:var(--accent);border:1px solid rgba(99,179,237,0.3);}
+.feat-tag.prio-tag.high{background:var(--red-dim);color:var(--red);}
+.feat-tag.prio-tag.mid{background:var(--yellow-dim);color:var(--yellow);}
+.feat-tag.prio-tag.low{background:var(--green-dim);color:var(--green);}
+.feat-badge{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:3px;font-size:11px;flex-shrink:0;}
+.feat-badge.ux-supp{background:rgba(99,179,237,0.12);color:var(--accent);}
+.feat-badge.l3-warn{background:rgba(255,160,50,0.15);color:var(--yellow);}
+
+.module-priority{
+  display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;
+  font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+}
+.module-priority.high{background:var(--red-dim);color:var(--red);}
+.module-priority.mid{background:var(--yellow-dim);color:var(--yellow);}
+.module-priority.low{background:var(--green-dim);color:var(--green);}
+
+/* ── Add btn ── */
+.add-btn{
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  padding:6px 10px;margin-top:8px;
+  background:transparent;
+  border:1px dashed var(--border2);
+  border-radius:var(--radius-sm);
+  color:var(--text4);cursor:pointer;font-size:0;
+  transition:border-color var(--dur-fast),color var(--dur-fast),background var(--dur-fast);
+  width:100%;font-family:inherit;
+}
+.add-btn::before{content:'＋';font-size:14px;}
+.add-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+
+/* ── Annotation ── */
+.anno{display:inline-flex;align-items:center;gap:3px;background:var(--yellow-dim);border:1px solid rgba(201,150,58,0.28);border-radius:var(--radius-xs);padding:1px 7px;font-size:11px;color:var(--yellow);margin-left:6px;cursor:pointer;}
+.anno-btn{background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;padding:2px 4px;opacity:0;transition:opacity var(--dur-fast);}
+.step-item:hover .anno-btn,.node-row:hover .anno-btn,.card-header:hover .anno-btn{opacity:1;}
+.anno-btn:hover{color:var(--yellow);}
+.anno-input{background:var(--bg);border:1px solid var(--yellow);border-radius:var(--radius-xs);padding:3px 7px;font-size:11px;color:var(--text);width:150px;outline:none;}
+
+/* ── Reference Tags ── */
+.ref-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+.ref-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500;cursor:pointer;transition:background var(--dur-fast),color var(--dur-fast);border:1px solid var(--border2);background:var(--surface2);color:var(--accent);}
+.ref-tag:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+.ref-tag.changed{color:var(--orange);border-color:var(--orange-dim);background:var(--orange-dim);}
+.ref-tag.changed:hover{background:var(--orange);color:#fff;border-color:var(--orange);}
+.ref-tag.deleted{color:var(--red);border-color:var(--red-dim);background:var(--red-dim);text-decoration:line-through;cursor:default;}
+.ref-tag .ref-mode{font-weight:700;opacity:.65;}
+.back-ref-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;align-items:center;}
+.back-ref-label{font-size:11px;color:var(--text2);}
+.back-ref-tag{display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:10px;font-size:11px;cursor:pointer;transition:background var(--dur-fast),color var(--dur-fast);color:var(--text2);background:var(--surface2);border:1px solid var(--border);}
+.back-ref-tag:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+.ref-link-btn{display:inline-flex;align-items:center;background:transparent;border:1px solid var(--border2);color:var(--text2);cursor:pointer;font-size:12px;padding:3px 6px;border-radius:var(--radius-xs);transition:background var(--dur-fast),color var(--dur-fast),border-color var(--dur-fast);}
+.ref-link-btn:hover{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);}
+/* Ref highlight */
+.ref-highlight{animation:refFlash 0.5s ease-in-out 3;}
+@keyframes refFlash{0%,100%{box-shadow:0 0 0 2px transparent;}50%{box-shadow:0 0 0 2px var(--accent);}}
+/* Ref modal */
+.ref-modal-list{max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);padding:3px;}
+.ref-modal-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--radius-xs);cursor:pointer;font-size:13px;transition:background var(--dur-fast);}
+.ref-modal-item:hover{background:var(--surface2);}
+.ref-modal-item input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;}
+.ref-modal-item .ref-modal-label{flex:1;color:var(--text);}
+.ref-modal-item .ref-modal-id{font-size:11px;color:var(--text2);font-family:monospace;}
+
+/* ── Drag & Drop ── */
+.dragging{opacity:.35;transform:scale(.98);box-shadow:var(--shadow-md);}
+.drag-over{
+  border:2px dashed var(--accent) !important;
+  background:var(--accent-dim) !important;
+  box-shadow:0 0 0 3px var(--accent-glow) !important;
+  transform:scale(1.005);
+  transition:transform var(--dur-fast),box-shadow var(--dur-fast) !important;
+}
+.drag-handle{cursor:grab;user-select:none;}
+.drag-handle:active{cursor:grabbing;}
+
+/* ── Storage indicator ── */
+.storage-status{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:5px;font-weight:500;}
+.storage-dot{width:5px;height:5px;border-radius:50%;background:var(--green);}
+.storage-dot.unsaved{background:var(--orange);animation:pulse 1.4s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* ── SVG Icon Utilities ── */
+button svg{display:block;flex-shrink:0;pointer-events:none;}
+.drag-handle{display:inline-flex;align-items:center;justify-content:center;}
+.sec-toggle-btn{display:inline-flex;align-items:center;justify-content:center;}
+.node-actions button{display:inline-flex;align-items:center;}
+.card-header .actions button{display:inline-flex;align-items:center;}
+
+/* ── Modal utilities ── */
+.modal-sm{max-width:480px;}
+.modal-md{max-width:500px;}
+.modal-lg{max-width:600px;}
+.modal-xl{max-width:640px;}
+/* Modal 内语义布局 */
+.modal-section{margin-bottom:14px;}
+.modal-section-title{font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text);}
+.modal-empty{padding:12px;color:var(--text2);font-size:13px;}
+.modal-hint{font-size:12px;color:var(--text2);margin-bottom:12px;}
+.modal-hint strong.hl-orange{color:var(--orange);}
+.modal-hint strong.hl-text{color:var(--text);}
+.modal-hint strong.hl-red{color:var(--red);}
+.modal-h2{display:flex;align-items:center;gap:7px;}
+/* 变更详情列表 */
+.ref-change-list{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:14px;max-height:250px;overflow-y:auto;}
+.ref-change-list-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;}
+.ref-change-item{display:flex;gap:6px;align-items:flex-start;padding:4px 0;font-size:13px;border-bottom:1px solid var(--border);}
+.ref-change-item-icon{font-size:14px;min-width:18px;}
+.ref-change-item-text{color:var(--text);flex:1;}
+.ref-change-empty{font-size:13px;color:var(--text2);}
+/* 进度条 */
+.progress-bar-wrap{display:flex;align-items:center;gap:8px;}
+.progress-bar-track{flex:1;height:8px;background:var(--surface);border-radius:4px;overflow:hidden;border:1px solid var(--border);}
+.progress-bar-fill{height:100%;border-radius:4px;transition:width .3s;}
+.progress-bar-fill.green{background:var(--green);}
+.progress-bar-fill.yellow{background:var(--yellow);}
+.progress-bar-fill.red{background:var(--red);}
+.progress-bar-label{font-size:12px;font-weight:600;min-width:70px;text-align:right;}
+.progress-bar-label.green{color:var(--green);}
+.progress-bar-label.yellow{color:var(--yellow);}
+.progress-bar-label.red{color:var(--red);}
+/* 覆盖率报告 */
+.cov-section{margin-bottom:18px;}
+.cov-section-title{font-size:14px;font-weight:600;margin-bottom:6px;}
+.cov-section-title.red{color:var(--red);}
+.cov-section-title.green{color:var(--green);}
+.cov-section-empty{font-size:13px;color:var(--text2);padding:8px;}
+.cov-list{margin-top:8px;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;background:var(--bg);padding:4px;}
+.cov-list-row{display:flex;align-items:flex-start;gap:6px;padding:5px 8px;font-size:13px;border-bottom:1px solid var(--border);}
+.cov-list-icon{min-width:20px;}
+.cov-list-text{flex:1;color:var(--text);}
+.cov-list-unlinked{color:var(--orange);}
+.cov-list-changed{color:var(--orange);font-size:11px;}
+.cov-orphan-box{border:1px solid rgba(224,107,107,0.3);border-radius:6px;background:rgba(224,107,107,0.05);padding:4px;}
+.cov-orphan-row{display:flex;align-items:center;gap:6px;padding:5px 8px;font-size:13px;border-bottom:1px solid var(--border);}
+.cov-orphan-mode{min-width:20px;font-weight:600;color:var(--text2);}
+.cov-orphan-label{flex:1;color:var(--text);}
+.cov-orphan-miss{font-size:11px;color:var(--orange);}
+.modal-scroll-body{max-height:65vh;overflow-y:auto;padding-right:8px;}
+/* 覆盖率报告弹窗内的二次确认 */
+.confirm-modal-text{font-size:13px;color:var(--text2);line-height:1.7;margin:0 0 18px;}
+/* 分享面板 */
+.share-modal-label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px;}
+.share-modal-input{width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;outline:none;transition:border-color var(--dur-fast);}
+.share-modal-input:focus{border-color:var(--accent);}
+.share-modal-row{margin-bottom:8px;}
+.share-checkbox-row{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);margin-bottom:10px;}
+/* Mode A 模块内容块 */
+.mod-section-title{font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;}
+.mod-section-title.accent{color:var(--accent);}
+.mod-section-title.green{color:var(--green);}
+.sug-item-wrap{margin:5px 0;padding:7px 28px 7px 10px;border-radius:5px;background:rgba(76,175,137,0.06);border:1px solid rgba(76,175,137,0.15);position:relative;}
+.sug-reason{font-size:12px;color:var(--text2);margin-top:3px;}
+/* Mode B 内联按钮（copy/delete 统一 ghost 样式）*/
+.icon-btn{background:none;border:none;color:var(--text2);cursor:pointer;padding:2px 5px;border-radius:var(--radius-xs);display:inline-flex;align-items:center;transition:color var(--dur-fast),background var(--dur-fast);}
+.icon-btn:hover{color:var(--accent);background:var(--accent-dim);}
+.icon-btn.danger{color:var(--red);}
+.icon-btn.danger:hover{color:var(--red);background:var(--red-dim);}
+/* Mode D 区块（area/flow/boundary）*/
+.d-area-block{margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(76,175,137,0.15);background:rgba(76,175,137,0.04);position:relative;}
+.d-area-title{font-weight:600;font-size:13px;color:var(--accent);}
+.d-area-list{margin-top:4px;}
+.d-area-item-row{display:flex;align-items:baseline;gap:4px;padding:3px 0;}
+.d-area-item-label{font-weight:600;flex-shrink:0;}
+.d-area-item-sep{flex-shrink:0;color:var(--text2);}
+.d-area-item-desc{flex:1;}
+.d-flow-block{margin:6px 0;padding:8px 28px 8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-raised);position:relative;}
+/* flows 区块内：绿色系；boundaries 区块内：红色系 */
+.spec-section-header.interact + .spec-section-body .d-flow-block{background:rgba(95,127,255,0.05);border-color:rgba(95,127,255,0.2);}
+.spec-section-header.boundary + .spec-section-body .d-flow-block{background:rgba(224,107,107,0.05);border-color:rgba(224,107,107,0.2);}
+.d-flow-title{font-weight:600;font-size:13px;color:var(--accent);display:flex;align-items:center;}
+.d-flow-meta{font-size:13px;margin-top:3px;}
+.d-flow-meta-row{margin-top:2px;}
+.d-flow-steps-title{font-size:13px;margin-top:4px;font-weight:600;display:flex;align-items:center;justify-content:space-between;}
+.d-flow-steps-list{margin-top:2px;}
+.d-exception-wrap{margin-top:6px;padding-top:6px;border-top:1px dashed rgba(224,107,107,0.25);}
+.d-exception-header{font-size:12px;font-weight:600;color:var(--orange);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;}
+.d-exception-item{margin:4px 0 0 12px;padding:6px 8px;border-radius:4px;border:1px solid rgba(224,107,107,0.2);background:rgba(224,107,107,0.04);}
+.d-exception-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.d-exception-title{font-weight:600;font-size:12px;color:var(--red);flex:1;}
+.d-exception-del{background:none;border:none;color:var(--red);cursor:pointer;padding:2px 4px;flex-shrink:0;display:inline-flex;align-items:center;border-radius:var(--radius-xs);opacity:0.6;transition:opacity var(--dur-fast),background var(--dur-fast);}
+.d-exception-del:hover{opacity:1;background:var(--red-dim);}
+.d-exception-field{font-size:12px;margin-top:2px;display:flex;align-items:flex-start;}
+.d-exception-field-label{flex-shrink:0;}
+.d-exception-field-val{flex:1;}
+.d-boundary-block{margin:6px 0;padding:8px 28px 8px 10px;border-radius:5px;border:1px solid rgba(224,107,107,0.15);background:rgba(224,107,107,0.04);position:relative;}
+.d-boundary-title{font-weight:600;font-size:13px;color:var(--red);}
+.d-boundary-field{font-size:13px;margin-top:3px;display:flex;align-items:flex-start;}
+.d-boundary-field-label{flex-shrink:0;}
+.d-boundary-field-val{flex:1;}
+/* FB Popover 内部区块增强 */
+.fb-section{margin-top:8px;}
+.fb-section-title{font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:6px 10px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;display:flex;align-items:center;justify-content:space-between;}
+.fb-section-title.feedback{background:var(--green-dim);color:var(--green);border:1px solid rgba(76,175,137,0.2);}
+.fb-section-title.branch{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(232,160,72,0.2);}
+.fb-section-body{padding:6px 10px 10px;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);background:var(--surface2);}
+/* 反向引用 label */
+.back-ref-label{display:inline-flex;align-items:center;gap:3px;}
+/* 树节点 depth=0 */
+.tree-node-root{margin-left:0;}
+
+/* ── prefers-reduced-motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *{transition:none !important;animation:none !important;}
+}
+
+/* ── Context menu ── */
+.ctx-menu{position:fixed;z-index:250;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:3px;min-width:170px;box-shadow:var(--shadow-lg);}
+.ctx-menu button{display:flex;align-items:center;gap:7px;width:100%;padding:7px 11px;background:none;border:none;color:var(--text);cursor:pointer;font-size:13px;border-radius:var(--radius-xs);text-align:left;transition:background var(--dur-fast);}
+.ctx-menu button:hover{background:var(--surface3);}
+.ctx-menu button.danger{color:var(--red);}
+.ctx-menu button.danger:hover{background:var(--red-dim);}
+
+/* ── Empty State ── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;color:var(--text2);}
+.empty-state .empty-icon{font-size:64px;margin-bottom:20px;opacity:.4;}
+.empty-state .empty-text{font-size:14px;font-weight:500;color:var(--text2);text-align:center;line-height:1.8;}
+.empty-state .empty-action{color:var(--accent);font-weight:600;cursor:pointer;padding:5px 14px;border-radius:var(--radius-sm);transition:background var(--dur-fast);display:inline-block;margin-top:4px;}
+.empty-state .empty-action:hover{background:var(--accent-dim);}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;top:16px;left:50%;
+  transform:translateX(-50%) translateY(-8px);
+  background:var(--surface3);
+  border:1px solid var(--border2);
+  padding:7px 18px;border-radius:20px;
+  font-size:12px;font-weight:500;
+  letter-spacing:0.01em;
+  z-index:400;
+  box-shadow:var(--shadow-lg);
+  transition:opacity var(--dur-base) var(--ease),transform var(--dur-base) var(--ease);
+  opacity:0;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── Undo Delete Toast ── */
+.undo-toast{
+  position:fixed;bottom:24px;left:50%;
+  transform:translateX(-50%) translateY(16px);
+  background:var(--surface2);
+  border:1px solid var(--border2);
+  border-radius:10px;
+  padding:0;
+  z-index:450;
+  box-shadow:var(--shadow-lg);
+  min-width:260px;max-width:360px;
+  overflow:hidden;
+  opacity:0;pointer-events:none;
+  transition:opacity var(--dur-base) var(--ease),transform var(--dur-base) var(--ease);
+}
+.undo-toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+.undo-toast-body{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 14px;
+}
+.undo-toast-msg{flex:1;font-size:12px;color:var(--text2);}
+.undo-toast-msg strong{color:var(--text);font-weight:500;}
+.undo-toast-cancel{
+  flex-shrink:0;
+  background:var(--surface3);border:1px solid var(--border2);
+  color:var(--text);font-size:12px;font-weight:500;
+  padding:4px 11px;border-radius:var(--radius-xs);
+  cursor:pointer;font-family:inherit;
+  transition:background var(--dur-fast),border-color var(--dur-fast);
+}
+.undo-toast-cancel:hover{background:var(--surface4);border-color:var(--border3);}
+/* 进度条倒计时 */
+.undo-toast-bar{
+  height:2px;
+  background:var(--red);
+  transform-origin:left;
+  transform:scaleX(1);
+  transition:transform linear;
+}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:300;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:22px;width:90%;max-width:640px;max-height:82vh;overflow-y:auto;box-shadow:var(--shadow-xl);}
+.modal h2{font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text);}
+.modal pre{background:var(--bg);padding:14px;border-radius:var(--radius-sm);font-size:12px;overflow-x:auto;white-space:pre-wrap;max-height:45vh;border:1px solid var(--border);}
+.modal textarea{width:100%;height:200px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);padding:12px;font-size:12px;font-family:monospace;resize:vertical;outline:none;transition:border-color var(--dur-fast);}
+.modal textarea:focus{border-color:var(--accent);}
+.modal .m-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:16px;}
+.modal button{padding:6px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;font-family:inherit;transition:background var(--dur-fast),border-color var(--dur-fast);}
+.modal button:hover{background:var(--surface3);border-color:var(--border3);}
+.modal button.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.modal button.primary:hover{background:var(--accent2);border-color:var(--accent2);}
+.modal button.danger-btn{background:var(--red);border-color:var(--red);color:#fff;}
+.modal button.danger-btn:hover{background:#c55;border-color:#c55;}
+
+/* ── Inline add button ── */
+.add-inline-btn{
+  background:transparent !important;
+  border:1px dashed var(--border2) !important;
+  border-radius:var(--radius-xs);color:var(--text3) !important;
+  cursor:pointer;font-size:0 !important;
+  padding:4px 10px !important;
+  min-height:28px;
+  display:inline-flex !important;align-items:center;justify-content:center;
+  transition:border-color var(--dur-fast),color var(--dur-fast),background var(--dur-fast);
+  white-space:nowrap;line-height:1.6;font-family:inherit;
+}
+.add-inline-btn::before{content:'＋';font-size:12px;}
+.add-inline-btn:hover{border-color:var(--accent) !important;color:var(--accent) !important;background:var(--accent-dim) !important;}
+
+/* ── FB Popover（反馈与边界条件浮层）── */
+.fb-popover-btn{background:var(--purple-dim) !important;border:1px solid rgba(155,135,212,0.35) !important;border-radius:var(--radius-sm);color:var(--purple) !important;cursor:pointer;font-size:12px !important;padding:3px 9px !important;transition:background var(--dur-fast),border-color var(--dur-fast);white-space:nowrap;}
+.fb-popover-btn:hover{background:rgba(155,135,212,0.22) !important;border-color:var(--purple) !important;}
+.fb-popover-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
+.fb-popover{position:fixed;z-index:310;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:0;width:760px;max-width:calc(100vw - 40px);height:75vh;max-height:75vh;display:flex;flex-direction:column;box-shadow:var(--shadow-xl);top:50%;left:50%;transform:translate(-50%,-50%);}
+.fb-popover-head{display:flex;align-items:center;gap:8px;padding:14px 18px 0;flex-shrink:0;}
+.fb-popover-head h3{font-size:14px;font-weight:600;color:var(--purple);flex:1;}
+.fb-popover-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:15px;padding:4px 6px;border-radius:var(--radius-xs);line-height:1;transition:background var(--dur-fast),color var(--dur-fast);}
+.fb-popover-close:hover{background:var(--surface2);color:var(--text);}
+.fb-stage-tabs{display:flex;gap:3px;padding:10px 18px 0;flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
+.fb-stage-tabs::-webkit-scrollbar{display:none;}
+.fb-stage-tab{padding:4px 12px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);white-space:nowrap;transition:background var(--dur-fast),color var(--dur-fast),border-color var(--dur-fast);flex-shrink:0;}
+.fb-stage-tab:hover{border-color:var(--purple);color:var(--purple);}
+.fb-stage-tab.active{background:var(--purple-dim);border-color:var(--purple);color:var(--purple);font-weight:600;}
+.fb-popover-body{overflow-y:auto;padding:12px 18px 16px;flex:1;min-height:0;}
+.fb-popover-body .editable{overflow-wrap:break-word;word-break:break-word;}
+.fb-popover-body .step-content,.fb-popover-body .branch-title{white-space:normal;overflow-wrap:break-word;word-break:break-word;}
+</style>
+</head>
+<body>
+
+<!-- ── Toolbar Row 1：品牌 + TAB 导航 + 存储状态 ── -->
+<div class="toolbar">
+  <h1>
+    <span class="brand-icon" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+    </span>
+    UX Editor
+  </h1>
+  <div class="sep"></div>
+  <!-- TAB 内嵌至 Toolbar -->
+  <div class="toolbar-tabs">
+    <div class="mode-tab active" data-mode="A">策划案分析</div>
+    <div class="mode-tab" data-mode="B">行为路径</div>
+    <div class="mode-tab" data-mode="C" style="display:none;">信息架构</div>
+    <div class="mode-tab" data-mode="D">交互稿</div>
+  </div>
+  <!-- 右侧：存储状态 -->
+  <div class="storage-status" id="storageStatus" title="数据自动保存到浏览器" style="margin-left:auto;">
+    <span class="storage-dot"></span>
+    <span>已保存</span>
+  </div>
+</div>
+
+<!-- ── Toolbar Row 2：操作栏（分三组）── -->
+<div class="tab-bar">
+  <!-- 组1：历史 -->
+  <div class="undo-redo">
+    <button id="undoBtn" disabled title="撤销 Ctrl+Z" aria-label="撤销">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/></svg>
+    </button>
+    <button id="redoBtn" disabled title="重做 Ctrl+Y" aria-label="重做">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 019-9 9 9 0 016 2.3L21 13"/></svg>
+    </button>
+  </div>
+  <div class="actions-right" style="margin-left:auto;">
+    <!-- 组2：数据 -->
+    <button id="importBtn" aria-label="导入 JSON">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      导入
+    </button>
+    <div class="dropdown" id="exportJsonDropdown">
+      <button id="exportJsonBtn" aria-label="导出菜单">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        导出
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="dropdown-menu" id="exportJsonMenu">
+        <button onclick="copyAsPrompt()">复制为 Prompt</button>
+        <button onclick="exportJsonModFull()">导出全部 JSON</button>
+        <button onclick="exportMd()">导出 Markdown</button>
+        <button onclick="showCoverageReport()">引用覆盖率报告</button>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <!-- 组3：分享 / 危险操作 -->
+    <button id="shareLinkBtn" title="分享：导出/导入 .uxshare 文件" aria-label="分享文件">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      分享
+    </button>
+    <button id="clearStorageBtn" title="清除所有本地数据" aria-label="清除数据" style="color:var(--red);border-color:rgba(224,107,107,0.25);">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+      清除数据
+    </button>
+  </div>
+</div>
+
+<div class="container">
+  <div id="panelA" class="mode-panel active"></div>
+  <div id="panelB" class="mode-panel"></div>
+  <div id="panelC" class="mode-panel"></div>
+  <div id="panelD" class="mode-panel"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="undo-toast" id="undoToast">
+  <div class="undo-toast-body">
+    <span class="undo-toast-msg" id="undoToastMsg">即将删除</span>
+    <button class="undo-toast-cancel" id="undoToastCancel">撤销</button>
+  </div>
+  <div class="undo-toast-bar" id="undoToastBar"></div>
+</div>
+
+<script>
+// ====== Core Utils ======
+let uid = 1000;
+function nid() { return 'n' + (uid++); }
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ── Undo Delete Toast ──
+let _undoTimer = null;
+let _undoRafId = null;
+function pendingDel(label, execFn, delay = 3000) {
+  // 如有上一个待删除，立即执行
+  if (_undoTimer) {
+    clearTimeout(_undoTimer);
+    clearAnimationFrame(_undoRafId);
+    _undoTimer = null;
+    document.getElementById('undoToast').classList.remove('show');
+  }
+  const toastEl = document.getElementById('undoToast');
+  const msgEl   = document.getElementById('undoToastMsg');
+  const barEl   = document.getElementById('undoToastBar');
+  const cancelEl = document.getElementById('undoToastCancel');
+  msgEl.innerHTML = `即将删除 <strong>${label}</strong>`;
+  // 进度条动画
+  barEl.style.transition = 'none';
+  barEl.style.transform  = 'scaleX(1)';
+  toastEl.classList.add('show');
+  // 下一帧启动进度条
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      barEl.style.transition = `transform ${delay}ms linear`;
+      barEl.style.transform  = 'scaleX(0)';
+    });
+  });
+  // 撤销按钮
+  const newCancel = cancelEl.cloneNode(true);
+  cancelEl.parentNode.replaceChild(newCancel, cancelEl);
+  newCancel.onclick = () => {
+    clearTimeout(_undoTimer);
+    _undoTimer = null;
+    toastEl.classList.remove('show');
+    toast('已取消删除');
+  };
+  // 倒计时后真正执行
+  _undoTimer = setTimeout(() => {
+    _undoTimer = null;
+    toastEl.classList.remove('show');
+    execFn();
+  }, delay);
+}
+function clearAnimationFrame(id) { if (id) cancelAnimationFrame(id); }
+
+// ====== Icon System (Heroicons Outline 24px) ======
+const ICONS = {
+  // 删除 / 关闭
+  x: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  // 拖拽手柄（六点网格）
+  drag: `<svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor" aria-hidden="true"><circle cx="4" cy="2.5" r="1.2"/><circle cx="8" cy="2.5" r="1.2"/><circle cx="4" cy="7" r="1.2"/><circle cx="8" cy="7" r="1.2"/><circle cx="4" cy="11.5" r="1.2"/><circle cx="8" cy="11.5" r="1.2"/></svg>`,
+  // 折叠 / 展开
+  chevronDown:  `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>`,
+  chevronRight: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>`,
+  // 复制
+  copy: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`,
+  // 链接 / 引用关系
+  link: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>`,
+  // 定位 / 被引用
+  pin: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  // 警告
+  warning: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-1px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  // 成功
+  check: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg>`,
+  // 模块
+  modules: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>`,
+  // 空状态
+  empty: `<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>`,
+  // 统计报告
+  chart: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+  // 阶段（层叠/流程步骤）
+  stage: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`,
+  // 用户操作（人像）
+  user: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+  // 反馈与边界（双向箭头）
+  feedback: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>`,
+  // 分支选项（向右箭头）
+  arrowRight: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`,
+  // 删除（垃圾桶）
+  trash: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`,
+};
+
+// ====== State ======
+let store = { A: {}, B: [], C: [], D: [] };
+let importSnapshot = { A: {}, B: [], C: [], D: [] }; // 导入时的快照，用于对比修改
+let annotations = {}; // { nodeId: "批注内容" }
+let hist = [], hIdx = -1, activeMode = 'A';
+const STORAGE_KEY = 'ux_design_editor_data';
+const ANNO_STORAGE_KEY = 'ux_design_editor_annotations';
+const SNAPSHOT_STORAGE_KEY = 'ux_design_editor_snapshot';
+const FINGERPRINT_STORAGE_KEY = 'ux_design_editor_fingerprints';
+
+// ====== Reference Network ======
+// 运行时反向索引（不持久化），key = 被引用方ID，value = [{ from, fromMode, fromLabel }]
+let refIndex = {};
+// 引用指纹（持久化），建立引用时记录被引用对象的内容hash，用于变更检测
+let refFingerprints = {};
+
+/**
+ * 从 store 构建反向引用索引
+ * B.refs.A → refIndex[aModuleId] = [{ from: bPathId, fromMode:'B', fromLabel }]
+ * D.refs.B → refIndex[bPathId]   = [{ from: dSpecId, fromMode:'D', fromLabel }]
+ * D.refs.C → refIndex[cPageId]   = [{ from: dSpecId, fromMode:'D', fromLabel }]
+ */
+function buildRefIndex() {
+  refIndex = {};
+  // B→A
+  (store.B || []).forEach(path => {
+    (path.refs?.A || []).forEach(aId => {
+      if (!refIndex[aId]) refIndex[aId] = [];
+      refIndex[aId].push({ from: path.id, fromMode: 'B', fromLabel: path.title });
+    });
+  });
+  // D→B
+  (store.D || []).forEach(spec => {
+    (spec.refs?.B || []).forEach(bId => {
+      if (!refIndex[bId]) refIndex[bId] = [];
+      refIndex[bId].push({ from: spec.id, fromMode: 'D', fromLabel: spec.specName });
+    });
+    // D→C
+    (spec.refs?.C || []).forEach(cId => {
+      if (!refIndex[cId]) refIndex[cId] = [];
+      refIndex[cId].push({ from: spec.id, fromMode: 'D', fromLabel: spec.specName });
+    });
+  });
+}
+
+/**
+ * 对节点对象生成轻量内容指纹（djb2 hash），排除 refs/collapsed/id 等非内容字段
+ */
+function fingerprint(obj) {
+  const content = JSON.stringify(obj, (key, val) => {
+    if (['refs', 'collapsed', 'id'].includes(key)) return undefined;
+    return val;
+  });
+  let hash = 5381;
+  for (let i = 0; i < content.length; i++) {
+    hash = ((hash << 5) + hash) + content.charCodeAt(i);
+  }
+  return 'fp_' + (hash >>> 0).toString(36);
+}
+
+/**
+ * 记录被引用对象的当前内容指纹
+ */
+function snapshotFingerprint(targetId, targetObj) {
+  refFingerprints[targetId] = fingerprint(targetObj);
+  try { localStorage.setItem(FINGERPRINT_STORAGE_KEY, JSON.stringify(refFingerprints)); } catch(e) {}
+}
+
+/**
+ * 检查被引用对象内容是否已变更
+ */
+function hasRefChanged(targetId, targetObj) {
+  const saved = refFingerprints[targetId];
+  if (!saved) return false;
+  return saved !== fingerprint(targetObj);
+}
+
+/**
+ * 确保 B 和 D 数据中的 refs 字段存在（导入兼容）
+ */
+function ensureRefs() {
+  (store.B || []).forEach(path => {
+    if (!path.refs) path.refs = {};
+    if (!path.refs.A) path.refs.A = [];
+  });
+  (store.D || []).forEach(spec => {
+    if (!spec.refs) spec.refs = {};
+    if (!spec.refs.B) spec.refs.B = [];
+    if (!spec.refs.C) spec.refs.C = [];
+  });
+}
+
+// ====== A 模块数据迁移（v4 modules[] → v5 stages[].modules[]）======
+function migrateA_v4_to_v5() {
+  const A = store.A;
+  // 检测：有 modules 但没有 stages → 需要迁移
+  if (!A.stages && Array.isArray(A.modules)) {
+    A.stages = [{
+      id: 's' + Date.now(),
+      label: 'A.功能清单',
+      collapsed: false,
+      modules: A.modules.map(m => {
+        // 删除模块级 priority，为每个 feature 补充默认字段
+        const mod = Object.assign({}, m);
+        delete mod.priority;
+        mod.features = (mod.features || []).map(f => Object.assign(
+          { layer: 'L1', priority: 'Mid', isUXSupplement: false, supplementReason: '', l3Reason: '' },
+          f
+        ));
+        return mod;
+      })
+    };
+    delete A.modules;
+    save();
+    console.log('[migrateA_v4_to_v5] 旧版 A 模块数据已迁移到新结构');
+  }
+  // 若已是新结构，确保每个 feature 都有新字段（增量补全）
+  if (Array.isArray(A.stages)) {
+    A.stages.forEach(st => {
+      (st.modules || []).forEach(m => {
+        (m.features || []).forEach(f => {
+          if (f.layer === undefined) f.layer = 'L1';
+          if (f.priority === undefined) f.priority = 'Mid';
+          if (f.isUXSupplement === undefined) f.isUXSupplement = false;
+          if (f.supplementReason === undefined) f.supplementReason = '';
+          if (f.l3Reason === undefined) f.l3Reason = '';
+        });
+      });
+    });
+  }
+}
+
+// ====== D 模块数据迁移（旧 visible/interactions → 新 elements/flows）======
+function migrateD() {
+  let migrated = false;
+  (store.D || []).forEach(spec => {
+    // 迁移 visible → elements
+    if (spec.visible && !spec.elements) {
+      spec.elements = [{
+        id: nid(), area: '默认区域',
+        items: spec.visible.map(v => ({ id: v.id || nid(), label: '展示内容', desc: v.text || '' }))
+      }];
+      delete spec.visible;
+      migrated = true;
+    }
+    // 迁移 interactions → flows
+    if (spec.interactions && !spec.flows) {
+      spec.flows = spec.interactions.map(it => ({
+        id: it.id || nid(), action: it.text || '', trigger: '', validation: '',
+        steps: [], exceptions: []
+      }));
+      delete spec.interactions;
+      migrated = true;
+    }
+    // 迁移 boundaries 字段名（type→scenario, feedback→defense）
+    if (spec.boundaries) {
+      spec.boundaries.forEach(b => {
+        if (b.type !== undefined && b.scenario === undefined) {
+          b.scenario = b.type; delete b.type; migrated = true;
+        }
+        if (b.feedback !== undefined && b.defense === undefined) {
+          b.defense = b.feedback; delete b.feedback; migrated = true;
+        }
+      });
+    }
+    // 确保新字段存在
+    if (!spec.elements) spec.elements = [];
+    if (!spec.flows) spec.flows = [];
+    if (!spec.boundaries) spec.boundaries = [];
+  });
+  if (migrated) { save(); console.log('[migrateD] 旧版 D 模块数据已迁移到新结构'); }
+}
+
+/**
+ * 根据 ID 在 store 中查找对应节点及其标签
+ * 返回 { mode, label, obj } 或 null
+ */
+function resolveRefTarget(targetId) {
+  // 在 A 模块中查找（新结构：从 stages[].modules[] 中遍历）
+  const aMod = aFindMod(targetId);
+  if (aMod) return { mode: 'A', label: aMod.name, obj: aMod };
+  // 在 B 路径中查找
+  const bPath = (store.B || []).find(p => p.id === targetId);
+  if (bPath) return { mode: 'B', label: bPath.title, obj: bPath };
+  // 在 C 页面中查找
+  const cPage = (store.C || []).find(p => p.id === targetId);
+  if (cPage) return { mode: 'C', label: cPage.pageName, obj: cPage };
+  // 在 D 交互稿中查找
+  const dSpec = (store.D || []).find(s => s.id === targetId);
+  if (dSpec) return { mode: 'D', label: dSpec.specName, obj: dSpec };
+  return null;
+}
+
+/**
+ * 渲染正向引用标签行（B卡片显示refs.A，D卡片显示refs.B和refs.C）
+ */
+function renderRefTags(item, itemMode) {
+  if (!item.refs) return '';
+  const tags = [];
+  const refKeys = itemMode === 'B' ? ['A'] : ['B', 'C'];
+  refKeys.forEach(targetMode => {
+    (item.refs[targetMode] || []).forEach(targetId => {
+      const resolved = resolveRefTarget(targetId);
+      if (!resolved) {
+        tags.push(`<span class="ref-tag deleted" title="引用目标已删除">${ICONS.warning} <span class="ref-mode">${targetMode}:</span>(已删除)</span>`);
+      } else {
+        const changed = hasRefChanged(targetId, resolved.obj);
+        const cls = changed ? 'ref-tag changed' : 'ref-tag';
+        const prefix = changed ? ICONS.warning + ' ' : '';
+        const onclick = changed
+          ? `showRefChangeDetail('${targetId}','${resolved.mode}','${esc(resolved.label).replace(/'/g,"\\&#39;")}')`
+          : `jumpToRef('${targetId}','${resolved.mode}')`;
+        const title = changed ? '内容已变更，点击查看详情' : '点击跳转';
+        tags.push(`<span class="${cls}" onclick="${onclick}" title="${title}">${prefix}<span class="ref-mode">${targetMode}:</span>${esc(resolved.label)}</span>`);
+      }
+    });
+  });
+  if (tags.length === 0) return '';
+  return `<div class="ref-tags">${tags.join('')}</div>`;
+}
+
+/**
+ * 渲染反向引用标签行（A模块/B路径/C页面 显示"被谁引用"）
+ */
+function renderBackRefTags(itemId) {
+  const refs = refIndex[itemId];
+  if (!refs || refs.length === 0) return '';
+  const tags = refs.map(r =>
+    `<span class="back-ref-tag" onclick="jumpToRef('${r.from}','${r.fromMode}')" title="点击跳转到 ${r.fromLabel}">${r.fromMode}:${esc(r.fromLabel)}</span>`
+  ).join('');
+  return `<div class="back-ref-row"><span class="back-ref-label">${ICONS.pin}被引用:</span>${tags}</div>`;
+}
+
+/**
+ * 跳转到引用目标：切换Tab + 滚动 + 高亮闪烁
+ */
+function jumpToRef(targetId, targetMode) {
+  switchMode(targetMode);
+  requestAnimationFrame(() => {
+    const selectors = [
+      `.card[data-path="${targetId}"]`,
+      `.card[data-mod="${targetId}"]`,
+      `.card[data-page="${targetId}"]`,
+      `.card[data-spec="${targetId}"]`
+    ];
+    let el = null;
+    for (const sel of selectors) {
+      el = document.querySelector(sel);
+      if (el) break;
+    }
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('ref-highlight');
+      setTimeout(() => el.classList.remove('ref-highlight'), 2000);
+    } else {
+      toast('未找到目标节点');
+    }
+  });
+}
+
+/**
+ * 打开引用管理浮层
+ */
+function openRefModal(itemId, itemMode) {
+  const item = itemMode === 'B' ? (store.B || []).find(p => p.id === itemId) : (store.D || []).find(s => s.id === itemId);
+  if (!item) return;
+  if (!item.refs) item.refs = {};
+
+  let sections = '';
+
+  if (itemMode === 'B') {
+    const aModules = (store.A.stages||[]).flatMap(st => st.modules||[]);
+    const selectedA = new Set(item.refs.A || []);
+    sections += `<div class="modal-section">
+      <div class="modal-section-title">📎 引用功能模块（A）</div>
+      <div class="ref-modal-list" id="refListA">
+        ${aModules.length === 0 ? '<div class="modal-empty">暂无功能模块数据</div>' :
+          aModules.map(m => `<label class="ref-modal-item">
+            <input type="checkbox" value="${m.id}" ${selectedA.has(m.id) ? 'checked' : ''}>
+            <span class="ref-modal-label">${esc(m.name)}</span>
+            <span class="ref-modal-id">${m.id}</span>
+          </label>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  if (itemMode === 'D') {
+    const bPaths = store.B || [];
+    const selectedB = new Set(item.refs.B || []);
+    sections += `<div class="modal-section">
+      <div class="modal-section-title">📎 引用行为路径（B）</div>
+      <div class="ref-modal-list" id="refListB">
+        ${bPaths.length === 0 ? '<div class="modal-empty">暂无行为路径数据</div>' :
+          bPaths.map(p => `<label class="ref-modal-item">
+            <input type="checkbox" value="${p.id}" ${selectedB.has(p.id) ? 'checked' : ''}>
+            <span class="ref-modal-label">${esc(p.title)}</span>
+            <span class="ref-modal-id">${p.id}</span>
+          </label>`).join('')}
+      </div>
+    </div>`;
+
+    const cPages = store.C || [];
+    const selectedC = new Set(item.refs.C || []);
+    sections += `<div class="modal-section">
+      <div class="modal-section-title">📎 引用信息架构（C）</div>
+      <div class="ref-modal-list" id="refListC">
+        ${cPages.length === 0 ? '<div class="modal-empty">暂无信息架构数据</div>' :
+          cPages.map(p => `<label class="ref-modal-item">
+            <input type="checkbox" value="${p.id}" ${selectedC.has(p.id) ? 'checked' : ''}>
+            <span class="ref-modal-label">${esc(p.pageName)}</span>
+            <span class="ref-modal-id">${p.id}</span>
+          </label>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `<div class="modal modal-sm">
+    <h2 class="modal-h2">${ICONS.link} 管理引用关系</h2>
+    <p class="modal-hint">选择该${itemMode === 'B' ? '路径' : '交互稿'}所关联的上游模块，建立引用后可跳转导航和变更检测</p>
+    ${sections}
+    <div class="m-actions">
+      <button onclick="this.closest('.modal-overlay').remove()">取消</button>
+      <button class="primary" onclick="saveRefs('${itemId}','${itemMode}')">保存</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+}
+
+/**
+ * 保存引用关系
+ */
+function saveRefs(itemId, itemMode) {
+  const item = itemMode === 'B' ? (store.B || []).find(p => p.id === itemId) : (store.D || []).find(s => s.id === itemId);
+  if (!item) return;
+  if (!item.refs) item.refs = {};
+
+  if (itemMode === 'B') {
+    const listA = document.getElementById('refListA');
+    if (listA) {
+      const checked = [...listA.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
+      item.refs.A = checked;
+      checked.forEach(aId => {
+        const mod = aFindMod(aId);
+        if (mod) snapshotFingerprint(aId, mod);
+      });
+    }
+  }
+
+  if (itemMode === 'D') {
+    const listB = document.getElementById('refListB');
+    if (listB) {
+      const checked = [...listB.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
+      item.refs.B = checked;
+      checked.forEach(bId => {
+        const path = (store.B || []).find(p => p.id === bId);
+        if (path) snapshotFingerprint(bId, path);
+      });
+    }
+    const listC = document.getElementById('refListC');
+    if (listC) {
+      const checked = [...listC.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
+      item.refs.C = checked;
+      checked.forEach(cId => {
+        const page = (store.C || []).find(p => p.id === cId);
+        if (page) snapshotFingerprint(cId, page);
+      });
+    }
+  }
+
+  document.querySelector('.modal-overlay')?.remove();
+  save(); renderAll();
+  toast('引用关系已保存');
+}
+
+// ====== Phase 3: 变更详情弹窗 + 标记已读 ======
+
+/**
+ * 显示引用变更详情弹窗
+ */
+function showRefChangeDetail(targetId, targetMode, targetLabel) {
+  const resolved = resolveRefTarget(targetId);
+  if (!resolved) {
+    toast('引用目标已不存在');
+    return;
+  }
+
+  // 计算变更摘要
+  const changes = computeRefChangeSummary(targetId, resolved.obj, targetMode);
+
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `<div class="modal modal-md">
+    <h2 class="modal-h2">${ICONS.warning} 引用变更详情</h2>
+    <p class="modal-hint">
+      <strong class="hl-orange">${targetMode}:${esc(resolved.label)}</strong> 的内容已发生变更
+    </p>
+    <div class="ref-change-list">
+      <div class="ref-change-list-title">变更内容：</div>
+      ${changes.length > 0 ? changes.map(c => `
+        <div class="ref-change-item">
+          <span class="ref-change-item-icon" style="color:${c.color};">${c.icon}</span>
+          <span class="ref-change-item-text">${esc(c.text)}</span>
+        </div>
+      `).join('') : '<div class="ref-change-empty">内容结构已变更（详细差异请跳转查看）</div>'}
+    </div>
+    <div class="m-actions">
+      <button onclick="this.closest('.modal-overlay').remove()">关闭</button>
+      <button class="primary" onclick="this.closest('.modal-overlay').remove();jumpToRef('${targetId}','${targetMode}')">🔍 跳转查看</button>
+      <button class="primary" style="background:var(--green);border-color:var(--green);" onclick="ackRefChange('${targetId}','${targetMode}')">✅ 标记已读</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+}
+
+/**
+ * 计算引用变更摘要（对比指纹快照与当前内容的差异）
+ */
+function computeRefChangeSummary(targetId, targetObj, targetMode) {
+  const changes = [];
+  try {
+    if (targetMode === 'A') {
+      // A模块：对比 features / suggestions 数量
+      changes.push({ icon: '📝', text: `功能项数量: ${targetObj.features?.length || 0} 个`, color: 'var(--accent)' });
+      changes.push({ icon: '💡', text: `建议数量: ${targetObj.suggestions?.length || 0} 个`, color: 'var(--green)' });
+      changes.push({ icon: '🏷️', text: `优先级: ${targetObj.priority === 'high' ? '高' : targetObj.priority === 'mid' ? '中' : '低'}`, color: 'var(--yellow)' });
+    } else if (targetMode === 'B') {
+      // B路径：对比 stages 数量、起点、关键点
+      changes.push({ icon: '🌊', text: `阶段数量: ${targetObj.stages?.length || 0} 个`, color: 'var(--accent)' });
+      changes.push({ icon: '📍', text: `起点: ${targetObj.startPoint || '(空)'}`, color: 'var(--text2)' });
+      changes.push({ icon: '⭐', text: `体验关键点: ${targetObj.keyPoint || '(空)'}`, color: 'var(--text2)' });
+    } else if (targetMode === 'C') {
+      // C页面：对比根节点数量
+      const countNodes = (nodes) => { let c = nodes.length; nodes.forEach(n => { c += countNodes(n.children || []); }); return c; };
+      const total = countNodes(targetObj.nodes || []);
+      changes.push({ icon: '🌳', text: `节点总数: ${total} 个`, color: 'var(--accent)' });
+    }
+  } catch (e) {
+    changes.push({ icon: '❓', text: '无法解析变更详情', color: 'var(--text2)' });
+  }
+  return changes;
+}
+
+/**
+ * 标记变更已读（更新指纹）
+ */
+function ackRefChange(targetId, targetMode) {
+  const resolved = resolveRefTarget(targetId);
+  if (resolved) {
+    snapshotFingerprint(targetId, resolved.obj);
+  }
+  document.querySelector('.modal-overlay')?.remove();
+  renderAll();
+  toast('已标记为已读');
+}
+
+// ====== Phase 4: 覆盖率报告 ======
+
+/**
+ * 生成覆盖率报告数据
+ */
+function generateCoverageReport() {
+  const report = {
+    BA: { items: [], covered: 0, total: 0 },
+    DB: { items: [], covered: 0, total: 0 },
+    DC: { items: [], covered: 0, total: 0 },
+    orphans: []
+  };
+
+  // B→A 覆盖率
+  (store.B || []).forEach(path => {
+    const linked = path.refs?.A?.length > 0;
+    const targets = (path.refs?.A || []).map(id => {
+      const mod = aFindMod(id);
+      return mod ? mod.name : `(ID:${id} 未找到)`;
+    });
+    const changed = linked && (path.refs.A || []).some(id => {
+      const mod = aFindMod(id);
+      return mod && hasRefChanged(id, mod);
+    });
+    report.BA.items.push({ source: path.title, sourceId: path.id, linked, targets, changed });
+    report.BA.total++;
+    if (linked) report.BA.covered++;
+  });
+
+  // D→B 覆盖率
+  (store.D || []).forEach(spec => {
+    const linked = spec.refs?.B?.length > 0;
+    const targets = (spec.refs?.B || []).map(id => {
+      const p = (store.B || []).find(b => b.id === id);
+      return p ? p.title : `(ID:${id} 未找到)`;
+    });
+    report.DB.items.push({ source: spec.specName, sourceId: spec.id, linked, targets });
+    report.DB.total++;
+    if (linked) report.DB.covered++;
+  });
+
+  // D→C 覆盖率
+  (store.D || []).forEach(spec => {
+    const linked = spec.refs?.C?.length > 0;
+    const targets = (spec.refs?.C || []).map(id => {
+      const p = (store.C || []).find(c => c.id === id);
+      return p ? p.pageName : `(ID:${id} 未找到)`;
+    });
+    report.DC.items.push({ source: spec.specName, sourceId: spec.id, linked, targets });
+    report.DC.total++;
+    if (linked) report.DC.covered++;
+  });
+
+  // 孤立节点：A模块未被任何B引用
+  (store.A.stages||[]).flatMap(st=>st.modules||[]).forEach(mod => {
+    if (!refIndex[mod.id] || refIndex[mod.id].length === 0) {
+      report.orphans.push({ id: mod.id, label: mod.name, mode: 'A', missing: '无B引用' });
+    }
+  });
+  // 孤立节点：B路径未被任何D引用
+  (store.B || []).forEach(path => {
+    if (!refIndex[path.id] || refIndex[path.id].length === 0) {
+      report.orphans.push({ id: path.id, label: path.title, mode: 'B', missing: '无D引用' });
+    }
+  });
+  // 孤立节点：C页面未被任何D引用
+  (store.C || []).forEach(page => {
+    if (!refIndex[page.id] || refIndex[page.id].length === 0) {
+      report.orphans.push({ id: page.id, label: page.pageName, mode: 'C', missing: '无D引用' });
+    }
+  });
+
+  return report;
+}
+
+/**
+ * 渲染进度条
+ */
+function renderProgressBar(covered, total) {
+  if (total === 0) return '<span class="progress-bar-label">无数据</span>';
+  const pct = Math.round((covered / total) * 100);
+  const colorCls = pct === 100 ? 'green' : pct >= 60 ? 'yellow' : 'red';
+  return `<div class="progress-bar-wrap">
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill ${colorCls}" style="width:${pct}%;"></div>
+    </div>
+    <span class="progress-bar-label ${colorCls}">${covered}/${total} (${pct}%)</span>
+  </div>`;
+}
+
+/**
+ * 打开覆盖率报告浮层
+ */
+function showCoverageReport() {
+  closeExportDropdown();
+  const report = generateCoverageReport();
+
+  const renderSection = (title, data, arrow) => {
+    if (data.total === 0) return `<div class="cov-section">
+      <div class="cov-section-title">${title}</div>
+      <div class="cov-section-empty">暂无数据</div>
+    </div>`;
+
+    return `<div class="cov-section">
+      <div class="cov-section-title">${title}</div>
+      ${renderProgressBar(data.covered, data.total)}
+      <div class="cov-list">
+        ${data.items.map(item => {
+          const icon = item.linked ? ICONS.check : ICONS.warning;
+          const targetStr = item.linked ? ` → ${item.targets.join(', ')}` : ' → <span class="cov-list-unlinked">(未关联)</span>';
+          const changeStr = item.changed ? ' <span class="cov-list-changed">🔄已变更</span>' : '';
+          return `<div class="cov-list-row">
+            <span class="cov-list-icon">${icon}</span>
+            <span class="cov-list-text">${esc(item.source)}${targetStr}${changeStr}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  };
+
+  const orphanSection = report.orphans.length > 0 ? `<div class="cov-section">
+    <div class="cov-section-title red">🔴 未被引用的孤立节点</div>
+    <div class="cov-orphan-box">
+      ${report.orphans.map(o => `<div class="cov-orphan-row">
+        <span class="cov-orphan-mode">${o.mode}</span>
+        <span class="cov-orphan-label">${esc(o.label)}</span>
+        <span class="cov-orphan-miss">${o.missing}</span>
+      </div>`).join('')}
+    </div>
+  </div>` : `<div class="cov-section">
+    <div class="cov-section-title green">✅ 无孤立节点</div>
+    <div class="cov-section-empty">所有模块/路径/页面均已被引用</div>
+  </div>`;
+
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `<div class="modal modal-lg">
+    <h2 class="modal-h2">${ICONS.chart} 引用覆盖率报告</h2>
+    <div class="modal-scroll-body">
+      ${renderSection('B → A 覆盖率（行为路径 → 功能模块）', report.BA, '→')}
+      ${renderSection('D → B 覆盖率（交互稿 → 行为路径）', report.DB, '→')}
+      ${renderSection('D → C 覆盖率（交互稿 → 信息架构）', report.DC, '→')}
+      ${orphanSection}
+    </div>
+    <div class="m-actions">
+      <button onclick="this.closest('.modal-overlay').remove()">关闭</button>
+      <button class="primary" onclick="exportCoverageReportMd()">📋 导出报告 Markdown</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+}
+
+/**
+ * 导出覆盖率报告为 Markdown
+ */
+function exportCoverageReportMd() {
+  const report = generateCoverageReport();
+  let md = '# 📊 引用覆盖率报告\n\n';
+  md += `> 生成时间：${new Date().toLocaleString()}\n\n`;
+
+  const addSection = (title, data) => {
+    md += `## ${title}\n\n`;
+    if (data.total === 0) { md += '暂无数据\n\n'; return; }
+    const pct = Math.round((data.covered / data.total) * 100);
+    md += `**覆盖率：${data.covered}/${data.total} (${pct}%)**\n\n`;
+    data.items.forEach(item => {
+        const icon = item.linked ? ICONS.check : ICONS.warning;
+      const target = item.linked ? item.targets.join(', ') : '(未关联)';
+      const change = item.changed ? ' 🔄已变更' : '';
+      md += `- ${icon} ${item.source} → ${target}${change}\n`;
+    });
+    md += '\n';
+  };
+
+  addSection('B → A 覆盖率（行为路径 → 功能模块）', report.BA);
+  addSection('D → B 覆盖率（交互稿 → 行为路径）', report.DB);
+  addSection('D → C 覆盖率（交互稿 → 信息架构）', report.DC);
+
+  if (report.orphans.length > 0) {
+    md += '## 🔴 未被引用的孤立节点\n\n';
+    report.orphans.forEach(o => { md += `- **${o.mode}** ${o.label} — ${o.missing}\n`; });
+  } else {
+    md += '## ✅ 无孤立节点\n\n所有模块/路径/页面均已被引用。\n';
+  }
+
+  // 关闭覆盖率弹窗后显示导出弹窗
+  document.querySelector('.modal-overlay')?.remove();
+  showExportModal('📊 覆盖率报告 Markdown', md, 'md');
+}
+
+// ====== LocalStorage ======
+function saveToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    localStorage.setItem(ANNO_STORAGE_KEY, JSON.stringify(annotations));
+    updateStorageStatus(true);
+  } catch (e) {
+    console.error('LocalStorage save failed:', e);
+    updateStorageStatus(false);
+  }
+}
+
+function loadFromStorage() {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    const annoData = localStorage.getItem(ANNO_STORAGE_KEY);
+    if (data) {
+      const parsed = JSON.parse(data);
+      if (parsed.A || parsed.B || parsed.C || parsed.D) {
+        store = parsed;
+        // 确保所有模式数据存在
+        if (!store.A) store.A = {};
+        if (!store.B) store.B = [];
+        if (!store.C) store.C = [];
+        if (!store.D) store.D = [];
+        return true;
+      }
+    }
+    if (annoData) {
+      annotations = JSON.parse(annoData);
+    }
+  } catch (e) {
+    console.error('LocalStorage load failed:', e);
+  }
+  return false;
+}
+
+function clearStorage() {
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `
+    <div class="modal modal-sm">
+      <h2>🗑️ 清除数据</h2>
+      <p class="confirm-modal-text">
+        此操作将清除<strong class="hl-text">四个模式（A/B/C/D）下的所有数据</strong>，包括批注、引用关系、导入快照等，且<strong class="hl-red">无法撤销</strong>。<br>确定要继续吗？
+      </p>
+      <div class="m-actions">
+        <button onclick="this.closest('.modal-overlay').remove()">取消</button>
+        <button class="primary danger-btn" onclick="this.closest('.modal-overlay').remove();doClearStorage()">确认清除</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+function doClearStorage() {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(ANNO_STORAGE_KEY);
+  localStorage.removeItem(SNAPSHOT_STORAGE_KEY);
+  localStorage.removeItem(FINGERPRINT_STORAGE_KEY);
+  localStorage.removeItem(SHARE_CODE_STORAGE_KEY);
+  annotations = {};
+  refFingerprints = {};
+  refIndex = {};
+  store = { A: {}, B: [], C: [], D: [] };
+  importSnapshot = { A: {}, B: [], C: [], D: [] };
+  hist = []; hIdx = -1;
+  save(); renderAll();
+  toast('已清除所有数据');
+}
+
+function updateStorageStatus(saved) {
+  const el = document.getElementById('storageStatus');
+  const dot = el.querySelector('.storage-dot');
+  const text = el.querySelector('span:last-child');
+  if (saved) {
+    dot.classList.remove('unsaved');
+    text.textContent = '已保存';
+  } else {
+    dot.classList.add('unsaved');
+    text.textContent = '未保存';
+  }
+}
+
+// ====== History ======
+function save() {
+  const snap = JSON.stringify(store);
+  hist = hist.slice(0, hIdx + 1);
+  hist.push(snap);
+  if (hist.length > 80) hist.shift();
+  hIdx = hist.length - 1;
+  updHist();
+  saveToStorage(); // 同步到 LocalStorage
+  buildRefIndex(); // 每次保存后刷新引用索引
+}
+function undo() {
+  if (hIdx <= 0) return;
+  hIdx--;
+  store = JSON.parse(hist[hIdx]);
+  renderAll(); updHist(); toast('已撤销');
+}
+function redo() {
+  if (hIdx >= hist.length - 1) return;
+  hIdx++;
+  store = JSON.parse(hist[hIdx]);
+  renderAll(); updHist(); toast('已重做');
+}
+function updHist() {
+  document.getElementById('undoBtn').disabled = hIdx <= 0;
+  document.getElementById('redoBtn').disabled = hIdx >= hist.length - 1;
+}
+
+// ====== Tab Switch ======
+function switchMode(mode) {
+  activeMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.mode === mode);
+  });
+  document.querySelectorAll('.mode-panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'panel' + mode);
+  });
+}
+
+// ====== Editable Binding ======
+function bindEdit() {
+  document.querySelectorAll('.editable').forEach(el => {
+    el.onblur = onBlur;
+    el.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.target.blur(); } };
+  });
+}
+
+// ====== Context Menu ======
+let ctxEl = null;
+function closeCtx() { if (ctxEl) { ctxEl.remove(); ctxEl = null; } }
+document.addEventListener('click', closeCtx);
+function showCtx(e, html) {
+  e.stopPropagation(); closeCtx();
+  const m = document.createElement('div');
+  m.className = 'ctx-menu';
+  m.style.left = e.clientX + 'px';
+  m.style.top = e.clientY + 'px';
+  m.innerHTML = html;
+  document.body.appendChild(m);
+  ctxEl = m;
+  const r = m.getBoundingClientRect();
+  if (r.right > innerWidth) m.style.left = (innerWidth - r.width - 8) + 'px';
+  if (r.bottom > innerHeight) m.style.top = (innerHeight - r.height - 8) + 'px';
+}
+
+// ====== Render All ======
+function renderAll() { renderA(); renderB(); renderC(); renderD(); bindEdit(); bindDragDrop(); }
+
+// ====== Annotations ======
+function renderAnno(id) {
+  const anno = annotations[id];
+  if (anno) {
+    return `<span class="anno" onclick="editAnno('${id}')" title="${esc(anno)}">💬 ${esc(anno.length > 15 ? anno.slice(0,15)+'...' : anno)}</span>`;
+  }
+  return `<button class="anno-btn" onclick="addAnno('${id}')" title="添加批注">💬</button>`;
+}
+
+function addAnno(id) {
+  const text = prompt('添加批注（留空则取消）：', '');
+  if (text !== null && text.trim()) {
+    annotations[id] = text.trim();
+    saveToStorage();
+    renderAll();
+    toast('已添加批注');
+  }
+}
+
+function editAnno(id) {
+  const current = annotations[id] || '';
+  const text = prompt('编辑批注（留空则删除）：', current);
+  if (text === null) return;
+  if (text.trim()) {
+    annotations[id] = text.trim();
+    toast('已更新批注');
+  } else {
+    delete annotations[id];
+    toast('已删除批注');
+  }
+  saveToStorage();
+  renderAll();
+}
+
+// ====== Drag & Drop ======
+let dragData = null;
+
+// 工具函数：通过 drag-handle 精准控制拖动热区
+// 仅在 mousedown 于 .drag-handle 时才临时开启父容器的 draggable
+function bindHandleDrag(el, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop) {
+  el.draggable = false;
+  const handle = el.querySelector('.drag-handle');
+  if (handle) {
+    handle.onmousedown = () => { el.draggable = true; };
+    document.addEventListener('mouseup', () => { el.draggable = false; }, { once: false });
+    el.ondragend = () => { el.draggable = false; onDragEnd(); };
+  } else {
+    // 无 handle 则降级为全区域可拖（保持兼容）
+    el.draggable = true;
+    el.ondragend = onDragEnd;
+  }
+  el.ondragstart = onDragStart;
+  el.ondragover = onDragOver;
+  el.ondragleave = onDragLeave;
+  el.ondrop = onDrop;
+}
+
+function bindDragDrop() {
+  // 模式 B 路径拖拽
+  document.querySelectorAll('#panelB .card[data-path]').forEach((card, idx) => {
+    bindHandleDrag(
+      card,
+      e => { dragData = { type: 'b-path', idx }; card.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; },
+      () => { card.classList.remove('dragging'); dragData = null; },
+      e => { e.preventDefault(); if (dragData?.type === 'b-path') card.classList.add('drag-over'); },
+      () => card.classList.remove('drag-over'),
+      e => {
+        e.preventDefault(); card.classList.remove('drag-over');
+        if (dragData?.type === 'b-path' && dragData.idx !== idx) {
+          const item = store.B.splice(dragData.idx, 1)[0];
+          store.B.splice(idx, 0, item);
+          save(); renderAll(); toast('已调整顺序');
+        }
+      }
+    );
+  });
+
+  // 模式 B 阶段拖拽（支持跨父级路径）
+  document.querySelectorAll('#panelB .stage[data-stage]').forEach(stage => {
+    const pid = stage.dataset.path;
+    const sid = stage.dataset.stage;
+    const path = bFindP(pid);
+    if (!path) return;
+    const stageIdx = path.stages.findIndex(s => s.id === sid);
+    bindHandleDrag(
+      stage,
+      e => { e.stopPropagation(); dragData = { type: 'b-stage', pid, stageIdx, sid }; stage.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; },
+      () => { stage.classList.remove('dragging'); dragData = null; },
+      e => { e.preventDefault(); e.stopPropagation(); if (dragData?.type === 'b-stage') stage.classList.add('drag-over'); },
+      () => stage.classList.remove('drag-over'),
+      e => {
+        e.preventDefault(); e.stopPropagation(); stage.classList.remove('drag-over');
+        if (dragData?.type !== 'b-stage') return;
+        if (dragData.pid === pid && dragData.stageIdx === stageIdx) return;
+        const srcPath = bFindP(dragData.pid);
+        const tgtPath = bFindP(pid);
+        if (!srcPath || !tgtPath) return;
+        const [item] = srcPath.stages.splice(dragData.stageIdx, 1);
+        tgtPath.stages.splice(stageIdx, 0, item);
+        save(); renderAll(); toast(dragData.pid === pid ? '已调整阶段顺序' : '已跨路径移动阶段');
+      }
+    );
+  });
+
+  // 模式 C 页面拖拽
+  document.querySelectorAll('#panelC .card').forEach((card, idx) => {
+    const pageId = card.querySelector('[data-f="c-page"]')?.dataset.i;
+    if (!pageId) return;
+    bindHandleDrag(
+      card,
+      e => { dragData = { type: 'c-page', idx }; card.classList.add('dragging'); },
+      () => { card.classList.remove('dragging'); dragData = null; },
+      e => { e.preventDefault(); if (dragData?.type === 'c-page') card.classList.add('drag-over'); },
+      () => card.classList.remove('drag-over'),
+      e => {
+        e.preventDefault(); card.classList.remove('drag-over');
+        if (dragData?.type === 'c-page' && dragData.idx !== idx) {
+          const item = store.C.splice(dragData.idx, 1)[0];
+          store.C.splice(idx, 0, item);
+          save(); renderAll(); toast('已调整顺序');
+        }
+      }
+    );
+  });
+
+  // 模式 D 交互稿拖拽
+  document.querySelectorAll('#panelD .card').forEach((card, idx) => {
+    const specId = card.querySelector('[data-f="d-name"]')?.dataset.i;
+    if (!specId) return;
+    bindHandleDrag(
+      card,
+      e => { dragData = { type: 'd-spec', idx }; card.classList.add('dragging'); },
+      () => { card.classList.remove('dragging'); dragData = null; },
+      e => { e.preventDefault(); if (dragData?.type === 'd-spec') card.classList.add('drag-over'); },
+      () => card.classList.remove('drag-over'),
+      e => {
+        e.preventDefault(); card.classList.remove('drag-over');
+        if (dragData?.type === 'd-spec' && dragData.idx !== idx) {
+          const item = store.D.splice(dragData.idx, 1)[0];
+          store.D.splice(idx, 0, item);
+          save(); renderAll(); toast('已调整顺序');
+        }
+      }
+    );
+  });
+
+  // 模式 A 模块拖拽
+  document.querySelectorAll('#panelA .card[data-mod]').forEach((card, idx) => {
+    bindHandleDrag(
+      card,
+      e => { dragData = { type: 'a-mod', idx }; card.classList.add('dragging'); },
+      () => { card.classList.remove('dragging'); dragData = null; },
+      e => { e.preventDefault(); if (dragData?.type === 'a-mod') card.classList.add('drag-over'); },
+      () => card.classList.remove('drag-over'),
+      e => {
+        e.preventDefault(); card.classList.remove('drag-over');
+        if (dragData?.type === 'a-mod' && dragData.idx !== idx) {
+          // 在 stage 内排序：找到该模块所在的 stage
+          const stageId = dragData.stageId;
+          const st = (store.A.stages||[]).find(s=>s.id===stageId);
+          if (st) {
+            const item = st.modules.splice(dragData.idx, 1)[0];
+            st.modules.splice(idx, 0, item);
+            save(); renderAll(); toast('已调整模块顺序');
+          }
+        }
+      }
+    );
+  });
+}
+
+// ============================================================
+// MODE A: 策划案分析
+// ============================================================
+function initA() {
+  store.A = {
+    goals: {
+      main: [
+        { id: nid(), text: '降低操作成本，缩短从信息获取到任务完成的路径' },
+        { id: nid(), text: '建立清晰的进度反馈，让用户对当前状态一目了然' }
+      ],
+      hidden: [
+        { id: nid(), text: '兼容多种入口渠道，避免单一路径卡点' },
+        { id: nid(), text: '保持操作流程的一致性，降低学习成本' }
+      ]
+    },
+    stages: [
+      {
+        id: 's' + nid(), label: 'A.信息浏览', collapsed: false,
+        modules: [
+          {
+            id: nid(), name: '列表管理', collapsed: false,
+            features: [
+              { id: nid(), text: '数据列表', layer: 'L1', priority: 'High', isUXSupplement: false, supplementReason: '', l3Reason: '' },
+              { id: nid(), text: '状态标签', layer: 'L1', priority: 'High', isUXSupplement: false, supplementReason: '', l3Reason: '' },
+              { id: nid(), text: '类型筛选', layer: 'L1', priority: 'Mid', isUXSupplement: false, supplementReason: '', l3Reason: '' },
+              { id: nid(), text: '排序切换', layer: 'L1', priority: 'Mid', isUXSupplement: false, supplementReason: '', l3Reason: '' },
+              { id: nid(), text: '详情弹窗', layer: 'L1.5', priority: 'Mid', isUXSupplement: false, supplementReason: '', l3Reason: '' },
+              { id: nid(), text: '来源跳转', layer: 'L1.5', priority: 'Mid', isUXSupplement: true, supplementReason: '条件不满足时避免流程中断', l3Reason: '' }
+            ],
+            suggestions: [
+              { id: nid(), text: '异常状态醒目标识', reason: '快速定位需要处理的条目' }
+            ]
+          }
+        ]
+      },
+      {
+        id: 's' + nid(), label: 'B.核心操作', collapsed: false,
+        modules: [
+          {
+            id: nid(), name: '操作面板', collapsed: false,
+            features: [
+              { id: nid(), text: '输入区域', layer: 'L1', priority: 'High', isUXSupplement: false, supplementReason: '', l3Reason: '' },
+              { id: nid(), text: '进度展示', layer: 'L1', priority: 'High', isUXSupplement: false, supplementReason: '', l3Reason: '' },
+              { id: nid(), text: '状态反馈', layer: 'L1', priority: 'High', isUXSupplement: false, supplementReason: '', l3Reason: '' },
+              { id: nid(), text: '结果预览', layer: 'L1.5', priority: 'Mid', isUXSupplement: true, supplementReason: '降低决策盲区，提高操作信心', l3Reason: '' },
+              { id: nid(), text: '批量入口', layer: 'L1', priority: 'Mid', isUXSupplement: false, supplementReason: '', l3Reason: '' },
+              { id: nid(), text: '历史记录', layer: 'L2', priority: 'Low', isUXSupplement: false, supplementReason: '', l3Reason: '' }
+            ],
+            suggestions: [
+              { id: nid(), text: '条件不足时显示缺口提示', reason: '减少来回切换查看的步骤' }
+            ]
+          },
+          {
+            id: nid(), name: '模板管理', collapsed: false,
+            features: [
+              { id: nid(), text: '模板列表', layer: 'L2', priority: 'High', isUXSupplement: false, supplementReason: '', l3Reason: '' },
+              { id: nid(), text: '参数配置', layer: 'L2', priority: 'High', isUXSupplement: false, supplementReason: '', l3Reason: '' },
+              { id: nid(), text: '快捷收藏', layer: 'L2', priority: 'Mid', isUXSupplement: true, supplementReason: '高频模板快捷访问，避免重复查找', l3Reason: '' },
+              { id: nid(), text: '分类筛选', layer: 'L2', priority: 'Mid', isUXSupplement: false, supplementReason: '', l3Reason: '' }
+            ],
+            suggestions: []
+          }
+        ]
+      },
+      {
+        id: 's' + nid(), label: 'C.结果确认', collapsed: false,
+        modules: [
+          {
+            id: nid(), name: '结果展示', collapsed: false,
+            features: [
+              { id: nid(), text: '结果列表', layer: 'L1', priority: 'High', isUXSupplement: false, supplementReason: '', l3Reason: '' },
+              { id: nid(), text: '数据对比', layer: 'L1.5', priority: 'Mid', isUXSupplement: true, supplementReason: '帮助用户评估操作效果', l3Reason: '' },
+              { id: nid(), text: '详情说明', layer: 'L1.5', priority: 'Mid', isUXSupplement: false, supplementReason: '', l3Reason: '' },
+              { id: nid(), text: '后续操作', layer: 'L1', priority: 'High', isUXSupplement: false, supplementReason: '', l3Reason: '' }
+            ],
+            suggestions: [
+              { id: nid(), text: '关键结果突出展示', reason: '强化完成感，建立正向反馈' }
+            ]
+          }
+        ]
+      }
+    ]
+  };
+}
+
+// 辅助函数：从 stages 中查找模块（by id）
+function aFindMod(mid) {
+  for (const st of (store.A.stages || [])) {
+    const m = (st.modules || []).find(x => x.id === mid);
+    if (m) return m;
+  }
+  return null;
+}
+// 辅助函数：从 stages 中查找功能点所在的模块（by feature id）
+function aFindModByFeat(fid) {
+  for (const st of (store.A.stages || [])) {
+    for (const m of (st.modules || [])) {
+      if ((m.features || []).find(f => f.id === fid)) return m;
+    }
+  }
+  return null;
+}
+
+function isStoreEmpty() {
+  const aEmpty = !store.A.goals || (!store.A.goals.main?.length && !store.A.goals.hidden?.length && !store.A.stages?.length);
+  const bEmpty = !store.B || store.B.length === 0;
+  const cEmpty = !store.C || store.C.length === 0;
+  const dEmpty = !store.D || store.D.length === 0;
+  return aEmpty && bEmpty && cEmpty && dEmpty;
+}
+
+function renderEmptyState() {
+  return `<div class="empty-state">
+    <div class="empty-icon">${ICONS.empty}</div>
+    <div class="empty-text">暂无数据<br><span class="empty-action" onclick="importJSON()">点击此处 📥 导入 JSON</span></div>
+  </div>`;
+}
+
+function renderA() {
+  const A = store.A;
+  const el = document.getElementById('panelA');
+  if (!A.goals || (!A.goals.main?.length && !A.goals.hidden?.length && !A.stages?.length)) {
+    el.innerHTML = renderEmptyState();
+    return;
+  }
+  el.innerHTML = `
+    <div class="mod-section-title" style="font-size:14px;margin:4px 0 10px;color:var(--purple);gap:6px;justify-content:flex-start;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>核心目标拆解</div>
+    <div class="card" style="border-left-color:rgba(155,135,212,0.5);background:rgba(155,135,212,0.03);">
+      <div class="card-body" style="padding-top:12px;">
+        <div class="mod-section-title" style="margin-top:10px;color:var(--purple);">主目标
+          <button class="add-inline-btn" onclick="aAddGoal('main')">＋主目标</button>
+        </div>
+        <ul class="step-list">${A.goals.main.map((g,i) => `
+          <li class="step-item">
+            <span class="step-num">${i+1}.</span>
+            <span class="step-content editable" contenteditable="true" data-f="a-main" data-i="${g.id}">${esc(g.text)}</span>
+            <button class="step-del" onclick="aDelGoal('main','${g.id}')" aria-label="删除">${ICONS.x}</button>
+          </li>`).join('')}
+        </ul>
+        <div class="mod-section-title" style="margin-top:12px;color:var(--purple);">隐性需求
+          <button class="add-inline-btn" onclick="aAddGoal('hidden')">＋隐性需求</button>
+        </div>
+        <ul class="step-list">${A.goals.hidden.map((g,i) => `
+          <li class="step-item">
+            <span class="step-num">•</span>
+            <span class="step-content editable" contenteditable="true" data-f="a-hidden" data-i="${g.id}">${esc(g.text)}</span>
+            <button class="step-del" onclick="aDelGoal('hidden','${g.id}')" aria-label="删除">${ICONS.x}</button>
+          </li>`).join('')}
+        </ul>
+      </div>
+    </div>
+    <div class="mod-section-title" style="font-size:14px;margin:16px 0 10px;gap:8px;color:var(--accent);">${ICONS.modules} 功能模块拆解与优化建议<button class="add-inline-btn" onclick="aAddStage()">＋新增阶段</button></div>
+    ${(A.stages || []).map(st => renderStage(st)).join('')}
+  `;
+}
+
+// 渲染行为阶段分组
+function renderStage(st) {
+  const totalMods = (st.modules || []).length;
+  return `<div class="card" data-stage="${st.id}" style="border-left-color:rgba(99,179,237,0.5);background:rgba(99,179,237,0.02);margin-bottom:12px;">
+    <div class="card-header">
+      <span class="drag-handle">⠿</span>
+      <div class="info" style="flex:1;">
+        <div class="title editable" contenteditable="true" data-f="a-stage-label" data-i="${st.id}" style="color:var(--accent);font-weight:600;">${esc(st.label)}</div>
+        <div class="meta" style="color:var(--text-muted);font-size:11px;">${totalMods} 个模块</div>
+      </div>
+      <div class="actions">
+        <button class="add-inline-btn" onclick="aAddModule('${st.id}')" style="font-size:12px;">＋模块</button>
+        <button class="del-btn" onclick="pendingDel('行为阶段', ()=>aDelStage('${st.id}'))" title="删除阶段">${ICONS.x}</button>
+        <button onclick="aToggleStage('${st.id}')" title="${st.collapsed?'展开':'收起'}">${st.collapsed ? ICONS.chevronRight : ICONS.chevronDown}</button>
+      </div>
+    </div>
+    <div class="card-body ${st.collapsed ? 'collapsed' : ''}" style="padding-left:8px;">
+      ${(st.modules || []).map(m => renderModule(m, st.id)).join('')}
+    </div>
+  </div>`;
+}
+
+function renderModule(m, stageId) {
+  const sid = stageId || '';
+  return `<div class="card" data-mod="${m.id}" style="margin-bottom:8px;">
+    <div class="card-header">
+      <span class="drag-handle">⠿</span>
+      <div class="info">
+        <div class="title editable" contenteditable="true" data-f="a-modname" data-i="${m.id}">${esc(m.name)}</div>
+        ${renderBackRefTags(m.id)}
+      </div>
+      <div class="actions">
+        <button class="icon-btn" onclick="aCopyMod('${m.id}')" title="复制模块内容">${ICONS.copy}</button>
+        <button class="del-btn" onclick="pendingDel('功能模块', ()=>aDelMod('${m.id}'))" title="删除模块">${ICONS.x}</button>
+        <button onclick="aToggleMod('${m.id}')" title="${m.collapsed?'展开':'收起'}">${m.collapsed ? ICONS.chevronRight : ICONS.chevronDown}</button>
+      </div>
+    </div>
+    <div class="card-body ${m.collapsed ? 'collapsed' : ''}">
+      <div class="mod-section-title" style="margin-top:10px;">
+        <span>包含功能</span>
+        <button class="add-inline-btn" onclick="aAddFeat('${m.id}')">＋功能</button>
+      </div>
+      <ul class="step-list">${m.features.map((f,i) => renderFeatureItem(f, m.id, i)).join('')}
+      </ul>
+      <div class="mod-section-title green" style="margin-top:12px;">
+        <span>✨ UX 补充建议</span>
+        <button class="add-inline-btn" onclick="aAddSug('${m.id}')">＋建议</button>
+      </div>
+      ${m.suggestions.map(s => `
+        <div class="sug-item sug-item-wrap">
+          <button class="step-del" onclick="aDelSug('${m.id}','${s.id}')" aria-label="删除">${ICONS.x}</button>
+          <div class="editable" contenteditable="true" data-f="a-sug" data-i="${s.id}" data-mod="${m.id}">${esc(s.text)}</div>
+          <div class="sug-reason">依据：<span class="editable" contenteditable="true" data-f="a-sugr" data-i="${s.id}" data-mod="${m.id}">${esc(s.reason)}</span></div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// 渲染单个功能点条目（含双维标注角标）
+function renderFeatureItem(f, mid, i) {
+  const layerCls = f.layer ? f.layer.replace('.','') : 'L1';
+  const prioMap = { High: { cls:'high', label:'高' }, Mid: { cls:'mid', label:'中' }, Low: { cls:'low', label:'低' } };
+  const prio = prioMap[f.priority] || prioMap['Mid'];
+  const uxBadge = f.isUXSupplement
+    ? `<span class="feat-badge ux-supp" title="${esc(f.supplementReason||'UX补全')}" style="cursor:pointer;">✦</span>`
+    : '';
+  const l3Badge = f.layer === 'L3'
+    ? `<span class="feat-badge l3-warn" title="${esc(f.l3Reason||'L3节点')}" style="cursor:pointer;">⚠</span>`
+    : '';
+  return `<li class="step-item">
+    <span class="step-num">${i+1}.</span>
+    <span class="step-content editable" contenteditable="true" data-f="a-feat" data-i="${f.id}" data-mod="${mid}">${esc(f.text)}</span>
+    <span class="feat-tag layer-tag" title="UI空间层级">${f.layer||'L1'}</span>
+    <span class="feat-tag prio-tag ${prio.cls}" onclick="aFeatCyclePriority('${mid}','${f.id}')" title="优先级（点击切换）" style="cursor:pointer;">${prio.label}</span>
+    ${uxBadge}${l3Badge}
+    <button class="step-del" onclick="aDelFeat('${mid}','${f.id}')" aria-label="删除">${ICONS.x}</button>
+  </li>`;
+}
+
+// Util: focus editable element after render
+function focusEl(selector) {
+  requestAnimationFrame(() => {
+    const el = document.querySelector(selector);
+    if (el) { el.focus(); const r=document.createRange(),s=window.getSelection(); r.selectNodeContents(el); r.collapse(false); s.removeAllRanges(); s.addRange(r); }
+  });
+}
+
+// Mode A operations
+function aAddGoal(type) { const nId=nid(); store.A.goals[type].push({id:nId,text:''}); save(); renderAll(); toast('已新增'); focusEl(`[data-f="a-${type}"][data-i="${nId}"]`); }
+function aDelGoal(type,id) { store.A.goals[type] = store.A.goals[type].filter(g=>g.id!==id); save(); renderAll(); toast('已删除'); }
+
+// 阶段（stage）操作
+function aAddStage() {
+  const nId = 's' + nid();
+  const idx = (store.A.stages||[]).length;
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const label = (letters[idx]||idx) + '.新阶段';
+  store.A.stages = store.A.stages || [];
+  store.A.stages.push({ id: nId, label, collapsed: false, modules: [] });
+  save(); renderAll(); toast('已新增阶段'); focusEl(`[data-f="a-stage-label"][data-i="${nId}"]`);
+}
+function aDelStage(sid) {
+  store.A.stages = (store.A.stages||[]).filter(s=>s.id!==sid);
+  save(); renderAll(); toast('已删除阶段');
+}
+function aToggleStage(sid) {
+  const st = (store.A.stages||[]).find(s=>s.id===sid);
+  if (st) st.collapsed = !st.collapsed;
+  renderAll();
+}
+
+// 模块操作（需指定所在 stageId）
+function aAddModule(stageId) {
+  const st = (store.A.stages||[]).find(s=>s.id===stageId);
+  if (!st) return;
+  const nId = nid();
+  st.modules.push({ id: nId, name: '新模块', collapsed: false,
+    features: [{ id: nid(), text: '', layer: 'L1', priority: 'Mid', isUXSupplement: false, supplementReason: '', l3Reason: '' }],
+    suggestions: [] });
+  save(); renderAll(); toast('已新增模块'); focusEl(`[data-f="a-modname"][data-i="${nId}"]`);
+}
+function aDelMod(id) {
+  (store.A.stages||[]).forEach(st => { st.modules = (st.modules||[]).filter(m=>m.id!==id); });
+  save(); renderAll(); toast('已删除模块');
+}
+function aToggleMod(id) { const m=aFindMod(id); if(m) m.collapsed=!m.collapsed; renderAll(); }
+
+// 功能点操作
+function aAddFeat(mid) {
+  const m=aFindMod(mid);
+  if(m){ const nId=nid(); m.features.push({id:nId,text:'',layer:'L1',priority:'Mid',isUXSupplement:false,supplementReason:'',l3Reason:''});
+    save();renderAll();toast('已新增');focusEl(`[data-f="a-feat"][data-i="${nId}"]`); }
+}
+function aDelFeat(mid,fid) { const m=aFindMod(mid); if(m){m.features=m.features.filter(f=>f.id!==fid);save();renderAll();toast('已删除');} }
+// 功能点级别优先级循环切换（High→Mid→Low→High）
+function aFeatCyclePriority(mid, fid) {
+  const m=aFindMod(mid); if(!m) return;
+  const f=m.features.find(x=>x.id===fid); if(!f) return;
+  f.priority = f.priority==='High'?'Mid':f.priority==='Mid'?'Low':'High';
+  save(); renderAll(); toast('优先级已切换');
+}
+// 保留旧名（模块级，现已改为功能点级，此处作废但不删避免遗漏调用报错）
+function aCyclePriority(id) { aFeatCyclePriority(id, id); }
+
+function aAddSug(mid) { const m=aFindMod(mid); if(m){const nId=nid();m.suggestions.push({id:nId,text:'',reason:''});save();renderAll();toast('已新增');focusEl(`[data-f="a-sug"][data-i="${nId}"]`);} }
+function aDelSug(mid,sid) { const m=aFindMod(mid); if(m){m.suggestions=m.suggestions.filter(s=>s.id!==sid);save();renderAll();toast('已删除');} }
+
+// ============================================================
+// 复制模块内容到剪贴板（纯文本，区分标题与正文）
+// ============================================================
+// 去除 emoji 及多余空白，保留纯文本语义内容
+function stripEmoji(str) {
+  return (str||'').replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').replace(/\s{2,}/g,' ').trim();
+}
+// 避免前缀与字段内容重复：若内容已以"前缀"开头则直接用内容，否则拼接前缀
+function safePrefix(prefix, value) {
+  const v = stripEmoji(value);
+  const p = prefix.replace(/：$/, '');
+  return (v.startsWith(p+'：') || v.startsWith(p+':') || v===p) ? v : `${prefix}${v}`;
+}
+
+// 复制富文本到剪贴板（同时写 text/html + text/plain）
+// lines 为数组，每项：{ text, bold?, indent? }
+function copyRichText(lines) {
+  const plain = lines.map(l => (l.indent||'') + l.text).join('\n');
+  const html = '<div style="font-family:sans-serif;font-size:14px;line-height:1.8;">' +
+    lines.map(l => {
+      const t = l.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const ind = l.indent ? `<span style="white-space:pre;">${l.indent}</span>` : '';
+      return l.bold
+        ? `<p style="margin:0;">${ind}<strong>${t}</strong></p>`
+        : `<p style="margin:0;">${ind}${t}</p>`;
+    }).join('') + '</div>';
+  try {
+    const item = new ClipboardItem({
+      'text/html' : new Blob([html],  { type:'text/html'  }),
+      'text/plain': new Blob([plain], { type:'text/plain' })
+    });
+    navigator.clipboard.write([item]).then(()=>toast('已复制到剪贴板（含格式）')).catch(()=>_copyPlainFallback(plain));
+  } catch(e) { _copyPlainFallback(plain); }
+}
+function _copyPlainFallback(text) {
+  navigator.clipboard.writeText(text).then(()=>toast('已复制到剪贴板')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('已复制到剪贴板');
+  });
+}
+
+function aCopyMod(mid) {
+  const m=aFindMod(mid);if(!m)return;
+  const L=[];
+  L.push({text:`【模块】${stripEmoji(m.name)}`,bold:true});
+  L.push({text:''});
+  L.push({text:'包含功能：',bold:true});
+  m.features.forEach((f,i)=>{
+    const layerStr = f.layer ? `[${f.layer}]` : '';
+    const prioStr = f.priority ? `[${f.priority}]` : '';
+    const uxStr = f.isUXSupplement ? ' [✦UX补全]' : '';
+    L.push({text:`${i+1}. ${stripEmoji(f.text)} ${layerStr}${prioStr}${uxStr}`,indent:'  '});
+    if(f.isUXSupplement && f.supplementReason) L.push({text:`依据：${f.supplementReason}`,indent:'    '});
+    if(f.layer==='L3' && f.l3Reason) L.push({text:`L3理由：${f.l3Reason}`,indent:'    '});
+  });
+  if(m.suggestions.length){
+    L.push({text:''});
+    L.push({text:'UX补充建议：',bold:true});
+    m.suggestions.forEach(s=>{
+      L.push({text:`• ${stripEmoji(s.text)}`,indent:'  '});
+      if(s.reason)L.push({text:`依据：${stripEmoji(s.reason)}`,indent:'    '});
+    });
+  }
+  copyRichText(L);
+}
+
+function bCopyPath(pid) {
+  const path=bFindP(pid);if(!path)return;
+  const L=[];
+  L.push({text:`【路径】${stripEmoji(path.title)}`,bold:true});
+  L.push({text:safePrefix('起点：',path.startPoint),indent:'  '});
+  L.push({text:''});
+  path.stages.forEach((s,si)=>{
+    const stitle=stripEmoji(s.title);
+    L.push({text:safePrefix(`阶段 ${si+1}：`,stitle),bold:true,indent:'  '});
+    if(s.actions.length){L.push({text:'用户操作：',bold:true,indent:'    '});s.actions.forEach((a,i)=>L.push({text:`${i+1}. ${stripEmoji(a.text)}`,indent:'      '}));}
+    if(s.feedbacks.length){L.push({text:'系统反馈：',bold:true,indent:'    '});s.feedbacks.forEach(f=>L.push({text:`• ${stripEmoji(f.text)}`,indent:'      '}));}
+    s.branches.forEach(b=>{L.push({text:`↳ ${stripEmoji(b.label)}`,bold:true,indent:'    '});b.items.forEach(it=>L.push({text:`• ${stripEmoji(it.text)}`,indent:'      '}));});
+    L.push({text:''});
+  });
+  copyRichText(L);
+}
+
+function bCopyStageToClipboard(pid, sid) {
+  const s=bFindS(pid,sid);if(!s)return;
+  const path=bFindP(pid);
+  const si=path?path.stages.findIndex(x=>x.id===sid):-1;
+  const L=[];
+  L.push({text:`${si>=0?'阶段 '+(si+1)+'：':''}${stripEmoji(s.title)}`,bold:true});
+  L.push({text:''});
+  if(s.actions.length){L.push({text:'用户操作：',bold:true});s.actions.forEach((a,i)=>L.push({text:`${i+1}. ${stripEmoji(a.text)}`,indent:'  '}));}
+  if(s.feedbacks.length){L.push({text:'系统反馈：',bold:true});s.feedbacks.forEach(f=>L.push({text:`• ${stripEmoji(f.text)}`,indent:'  '}));}
+  s.branches.forEach(b=>{L.push({text:`↳ ${stripEmoji(b.label)}`,bold:true});b.items.forEach(it=>L.push({text:`• ${stripEmoji(it.text)}`,indent:'  '}));});
+  copyRichText(L);
+}
+
+function cCopyPage(pgId) {
+  const pg=cFindPage(pgId);if(!pg)return;
+  const L=[];
+  L.push({text:`【页面架构】${stripEmoji(pg.pageName)}`,bold:true});
+  L.push({text:''});
+  function printNode(n,indent){
+    L.push({text:`├─ ${stripEmoji(n.label)}${n.note?' ('+stripEmoji(n.note)+')':''}`,indent});
+    (n.children||[]).forEach(c=>printNode(c,indent+'  '));
+  }
+  pg.nodes.forEach(n=>printNode(n,''));
+  copyRichText(L);
+}
+
+function dCopySpec(spId) {
+  const sp=dFindSpec(spId);if(!sp)return;
+  const L=[];
+  L.push({text:`【交互稿】${stripEmoji(sp.specName)}`,bold:true});
+  L.push({text:''});
+  if(sp.elements&&sp.elements.length){
+    L.push({text:'元素状态与基础逻辑：',bold:true});
+    sp.elements.forEach(el=>{
+      L.push({text:`【${stripEmoji(el.area)}】`,bold:true,indent:'  '});
+      (el.items||[]).forEach(it=>L.push({text:`• ${stripEmoji(it.label)}：${stripEmoji(it.desc)}`,indent:'    '}));
+    });
+    L.push({text:''});
+  }
+  if(sp.flows&&sp.flows.length){
+    L.push({text:'核心场景交互流：',bold:true});
+    sp.flows.forEach((fl,idx,arr)=>{
+      L.push({text:`操作：${stripEmoji(fl.action)}`,bold:true,indent:'  '});
+      if(fl.trigger)L.push({text:safePrefix('触发条件：',fl.trigger),indent:'    '});
+      if(fl.validation)L.push({text:safePrefix('系统校验：',fl.validation),indent:'    '});
+      (fl.steps||[]).forEach((st,i)=>L.push({text:`${i+1}. ${stripEmoji(st.desc)}`,indent:'    '}));
+      (fl.exceptions||[]).forEach(ex=>{
+        L.push({text:`异常分支：${stripEmoji(ex.scenario)}`,bold:true,indent:'    '});
+        L.push({text:safePrefix('触发条件：',ex.trigger),indent:'      '});
+        L.push({text:safePrefix('防错设计：',ex.defense),indent:'      '});
+        L.push({text:safePrefix('流程反馈：',ex.recovery),indent:'      '});
+      });
+      if(idx<arr.length-1)L.push({text:''});
+    });
+    L.push({text:''});
+  }
+  if(sp.boundaries&&sp.boundaries.length){
+    L.push({text:'系统级边界：',bold:true});
+    sp.boundaries.forEach(b=>{
+      L.push({text:`【${stripEmoji(b.scenario)}】`,bold:true,indent:'  '});
+      L.push({text:safePrefix('触发条件：',b.trigger),indent:'    '});
+      L.push({text:safePrefix('防错设计：',b.defense),indent:'    '});
+      L.push({text:safePrefix('流程反馈：',b.recovery),indent:'    '});
+    });
+    L.push({text:''});
+  }
+  copyRichText(L);
+}
+
+function dCopyElements(spId) {
+  const sp=dFindSpec(spId);if(!sp)return;
+  const L=[];
+  L.push({text:'元素状态与基础逻辑',bold:true});
+  L.push({text:''});
+  (sp.elements||[]).forEach(el=>{
+    L.push({text:`【${stripEmoji(el.area)}】`,bold:true,indent:'  '});
+    (el.items||[]).forEach(it=>L.push({text:`• ${stripEmoji(it.label)}：${stripEmoji(it.desc)}`,indent:'    '}));
+  });
+  copyRichText(L);
+}
+
+function dCopyFlows(spId) {
+  const sp=dFindSpec(spId);if(!sp)return;
+  const L=[];
+  L.push({text:'核心场景交互流',bold:true});
+  L.push({text:''});
+  const flows=sp.flows||[];
+  flows.forEach((fl,idx)=>{
+    L.push({text:`操作：${stripEmoji(fl.action)}`,bold:true,indent:'  '});
+    if(fl.trigger)L.push({text:safePrefix('触发条件：',fl.trigger),indent:'    '});
+    if(fl.validation)L.push({text:safePrefix('系统校验：',fl.validation),indent:'    '});
+    (fl.steps||[]).forEach((st,i)=>L.push({text:`${i+1}. ${stripEmoji(st.desc)}`,indent:'    '}));
+    (fl.exceptions||[]).forEach(ex=>{
+      L.push({text:`异常分支：${stripEmoji(ex.scenario)}`,bold:true,indent:'    '});
+      L.push({text:safePrefix('触发条件：',ex.trigger),indent:'      '});
+      L.push({text:safePrefix('防错设计：',ex.defense),indent:'      '});
+      L.push({text:safePrefix('流程反馈：',ex.recovery),indent:'      '});
+    });
+    if(idx<flows.length-1)L.push({text:''});
+  });
+  copyRichText(L);
+}
+
+function dCopyFlow(spId, flId) {
+  const sp=dFindSpec(spId);if(!sp)return;
+  const fl=(sp.flows||[]).find(x=>x.id===flId);if(!fl)return;
+  const L=[];
+  L.push({text:`操作：${stripEmoji(fl.action)}`,bold:true});
+  if(fl.trigger)L.push({text:safePrefix('触发条件：',fl.trigger)});
+  if(fl.validation)L.push({text:safePrefix('系统校验：',fl.validation)});
+  L.push({text:''});
+  L.push({text:'UI 反馈：',bold:true});
+  (fl.steps||[]).forEach((st,i)=>L.push({text:`${i+1}. ${stripEmoji(st.desc)}`,indent:'  '}));
+  if((fl.exceptions||[]).length>0){
+    L.push({text:''});
+    (fl.exceptions||[]).forEach(ex=>{
+      L.push({text:`异常分支：${stripEmoji(ex.scenario)}`,bold:true});
+      L.push({text:safePrefix('触发条件：',ex.trigger),indent:'  '});
+      L.push({text:safePrefix('防错设计：',ex.defense),indent:'  '});
+      L.push({text:safePrefix('流程反馈：',ex.recovery),indent:'  '});
+    });
+  }
+  copyRichText(L);
+}
+
+function dCopyBoundaries(spId) {
+  const sp=dFindSpec(spId);if(!sp)return;
+  const L=[];
+  L.push({text:'系统级边界',bold:true});
+  L.push({text:''});
+  (sp.boundaries||[]).forEach(b=>{
+    L.push({text:`【${stripEmoji(b.scenario)}】`,bold:true,indent:'  '});
+    L.push({text:safePrefix('触发条件：',b.trigger),indent:'    '});
+    L.push({text:safePrefix('防错设计：',b.defense),indent:'    '});
+    L.push({text:safePrefix('流程反馈：',b.recovery),indent:'    '});
+  });
+  copyRichText(L);
+}
+
+function dToggleSec(spId, key) {
+  const sp=dFindSpec(spId);if(!sp)return;
+  sp[key]=!sp[key];
+  renderAll();
+}
+
+// ============================================================
+// MODE B: 行为路径
+// ============================================================
+function initB() {
+  store.B = [
+    {
+      id:nid(),title:'核心行为路径 1：文明遗产获取',
+      startPoint:'玩家在大世界进行探索/战斗活动',
+      collapsed:false,
+      stages:[
+        {id:nid(),title:'大世界活动中获得文明遗产',
+          actions:[{id:nid(),text:'探索聚落 / 采集资源 / 击败敌人'}],
+          feedbacks:[
+            {id:nid(),text:'掉落结算：命中投放规则表的道具自动附加"文明遗产"标记属性'},
+            {id:nid(),text:'视觉标识：带有文明遗产标记的道具显示专属角标ICON'},
+            {id:nid(),text:'拾取提示：屏幕上方出现提示条："获得文明遗产 — [道具名称]"'}
+          ],
+          branches:[]},
+        {id:nid(),title:'首次获得某类文明遗产（补充建议）',
+          actions:[{id:nid(),text:'首次拾取某个从未获得过的文明遗产道具'}],
+          feedbacks:[
+            {id:nid(),text:'发现动效：道具图标短暂放大 + 光效闪烁'},
+            {id:nid(),text:'Toast提示"可在科技研究台进行逆向研究，解锁[对应科技名称]"'},
+            {id:nid(),text:'背包标记：道具归入"文明遗产"筛选标签下'}
+          ],
+          branches:[]}
+      ]
+    },
+    {
+      id:nid(),title:'核心行为路径 2：逆向研究（单个）',
+      startPoint:'玩家拥有文明遗产道具，前往科技研究台',
+      collapsed:false,
+      stages:[
+        {id:nid(),title:'进入科技研究台 — 选择逆向研究功能',
+          actions:[{id:nid(),text:'交互科技研究台设施'},{id:nid(),text:'在功能选择界面点击「逆向研究」Tab'}],
+          feedbacks:[{id:nid(),text:'打开逆向研究面板，展示研究槽位（最多5个）及状态'},{id:nid(),text:'若背包/储藏箱中有文明遗产道具，显示可用数量提示'}],
+          branches:[]},
+        {id:nid(),title:'放入文明遗产道具',
+          actions:[{id:nid(),text:'点击空闲槽位'},{id:nid(),text:'在道具选择列表中选择一个文明遗产道具'}],
+          feedbacks:[],
+          branches:[
+            {id:nid(),label:'分支A：对应科技未解锁',items:[
+              {id:nid(),text:'预览：展示"逆向研究将解锁：[科技名称]"'},
+              {id:nid(),text:'额外提示："有概率获得额外半成品道具"'},
+              {id:nid(),text:'消耗展示：所需额外材料 + 研究时间'}
+            ]},
+            {id:nid(),label:'分支B：对应科技已解锁',items:[
+              {id:nid(),text:'预览：展示"预计获得：科技碎片×N"'},
+              {id:nid(),text:'衰减提示：显示"当前为第X次研究，收益已降低"'}
+            ]}
+          ]},
+        {id:nid(),title:'研究完成 — 领取结果',
+          actions:[{id:nid(),text:'研究倒计时结束后，点击「领取」按钮'}],
+          feedbacks:[],
+          branches:[
+            {id:nid(),label:'分支A：科技解锁成功 ✅',items:[
+              {id:nid(),text:'全屏级解锁动效 — 科技图标从道具中"浮现"并点亮'},
+              {id:nid(),text:'展示"已掌握：[科技名称]"+ 科技效果详情'},
+              {id:nid(),text:'科技等级进度条增长动画'}
+            ]},
+            {id:nid(),label:'分支B：获得科技碎片 📦',items:[
+              {id:nid(),text:'轻量结算动效 — 碎片/材料图标飞入背包'},
+              {id:nid(),text:'展示累计拆解次数、下次预期收益'}
+            ]}
+          ]}
+      ]
+    },
+    {
+      id:nid(),title:'核心行为路径 3：逆向研究（批量）',
+      startPoint:'玩家拥有多个文明遗产道具，希望批量处理',
+      collapsed:true,
+      stages:[
+        {id:nid(),title:'进入批量研究模式',
+          actions:[{id:nid(),text:'在逆向研究面板点击「批量研究」按钮'}],
+          feedbacks:[{id:nid(),text:'切换至批量选择界面，展示所有可研究的文明遗产道具列表'},{id:nid(),text:'列表按"未解锁科技优先"排序'}],
+          branches:[]},
+        {id:nid(),title:'选择多个道具并开始研究',
+          actions:[{id:nid(),text:'勾选最多5个文明遗产道具'},{id:nid(),text:'点击「开始批量研究」按钮'}],
+          feedbacks:[{id:nid(),text:'展示批量研究预览：每个道具的预期产出汇总'},{id:nid(),text:'显示总消耗材料和总研究时间'}],
+          branches:[]},
+        {id:nid(),title:'批量研究进行中',
+          actions:[{id:nid(),text:'等待或执行其他游戏活动'}],
+          feedbacks:[{id:nid(),text:'研究槽位显示独立进度条'},{id:nid(),text:'单个完成时显示轻量Toast提示'}],
+          branches:[]},
+        {id:nid(),title:'一键领取全部结果',
+          actions:[{id:nid(),text:'点击「一键领取」按钮'}],
+          feedbacks:[{id:nid(),text:'汇总结算面板：展示本批次解锁的科技列表 + 获得的碎片/材料汇总'},{id:nid(),text:'科技等级进度条增长动画（如有升级则触发升级演出）'}],
+          branches:[]}
+      ]
+    },
+    {
+      id:nid(),title:'核心行为路径 4：科技发明',
+      startPoint:'玩家拥有基础材料，希望尝试发明新科技',
+      collapsed:true,
+      stages:[
+        {id:nid(),title:'进入科技发明界面',
+          actions:[{id:nid(),text:'在科技研究台点击「科技发明」Tab'}],
+          feedbacks:[{id:nid(),text:'展示科技发明界面：3×3材料投入区 + 产物预览区'},{id:nid(),text:'展示当前科技等级对发明概率的加成'}],
+          branches:[]},
+        {id:nid(),title:'投入材料',
+          actions:[{id:nid(),text:'点击材料槽位'},{id:nid(),text:'从背包选择材料投入（同种材料不可重复）'}],
+          feedbacks:[{id:nid(),text:'实时更新产物预览列表'},{id:nid(),text:'显示各产物的成功概率（按概率降序）'},{id:nid(),text:'显示"接近发现"提示（如概率≥80%）'}],
+          branches:[]},
+        {id:nid(),title:'开始发明',
+          actions:[{id:nid(),text:'点击「开始发明」按钮'}],
+          feedbacks:[{id:nid(),text:'发明演出动效：材料融合→光效闪烁→结果揭晓'}],
+          branches:[
+            {id:nid(),label:'分支A：发明成功 ✅',items:[
+              {id:nid(),text:'全屏级成功动效'},
+              {id:nid(),text:'展示"发明成功：[科技名称]"'},
+              {id:nid(),text:'记录配方到"发明记录"中'}
+            ]},
+            {id:nid(),label:'分支B：获得残次品 📦',items:[
+              {id:nid(),text:'展示"发明结果：残次品×N"'},
+              {id:nid(),text:'提示"残次品可用于二次发明"'}
+            ]},
+            {id:nid(),label:'分支C：发明失败 ❌',items:[
+              {id:nid(),text:'展示"发明失败，材料已消耗"'},
+              {id:nid(),text:'提示"建议尝试调整材料组合"'}
+            ]}
+          ]}
+      ]
+    },
+    {
+      id:nid(),title:'核心行为路径 5：科技等级提升',
+      startPoint:'玩家持续解锁科技，累计解锁数达到升级阈值',
+      collapsed:true,
+      stages:[
+        {id:nid(),title:'触发科技等级提升',
+          actions:[{id:nid(),text:'解锁第N个科技（达到升级阈值）'}],
+          feedbacks:[{id:nid(),text:'全屏级升级演出：等级数字放大→金色光效→新等级展示'},{id:nid(),text:'展示升级奖励：科技强化机会×N + 一次性奖励道具'}],
+          branches:[]},
+        {id:nid(),title:'领取升级奖励',
+          actions:[{id:nid(),text:'点击「领取奖励」按钮'}],
+          feedbacks:[{id:nid(),text:'奖励道具飞入背包动效'},{id:nid(),text:'显示"已获得科技强化机会×N"'},{id:nid(),text:'提示"可在科技主界面使用强化机会"'}],
+          branches:[]}
+      ]
+    },
+    {
+      id:nid(),title:'核心行为路径 6：科技碎片加点（科技强化）',
+      startPoint:'玩家拥有科技强化机会，希望强化已解锁的科技',
+      collapsed:true,
+      stages:[
+        {id:nid(),title:'进入科技强化界面',
+          actions:[{id:nid(),text:'在科技主界面点击「科技强化」入口'}],
+          feedbacks:[{id:nid(),text:'展示已解锁科技列表（按类型/等级分组）'},{id:nid(),text:'显示可用强化机会数量'},{id:nid(),text:'每个科技显示当前强化等级和下一级效果预览'}],
+          branches:[]},
+        {id:nid(),title:'选择科技并强化',
+          actions:[{id:nid(),text:'点击目标科技卡片'},{id:nid(),text:'在详情面板点击「强化」按钮'}],
+          feedbacks:[{id:nid(),text:'强化成功动效：科技图标发光→等级+1'},{id:nid(),text:'展示强化后的效果数值变化'},{id:nid(),text:'剩余强化机会数量更新'}],
+          branches:[
+            {id:nid(),label:'分支：已达满级',items:[
+              {id:nid(),text:'强化按钮置灰'},
+              {id:nid(),text:'显示"已达最高等级"'}
+            ]}
+          ]}
+      ]
+    },
+    {
+      id:nid(),title:'核心行为路径 7：拆解台特殊分支（文明遗产拦截）',
+      startPoint:'玩家在拆解台尝试拆解文明遗产道具',
+      collapsed:true,
+      stages:[
+        {id:nid(),title:'尝试拆解文明遗产道具',
+          actions:[{id:nid(),text:'在拆解台选中文明遗产道具'},{id:nid(),text:'点击「拆解」按钮'}],
+          feedbacks:[{id:nid(),text:'弹出拦截弹窗："该道具为文明遗产，建议前往科技研究台进行逆向研究"'}],
+          branches:[
+            {id:nid(),label:'分支A：选择跳转',items:[
+              {id:nid(),text:'点击「前往研究台」'},
+              {id:nid(),text:'自动打开科技研究台界面，并预选该道具'}
+            ]},
+            {id:nid(),label:'分支B：坚持拆解',items:[
+              {id:nid(),text:'点击「仍要拆解」'},
+              {id:nid(),text:'二次确认弹窗："确定放弃逆向研究收益吗？"'},
+              {id:nid(),text:'确认后执行普通拆解流程'}
+            ]}
+          ]}
+      ]
+    }
+  ];
+}
+
+function renderB() {
+  const el = document.getElementById('panelB');
+  if (!store.B || store.B.length === 0) {
+    el.innerHTML = renderEmptyState();
+    return;
+  }
+  el.innerHTML = store.B.map((path,pi) => `
+    <div class="card" data-path="${path.id}" draggable="true">
+      <div class="card-header">
+        <span class="drag-handle">${ICONS.drag}</span>
+        <div class="info">
+          <div class="title editable" contenteditable="true" data-f="b-title" data-i="${path.id}">${esc(path.title)}${renderAnno(path.id)}</div>
+          <div class="meta">【起点】<span class="editable" contenteditable="true" data-f="b-start" data-i="${path.id}">${esc(path.startPoint)}</span></div>
+          ${renderRefTags(path, 'B')}
+          ${renderBackRefTags(path.id)}
+        </div>
+        <div class="actions">
+          <button class="ref-link-btn" onclick="openRefModal('${path.id}','B')" title="管理引用关系">${ICONS.link}</button>
+          <button class="icon-btn" onclick="bCopyPath('${path.id}')" title="复制路径内容">${ICONS.copy}</button>
+          <button class="add-inline-btn" onclick="bAddStage('${path.id}')">＋阶段</button>
+          <button class="del-btn" onclick="pendingDel('行为路径', ()=>bDelPath('${path.id}'))" title="删除路径">${ICONS.x}</button>
+          <button onclick="bToggle('${path.id}')" title="${path.collapsed?'展开':'收起'}">${path.collapsed?ICONS.chevronRight:ICONS.chevronDown}</button>
+        </div>
+      </div>
+      <div class="card-body ${path.collapsed?'collapsed':''}">
+        ${path.stages.map((s,si)=>renderBStage(path.id,s,si)).join('')}
+        <button class="add-btn" onclick="bAddStage('${path.id}')">+ 新增阶段</button>
+      </div>
+    </div>`).join('') +
+    '<div style="margin-top:12px;"><button class="add-btn" onclick="bAddPath()">+ 新增路径</button></div>';
+}
+
+function renderBStage(pid,stage,si) {
+  const fbCount = stage.feedbacks.length + stage.branches.reduce((acc,b)=>acc+b.items.length,0);
+  return `<div class="stage" data-stage="${stage.id}" data-path="${pid}">
+    <div class="stage-header">
+      <span class="drag-handle">${ICONS.drag}</span>
+      <span class="icon-btn" style="pointer-events:none;color:var(--accent);opacity:0.7;">${ICONS.stage}</span>
+      <span class="stage-title">阶段 ${si+1}：<span class="editable" contenteditable="true" data-f="b-stitle" data-i="${stage.id}" data-p="${pid}">${esc(stage.title)}</span></span>
+      <button class="fb-popover-btn" onclick="openFbPopover('${pid}','${stage.id}')" style="display:inline-flex;align-items:center;gap:5px;">${ICONS.feedback} 反馈与边界 ${fbCount>0?'<span style="opacity:.6;font-weight:400;">('+stage.feedbacks.length+'+'+stage.branches.length+')</span>':''}</button>
+      <button class="icon-btn" onclick="bCopyStageToClipboard('${pid}','${stage.id}')" title="复制阶段内容到剪贴板">${ICONS.copy}</button>
+      <button class="icon-btn danger" onclick="pendingDel('交互阶段', ()=>bDelStage('${pid}','${stage.id}'))" title="删除阶段" aria-label="删除阶段">${ICONS.trash}</button>
+    </div>
+    <div class="action-block">
+      <div class="block-label" style="justify-content:space-between;">
+        <span style="display:inline-flex;align-items:center;gap:5px;">${ICONS.user} 用户操作</span>
+        <button class="add-inline-btn" onclick="bAddStep('${pid}','${stage.id}','actions')">＋操作</button>
+      </div>
+      <ul class="step-list">${stage.actions.map((a,i)=>`
+        <li class="step-item"><span class="step-num">${i+1}.</span>
+          <span class="step-content editable" contenteditable="true" data-f="b-step" data-i="${a.id}" data-s="${stage.id}" data-p="${pid}" data-t="actions">${esc(a.text)}</span>
+          <button class="step-del" onclick="bDelStep('${pid}','${stage.id}','actions','${a.id}')" aria-label="删除">${ICONS.x}</button>
+        </li>`).join('')}
+      </ul>
+    </div>
+  </div>`;
+}
+
+function renderBBranch(pid,sid,b) {
+  return `<div class="branch"><div class="branch-header">
+    <span class="icon-btn" style="pointer-events:none;color:var(--orange);">${ICONS.arrowRight}</span>
+    <span class="branch-title editable" contenteditable="true" data-f="b-blabel" data-i="${b.id}" data-s="${sid}" data-p="${pid}">${esc(b.label)}</span>
+    <button class="icon-btn danger step-del" onclick="bDelBranch('${pid}','${sid}','${b.id}')" aria-label="删除分支">${ICONS.x}</button>
+  </div>
+  ${b.items.map(it=>`<div class="branch-item"><span class="bullet">•</span>
+    <span class="editable" contenteditable="true" style="flex:1;" data-f="b-bitem" data-i="${it.id}" data-b="${b.id}" data-s="${sid}" data-p="${pid}">${esc(it.text)}</span>
+    <button class="step-del" onclick="bDelBItem('${pid}','${sid}','${b.id}','${it.id}')" aria-label="删除">${ICONS.x}</button>
+  </div>`).join('')}
+  <button class="add-btn" onclick="bAddBItem('${pid}','${sid}','${b.id}')">+ 新增分支项</button>
+  </div>`;
+}
+
+// Mode B helpers
+function bFindP(id){return store.B.find(p=>p.id===id);}
+function bFindS(pid,sid){const p=bFindP(pid);return p?p.stages.find(s=>s.id===sid):null;}
+function bToggle(id){const p=bFindP(id);if(p)p.collapsed=!p.collapsed;renderAll();}
+function bAddPath(){const nId=nid();store.B.push({id:nId,title:'新行为路径',startPoint:'',collapsed:false,stages:[{id:nid(),title:'新阶段',actions:[{id:nid(),text:''}],feedbacks:[],branches:[]}]});save();renderAll();toast('已新增路径');focusEl(`[data-f="b-title"][data-i="${nId}"]`);}
+function bDelPath(id){store.B=store.B.filter(p=>p.id!==id);save();renderAll();toast('已删除');}
+function bAddStage(pid){const p=bFindP(pid);if(p){const nId=nid();p.stages.push({id:nId,title:'新阶段',actions:[{id:nid(),text:''}],feedbacks:[],branches:[]});save();renderAll();toast('已新增');focusEl(`[data-f="b-stitle"][data-i="${nId}"]`);}}
+function bDelStage(pid,sid){const p=bFindP(pid);if(p){p.stages=p.stages.filter(s=>s.id!==sid);save();renderAll();toast('已删除');}}
+function bCopyStage(pid,sid){
+  const p=bFindP(pid);if(!p)return;
+  const s=bFindS(pid,sid);if(!s)return;
+  const idx=p.stages.findIndex(x=>x.id===sid);
+  function deepClone(obj){return JSON.parse(JSON.stringify(obj));}
+  function reId(obj){
+    if(Array.isArray(obj))return obj.map(reId);
+    if(obj&&typeof obj==='object'){const n={};for(const k in obj){n[k]=k==='id'?nid():reId(obj[k]);}return n;}
+    return obj;
+  }
+  const copy=reId(deepClone(s));copy.title=s.title+' (副本)';
+  p.stages.splice(idx+1,0,copy);save();renderAll();toast('阶段已复制');
+}
+function bAddStep(pid,sid,type){const s=bFindS(pid,sid);if(s){const nId=nid();s[type].push({id:nId,text:''});save();renderAll();toast('已新增');focusEl(`[data-f="b-step"][data-i="${nId}"]`);}}
+function bDelStep(pid,sid,type,id){const s=bFindS(pid,sid);if(s){s[type]=s[type].filter(x=>x.id!==id);save();renderAll();toast('已删除');}}
+function bAddBranch(pid,sid){const s=bFindS(pid,sid);if(s){const nId=nid();s.branches.push({id:nId,label:'',items:[{id:nid(),text:''}]});save();renderAll();toast('已新增');focusEl(`[data-f="b-blabel"][data-i="${nId}"]`);}}
+function bDelBranch(pid,sid,bid){const s=bFindS(pid,sid);if(s){s.branches=s.branches.filter(b=>b.id!==bid);save();renderAll();toast('已删除');}}
+function bAddBItem(pid,sid,bid){const s=bFindS(pid,sid);const b=s?.branches.find(x=>x.id===bid);if(b){const nId=nid();b.items.push({id:nId,text:''});save();renderAll();toast('已新增');focusEl(`[data-f="b-bitem"][data-i="${nId}"]`);}}
+function bDelBItem(pid,sid,bid,iid){const s=bFindS(pid,sid);const b=s?.branches.find(x=>x.id===bid);if(b){b.items=b.items.filter(x=>x.id!==iid);save();renderAll();toast('已删除');}}
+
+// FB Popover (反馈与边界条件浮层)
+let fbPopoverState = null; // { pid, sid }
+function openFbPopover(pid, sid) {
+  fbPopoverState = { pid, sid };
+  renderFbPopover();
+}
+function closeFbPopover() {
+  fbPopoverState = null;
+  const ol = document.getElementById('fbPopoverOverlay');
+  if (ol) ol.remove();
+}
+function renderFbPopover() {
+  const ol = document.getElementById('fbPopoverOverlay');
+  if (ol) ol.remove();
+  if (!fbPopoverState) return;
+  const { pid, sid } = fbPopoverState;
+  const path = bFindP(pid); if (!path) return;
+  const stageIdx = path.stages.findIndex(s => s.id === sid);
+  if (stageIdx < 0) return;
+  const stage = path.stages[stageIdx];
+
+  const tabsHtml = path.stages.map((s, i) =>
+    `<div class="fb-stage-tab ${s.id === sid ? 'active' : ''}" onclick="switchFbPopoverStage('${pid}','${s.id}')">${i+1}. ${esc(s.title.length>12?s.title.slice(0,12)+'…':s.title)}</div>`
+  ).join('');
+
+  const feedbacksHtml = stage.feedbacks.map(f => `
+    <li class="step-item"><span class="step-num">•</span>
+      <span class="step-content editable" contenteditable="true" data-f="b-step" data-i="${f.id}" data-s="${stage.id}" data-p="${pid}" data-t="feedbacks">${esc(f.text)}</span>
+          <button class="step-del" onclick="bDelStep('${pid}','${stage.id}','feedbacks','${f.id}');renderFbPopover()" aria-label="删除">${ICONS.x}</button>
+    </li>`).join('');
+
+  const branchesHtml = stage.branches.map(b => `
+    <div class="branch">
+      <div class="branch-header">
+        <span class="icon-btn" style="pointer-events:none;color:var(--orange);">${ICONS.arrowRight}</span>
+        <span class="branch-title editable" contenteditable="true" data-f="b-blabel" data-i="${b.id}" data-s="${stage.id}" data-p="${pid}">${esc(b.label)}</span>
+        <button class="step-del" onclick="bDelBranch('${pid}','${stage.id}','${b.id}');renderFbPopover()" aria-label="删除">${ICONS.x}</button>
+      </div>
+      ${b.items.map(it=>`<div class="branch-item"><span class="bullet">•</span>
+        <span class="editable" contenteditable="true" style="flex:1" data-f="b-bitem" data-i="${it.id}" data-b="${b.id}" data-s="${stage.id}" data-p="${pid}">${esc(it.text)}</span>
+        <button class="step-del" onclick="bDelBItem('${pid}','${stage.id}','${b.id}','${it.id}');renderFbPopover()" aria-label="删除">${ICONS.x}</button>
+      </div>`).join('')}
+      <button class="add-btn" onclick="bAddBItemInPopover('${pid}','${stage.id}','${b.id}')">+ 新增分支项</button>
+    </div>`).join('');
+
+  const html = `<div class="fb-popover-overlay" id="fbPopoverOverlay" onclick="if(event.target===this)closeFbPopover()">
+    <div class="fb-popover">
+      <div class="fb-popover-head">
+        <h3>🔄 反馈与边界条件</h3>
+        <button class="fb-popover-close" onclick="closeFbPopover()" aria-label="关闭">${ICONS.x}</button>
+      </div>
+      <div class="fb-stage-tabs">${tabsHtml}</div>
+      <div class="fb-popover-body">
+        <div class="fb-section">
+          <div class="fb-section-title feedback">
+            <span style="display:inline-flex;align-items:center;gap:5px;">${ICONS.feedback} 系统反馈</span>
+            <button class="add-inline-btn" onclick="bAddStepInPopover('${pid}','${stage.id}','feedbacks')">＋新增反馈</button>
+          </div>
+          <div class="fb-section-body">
+            <ul class="step-list">${feedbacksHtml}</ul>
+          </div>
+        </div>
+        <div class="fb-section">
+          <div class="fb-section-title branch">
+            <span style="display:inline-flex;align-items:center;gap:5px;">${ICONS.arrowRight} 分支条件</span>
+            <button class="add-btn" onclick="bAddBranchInPopover('${pid}','${stage.id}')" style="margin-top:0;border-color:var(--orange);color:var(--orange);">＋新增分支</button>
+          </div>
+          <div class="fb-section-body">
+            ${branchesHtml}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  bindEditableInPopover();
+}
+function switchFbPopoverStage(pid, sid) {
+  fbPopoverState = { pid, sid };
+  renderFbPopover();
+}
+function bAddStepInPopover(pid, sid, type) {
+  const s = bFindS(pid, sid); if (!s) return;
+  const nId = nid(); s[type].push({id:nId, text:''});
+  save(); renderFbPopover();
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`#fbPopoverOverlay [data-f="b-step"][data-i="${nId}"]`);
+    if (el) { el.focus(); const r=document.createRange(),sel=window.getSelection(); r.selectNodeContents(el); r.collapse(false); sel.removeAllRanges(); sel.addRange(r); }
+  });
+}
+function bAddBranchInPopover(pid, sid) {
+  const s = bFindS(pid, sid); if (!s) return;
+  const nId = nid(); s.branches.push({id:nId, label:'', items:[{id:nid(), text:''}]});
+  save(); renderFbPopover();
+}
+function bAddBItemInPopover(pid, sid, bid) {
+  const s = bFindS(pid, sid); const b = s?.branches.find(x=>x.id===bid); if (!b) return;
+  const nId = nid(); b.items.push({id:nId, text:''});
+  save(); renderFbPopover();
+}
+function bindEditableInPopover() {
+  // 使浮层内 editable 在 blur 时也能触发统一编辑处理
+  requestAnimationFrame(() => {
+    document.querySelectorAll('#fbPopoverOverlay .editable').forEach(el => {
+      el.onblur = onBlur;
+    });
+    // 阶段 Tab 区支持鼠标滚轮横向滚动
+    const tabs = document.querySelector('#fbPopoverOverlay .fb-stage-tabs');
+    if (tabs) {
+      tabs.addEventListener('wheel', e => {
+        if (e.deltaY !== 0) {
+          e.preventDefault();
+          tabs.scrollLeft += e.deltaY;
+        }
+      }, { passive: false });
+    }
+  });
+}
+
+// ============================================================
+// MODE C: 信息架构
+// ============================================================
+function initC() {
+  store.C = [
+    { id:nid(), pageName:'科技研究台 — 主界面', collapsed:false,
+      nodes:[
+        {id:nid(),icon:'📌',label:'常驻信息区',note:'顶部',children:[
+          {id:nid(),icon:'',label:'科技等级 + 等级进度条',note:'影响发明概率，需常驻可见',children:[]},
+          {id:nid(),icon:'',label:'科技碎片余额',note:'通用货币，多处需要参考',children:[]},
+          {id:nid(),icon:'',label:'未使用强化机会提示（角标）',note:'避免玩家遗忘',children:[]}
+        ]},
+        {id:nid(),icon:'🗂️',label:'功能Tab切换区',note:'顶部下方',children:[
+          {id:nid(),icon:'',label:'Tab1: 逆向研究（默认选中）',note:'主要解锁手段',children:[]},
+          {id:nid(),icon:'',label:'Tab2: 科技发明',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🔲',label:'内容区',note:'根据Tab切换展示子页面',children:[]}
+      ]
+    },
+    { id:nid(), pageName:'逆向研究子页面', collapsed:true,
+      nodes:[
+        {id:nid(),icon:'🗂️',label:'研究槽位区',note:'最多5个槽位',children:[
+          {id:nid(),icon:'',label:'槽位状态：空闲 / 研究中 / 已完成',note:'',children:[]},
+          {id:nid(),icon:'',label:'进度条（研究中状态）',note:'',children:[]},
+          {id:nid(),icon:'',label:'预期产出预览',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'📌',label:'可用道具提示',note:'',children:[
+          {id:nid(),icon:'',label:'背包中文明遗产数量',note:'',children:[]},
+          {id:nid(),icon:'',label:'储藏箱中文明遗产数量',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🕹️',label:'操作区',note:'底部',children:[
+          {id:nid(),icon:'',label:'「批量研究」按钮',note:'',children:[]},
+          {id:nid(),icon:'',label:'「一键领取」按钮',note:'有完成项时高亮',children:[]}
+        ]}
+      ]
+    },
+    { id:nid(), pageName:'道具选择列表', collapsed:true,
+      nodes:[
+        {id:nid(),icon:'📌',label:'筛选/排序区',note:'顶部',children:[
+          {id:nid(),icon:'',label:'数据来源切换：背包 / 储藏箱',note:'',children:[]},
+          {id:nid(),icon:'',label:'排序方式：品质 / 获取时间 / 对应科技',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🗂️',label:'道具列表区',note:'',children:[
+          {id:nid(),icon:'',label:'道具卡片：图标 + 名称 + 文明遗产角标',note:'',children:[]},
+          {id:nid(),icon:'',label:'对应科技预览（悬停/长按）',note:'',children:[]},
+          {id:nid(),icon:'',label:'已解锁/未解锁状态标识',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🕹️',label:'操作区',note:'',children:[
+          {id:nid(),icon:'',label:'「确认选择」按钮',note:'',children:[]},
+          {id:nid(),icon:'',label:'「取消」按钮',note:'',children:[]}
+        ]}
+      ]
+    },
+    { id:nid(), pageName:'研究结果面板', collapsed:true,
+      nodes:[
+        {id:nid(),icon:'🗂️',label:'结果展示区',note:'',children:[
+          {id:nid(),icon:'',label:'科技图标 + 名称（解锁成功时）',note:'',children:[]},
+          {id:nid(),icon:'',label:'碎片/材料图标 + 数量（拆解时）',note:'',children:[]},
+          {id:nid(),icon:'',label:'科技效果详情',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'📌',label:'进度关联展示',note:'',children:[
+          {id:nid(),icon:'',label:'科技等级进度条变化',note:'',children:[]},
+          {id:nid(),icon:'',label:'距下次升级还需X个科技',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🕹️',label:'操作区',note:'',children:[
+          {id:nid(),icon:'',label:'「继续研究」按钮',note:'快捷返回',children:[]},
+          {id:nid(),icon:'',label:'「查看科技」按钮',note:'跳转科技详情',children:[]},
+          {id:nid(),icon:'',label:'「关闭」按钮',note:'',children:[]}
+        ]}
+      ]
+    },
+    { id:nid(), pageName:'科技发明子页面', collapsed:true,
+      nodes:[
+        {id:nid(),icon:'🗂️',label:'材料投入区（3×3九宫格）',note:'左侧/上方',children:[
+          {id:nid(),icon:'',label:'9个材料槽位',note:'同种材料不可重复',children:[]},
+          {id:nid(),icon:'',label:'投入汇总：已投入种类数 + 预计时间',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🗂️',label:'产物预览区',note:'右侧/下方',children:[
+          {id:nid(),icon:'',label:'可能产物列表（按概率降序）',note:'实时计算',children:[]},
+          {id:nid(),icon:'',label:'"接近发现"提示区',note:'可配置开关',children:[]},
+          {id:nid(),icon:'',label:'综合概率说明',note:'≥100%绿色 / <100%橙色',children:[]}
+        ]},
+        {id:nid(),icon:'🕹️',label:'操作区',note:'底部',children:[
+          {id:nid(),icon:'',label:'「开始发明」按钮',note:'至少投入1种材料可点击',children:[]},
+          {id:nid(),icon:'',label:'「快捷配方」入口',note:'',children:[]},
+          {id:nid(),icon:'',label:'「发明记录」入口',note:'',children:[]}
+        ]}
+      ]
+    },
+    { id:nid(), pageName:'发明结果面板', collapsed:true,
+      nodes:[
+        {id:nid(),icon:'🗂️',label:'结果展示区',note:'',children:[
+          {id:nid(),icon:'',label:'成功：科技图标 + 名称 + 效果',note:'',children:[]},
+          {id:nid(),icon:'',label:'残次品：残次品图标 + 数量 + 用途提示',note:'',children:[]},
+          {id:nid(),icon:'',label:'失败：失败提示 + 建议',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'📌',label:'配方记录提示',note:'成功时显示',children:[
+          {id:nid(),icon:'',label:'本次配方已记录',note:'',children:[]},
+          {id:nid(),icon:'',label:'查看发明记录入口',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🕹️',label:'操作区',note:'',children:[
+          {id:nid(),icon:'',label:'「再次发明」按钮',note:'保留上次材料',children:[]},
+          {id:nid(),icon:'',label:'「返回」按钮',note:'',children:[]}
+        ]}
+      ]
+    },
+    { id:nid(), pageName:'科技主界面', collapsed:true,
+      nodes:[
+        {id:nid(),icon:'📌',label:'科技等级与进度区',note:'顶部',children:[
+          {id:nid(),icon:'',label:'当前科技等级',note:'',children:[]},
+          {id:nid(),icon:'',label:'进度条：已解锁/下一等级所需',note:'',children:[]},
+          {id:nid(),icon:'',label:'升级预览：下一等级奖励',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🗂️',label:'科技列表区',note:'',children:[
+          {id:nid(),icon:'',label:'分类Tab：全部 / 工具 / 建筑 / 装备',note:'',children:[]},
+          {id:nid(),icon:'',label:'科技卡片：图标 + 名称 + 强化等级',note:'',children:[]},
+          {id:nid(),icon:'',label:'状态标识：已解锁 / 未解锁 / 可强化',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🕹️',label:'快捷入口区',note:'底部',children:[
+          {id:nid(),icon:'',label:'「前往研究台」按钮',note:'',children:[]},
+          {id:nid(),icon:'',label:'「科技强化」按钮',note:'有机会时角标提示',children:[]}
+        ]}
+      ]
+    },
+    { id:nid(), pageName:'科技强化界面', collapsed:true,
+      nodes:[
+        {id:nid(),icon:'📌',label:'强化机会展示',note:'顶部',children:[
+          {id:nid(),icon:'',label:'可用强化机会×N',note:'',children:[]},
+          {id:nid(),icon:'',label:'来源说明：科技升级获得',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🗂️',label:'可强化科技列表',note:'',children:[
+          {id:nid(),icon:'',label:'已解锁科技（按类型/强化等级分组）',note:'',children:[]},
+          {id:nid(),icon:'',label:'当前等级 / 满级标识',note:'',children:[]},
+          {id:nid(),icon:'',label:'下一级效果预览',note:'',children:[]}
+        ]},
+        {id:nid(),icon:'🗂️',label:'强化详情面板（选中后）',note:'',children:[
+          {id:nid(),icon:'',label:'科技完整信息',note:'',children:[]},
+          {id:nid(),icon:'',label:'各等级效果对比',note:'',children:[]},
+          {id:nid(),icon:'',label:'「强化」按钮',note:'满级时置灰',children:[]}
+        ]}
+      ]
+    },
+    { id:nid(), pageName:'拆解台拦截弹窗', collapsed:true,
+      nodes:[
+        {id:nid(),icon:'📌',label:'警告信息区',note:'',children:[
+          {id:nid(),icon:'',label:'警告图标 + 文案',note:'该道具为文明遗产',children:[]},
+          {id:nid(),icon:'',label:'建议说明',note:'建议前往科技研究台',children:[]},
+          {id:nid(),icon:'',label:'逆向研究收益预览',note:'可获得的科技/碎片',children:[]}
+        ]},
+        {id:nid(),icon:'🕹️',label:'操作区',note:'',children:[
+          {id:nid(),icon:'',label:'「前往研究台」按钮',note:'主要引导',children:[]},
+          {id:nid(),icon:'',label:'「仍要拆解」按钮',note:'次要选项，需二次确认',children:[]},
+          {id:nid(),icon:'',label:'「取消」按钮',note:'',children:[]}
+        ]}
+      ]
+    }
+  ];
+}
+
+function renderC() {
+  const el = document.getElementById('panelC');
+  if (!store.C || store.C.length === 0) {
+    el.innerHTML = renderEmptyState();
+    return;
+  }
+  el.innerHTML = store.C.map(page => `
+    <div class="card" data-page="${page.id}">
+      <div class="card-header">
+        <span class="drag-handle">${ICONS.drag}</span>
+        <div class="info">
+          <div class="title">🏗️ <span class="editable" contenteditable="true" data-f="c-page" data-i="${page.id}">${esc(page.pageName)}</span></div>
+          ${renderBackRefTags(page.id)}
+        </div>
+        <div class="actions">
+          <button class="icon-btn" onclick="cCopyPage('${page.id}')" title="复制页面内容">${ICONS.copy}</button>
+          <button class="add-inline-btn" onclick="cAddNode('${page.id}',null)">＋节点</button>
+          <button class="del-btn" onclick="pendingDel('页面架构', ()=>cDelPage('${page.id}'))" title="删除页面">${ICONS.x}</button>
+          <button onclick="cToggle('${page.id}')" title="${page.collapsed?'展开':'收起'}">${page.collapsed?ICONS.chevronRight:ICONS.chevronDown}</button>
+        </div>
+      </div>
+      <div class="card-body ${page.collapsed?'collapsed':''}">
+        <div class="tree-node root">${page.nodes.map(n=>renderCNode(page.id,n)).join('')}</div>
+        <button class="add-btn" onclick="cAddNode('${page.id}',null)">+ 新增根节点</button>
+      </div>
+    </div>`).join('') +
+    '<div style="margin-top:12px;"><button class="add-btn" onclick="cAddPage()">+ 新增页面架构</button></div>';
+}
+
+function renderCNode(pageId,node,depth) {
+  depth = depth||0;
+  return `<div class="tree-node" style="${depth===0?'margin-left:0;':''}">
+    <div class="node-row">
+      <span class="node-icon">${node.icon||'├─'}</span>
+      <span class="node-label editable" contenteditable="true" data-f="c-label" data-i="${node.id}" data-pg="${pageId}">${esc(node.label)}</span>
+      ${node.note?`<span class="node-note">(${esc(node.note)})</span>`:''}
+      <span class="node-actions">
+        <button onclick="cAddNode('${pageId}','${node.id}')" title="添加子节点">＋</button>
+        <button onclick="cEditNote('${pageId}','${node.id}')" title="编辑备注">📝</button>
+        <button class="del-btn" onclick="cDelNode('${pageId}','${node.id}')" title="删除" aria-label="删除">${ICONS.x}</button>
+      </span>
+    </div>
+    ${(node.children||[]).map(c=>renderCNode(pageId,c,depth+1)).join('')}
+  </div>`;
+}
+
+// Mode C helpers
+function cFindPage(id){return store.C.find(p=>p.id===id);}
+function cFindNode(nodes,id){
+  for(const n of nodes){if(n.id===id)return n;const r=cFindNode(n.children||[],id);if(r)return r;}return null;
+}
+function cFindParent(nodes,id){
+  for(const n of nodes){if((n.children||[]).some(c=>c.id===id))return n;const r=cFindParent(n.children||[],id);if(r)return r;}return null;
+}
+function cToggle(id){const p=cFindPage(id);if(p)p.collapsed=!p.collapsed;renderAll();}
+function cAddPage(){const nId=nid();store.C.push({id:nId,pageName:'',collapsed:false,nodes:[{id:nid(),icon:'📌',label:'',note:'',children:[]}]});save();renderAll();toast('已新增');focusEl(`[data-f="c-page"][data-i="${nId}"]`);}
+function cDelPage(id){store.C=store.C.filter(p=>p.id!==id);save();renderAll();toast('已删除');}
+function cAddNode(pgId,parentId){
+  const pg=cFindPage(pgId);if(!pg)return;
+  const nId=nid();
+  const newNode={id:nId,icon:'',label:'',note:'',children:[]};
+  if(!parentId){pg.nodes.push(newNode);}
+  else{const p=cFindNode(pg.nodes,parentId);if(p){if(!p.children)p.children=[];p.children.push(newNode);}}
+  save();renderAll();toast('已新增');focusEl(`[data-f="c-label"][data-i="${nId}"]`);
+}
+function cDelNode(pgId,nodeId){
+  const pg=cFindPage(pgId);if(!pg)return;
+  function del(arr){return arr.filter(n=>{if(n.id===nodeId)return false;n.children=del(n.children||[]);return true;});}
+  pg.nodes=del(pg.nodes);save();renderAll();toast('已删除');
+}
+function cEditNote(pgId,nodeId){
+  const pg=cFindPage(pgId);if(!pg)return;
+  const n=cFindNode(pg.nodes,nodeId);if(!n)return;
+  const v=prompt('编辑设计依据/备注：',n.note||'');
+  if(v===null)return;n.note=v;save();renderAll();toast('已更新');
+}
+
+// ============================================================
+// MODE D: 交互稿
+// ============================================================
+function initD() {
+  store.D = [
+    { id:nid(), specName:'科技研究台 — 主界面', collapsed:false,
+      elements:[
+        {id:nid(),area:'顶部信息栏',items:[
+          {id:nid(),label:'科技等级进度条',desc:'进度不足时灰色填充，满时金色脉动'},
+          {id:nid(),label:'强化机会角标',desc:'无可用机会时隐藏；有机会时红色数字角标'}
+        ]},
+        {id:nid(),area:'Tab切换栏',items:[
+          {id:nid(),label:'Tab按钮',desc:'选中态高亮+下划线；未选中态默认色'},
+          {id:nid(),label:'页面布局',desc:'全屏界面，纵向三段式（顶部信息栏 | Tab切换栏 | 内容区）'}
+        ]}
+      ],
+      flows:[
+        {id:nid(),action:'切换功能Tab',trigger:'点击「逆向研究」或「科技发明」Tab',validation:'无',
+          steps:[{id:nid(),desc:'下划线指示器平滑滑动至目标Tab'},{id:nid(),desc:'内容区切换至对应子页面'}],
+          exceptions:[]},
+        {id:nid(),action:'查看强化机会',trigger:'点击强化机会角标',validation:'无',
+          steps:[{id:nid(),desc:'弹出气泡提示，展示可用机会数量'},{id:nid(),desc:'点击气泡跳转科技强化界面'}],
+          exceptions:[]}
+      ],
+      boundaries:[
+        {id:nid(),scenario:'设施被破坏',trigger:'耐久为0或被攻击',defense:'Toast提示"研究台已损坏，请先修复"',recovery:'提示修复所需材料'},
+        {id:nid(),scenario:'首次打开引导',trigger:'玩家首次交互研究台',defense:'新手引导蒙层，高亮Tab',recovery:'按序引导'}
+      ]
+    },
+    { id:nid(), specName:'逆向研究子页面', collapsed:true,
+      elements:[
+        {id:nid(),area:'研究槽位区',items:[
+          {id:nid(),label:'槽位布局',desc:'5个槽位横向排列，空闲态显示"+"图标'},
+          {id:nid(),label:'研究中状态',desc:'显示道具图标 + 进度条 + 剩余时间'},
+          {id:nid(),label:'已完成状态',desc:'道具图标发光 + "完成"标识'}
+        ]},
+        {id:nid(),area:'可用道具提示',items:[
+          {id:nid(),label:'展示内容',desc:'背包/储藏箱中文明遗产数量'}
+        ]}
+      ],
+      flows:[
+        {id:nid(),action:'选择空闲槽位',trigger:'点击空闲槽位',validation:'槽位状态为空闲',
+          steps:[{id:nid(),desc:'打开道具选择列表'}],
+          exceptions:[{id:nid(),scenario:'槽位已满',trigger:'5个槽位均在研究中',defense:'新增槽位按钮置灰 + Toast提示',recovery:'等待或加速完成'}]},
+        {id:nid(),action:'领取研究结果',trigger:'点击已完成槽位',validation:'研究状态为已完成',
+          steps:[{id:nid(),desc:'弹出研究结果面板'}],
+          exceptions:[]},
+        {id:nid(),action:'批量研究',trigger:'点击「批量研究」按钮',validation:'存在可研究道具',
+          steps:[{id:nid(),desc:'切换至批量选择模式'}],
+          exceptions:[{id:nid(),scenario:'无可用道具',trigger:'背包和储藏箱均无文明遗产',defense:'提示"暂无可研究道具"',recovery:'引导获取途径'}]}
+      ],
+      boundaries:[
+        {id:nid(),scenario:'网络超时',trigger:'研究请求发出后5s无响应',defense:'加载态按钮切换为错误态，顶部红色提示',recovery:'按钮恢复可点击，显示"重新研究"'}
+      ]
+    },
+    { id:nid(), specName:'道具选择列表', collapsed:true,
+      elements:[
+        {id:nid(),area:'筛选/排序区',items:[
+          {id:nid(),label:'数据来源切换',desc:'背包 / 储藏箱 Tab'},
+          {id:nid(),label:'排序方式',desc:'品质 / 获取时间 / 对应科技'}
+        ]},
+        {id:nid(),area:'道具列表区',items:[
+          {id:nid(),label:'道具卡片',desc:'图标 + 名称 + 文明遗产角标 + 对应科技状态'},
+          {id:nid(),label:'选中态',desc:'边框高亮 + 勾选图标'}
+        ]}
+      ],
+      flows:[
+        {id:nid(),action:'选择道具',trigger:'点击道具卡片',validation:'道具仍在背包中',
+          steps:[{id:nid(),desc:'选中该道具，显示选中态'},{id:nid(),desc:'长按/悬停展示对应科技预览气泡'}],
+          exceptions:[]},
+        {id:nid(),action:'确认选择',trigger:'点击「确认选择」',validation:'已选中至少一个道具',
+          steps:[{id:nid(),desc:'返回逆向研究页，道具放入槽位'}],
+          exceptions:[]}
+      ],
+      boundaries:[
+        {id:nid(),scenario:'列表为空',trigger:'当前来源无文明遗产',defense:'空状态插画 + 引导文案',recovery:'提示切换来源或获取方式'}
+      ]
+    },
+    { id:nid(), specName:'研究结果面板', collapsed:true,
+      elements:[
+        {id:nid(),area:'结果展示区',items:[
+          {id:nid(),label:'科技解锁结果',desc:'科技图标居中放大 + 名称 + 效果描述'},
+          {id:nid(),label:'碎片结算',desc:'碎片图标 + 数量 + 飞入背包动效'},
+          {id:nid(),label:'进度关联',desc:'科技等级进度条增长动画'}
+        ]}
+      ],
+      flows:[
+        {id:nid(),action:'领取结果',trigger:'动效播放完毕',validation:'无',
+          steps:[{id:nid(),desc:'展示操作按钮'},{id:nid(),desc:'点击「继续研究」关闭面板返回逆向研究页'},{id:nid(),desc:'点击「查看科技」跳转科技详情页'}],
+          exceptions:[{id:nid(),scenario:'科技升级触发',trigger:'本次解锁导致等级提升',defense:'衔接升级演出，结果面板后置',recovery:'升级演出完成后展示结果'}]}
+      ],
+      boundaries:[
+        {id:nid(),scenario:'网络异常',trigger:'领取时断网',defense:'重试按钮 + 提示',recovery:'重连后重新领取'}
+      ]
+    },
+    { id:nid(), specName:'科技发明子页面', collapsed:true,
+      elements:[
+        {id:nid(),area:'材料投入区',items:[
+          {id:nid(),label:'布局',desc:'3×3九宫格，空槽位显示"+"'},
+          {id:nid(),label:'已投入槽位',desc:'显示材料图标 + 数量，可点击移除'}
+        ]},
+        {id:nid(),area:'产物预览区',items:[
+          {id:nid(),label:'产物列表',desc:'按概率降序展示 + 概率百分比'},
+          {id:nid(),label:'概率指示',desc:'≥100%显示绿色"必定成功"，<100%橙色警示'}
+        ]}
+      ],
+      flows:[
+        {id:nid(),action:'投入材料',trigger:'点击材料槽位',validation:'背包中有可用材料',
+          steps:[{id:nid(),desc:'打开材料选择列表'},{id:nid(),desc:'选中后材料放入槽位，实时更新产物预览'}],
+          exceptions:[{id:nid(),scenario:'材料不足',trigger:'材料数量为0',defense:'材料卡片置灰 + 数量标红',recovery:'提示获取途径'},{id:nid(),scenario:'同种材料重复',trigger:'尝试投入已存在材料',defense:'Toast提示"同种材料不可重复"',recovery:'选择其他材料'}]},
+        {id:nid(),action:'开始发明',trigger:'点击「开始发明」按钮',validation:'至少投入1种材料',
+          steps:[{id:nid(),desc:'播放发明演出动效：材料融合→光效→结果揭晓'}],
+          exceptions:[]}
+      ],
+      boundaries:[]
+    },
+    { id:nid(), specName:'科技主界面', collapsed:true,
+      elements:[
+        {id:nid(),area:'科技等级与进度区',items:[
+          {id:nid(),label:'科技等级',desc:'大字号显示 + 进度条 + 下一级预览'}
+        ]},
+        {id:nid(),area:'科技列表区',items:[
+          {id:nid(),label:'科技卡片',desc:'图标 + 名称 + 强化等级星星 + 状态标识'},
+          {id:nid(),label:'分类Tab',desc:'全部/工具/建筑/装备，选中态高亮'}
+        ]}
+      ],
+      flows:[
+        {id:nid(),action:'查看科技详情',trigger:'点击科技卡片',validation:'无',
+          steps:[{id:nid(),desc:'展开科技详情面板'}],exceptions:[]},
+        {id:nid(),action:'前往研究台',trigger:'点击「前往研究台」按钮',validation:'无',
+          steps:[{id:nid(),desc:'跳转科技研究台'}],exceptions:[]}
+      ],
+      boundaries:[
+        {id:nid(),scenario:'无已解锁科技',trigger:'新玩家首次进入',defense:'空状态 + 引导文案',recovery:'引导前往研究台'}
+      ]
+    },
+    { id:nid(), specName:'拆解台拦截弹窗', collapsed:true,
+      elements:[
+        {id:nid(),area:'弹窗内容区',items:[
+          {id:nid(),label:'警告信息',desc:'橙色感叹号 + 说明文案'},
+          {id:nid(),label:'收益预览',desc:'逆向研究可获得的科技/碎片预览'},
+          {id:nid(),label:'按钮组',desc:'「前往研究台」（主按钮）+ 「仍要拆解」（次按钮）'}
+        ]}
+      ],
+      flows:[
+        {id:nid(),action:'选择跳转研究台',trigger:'点击「前往研究台」',validation:'无',
+          steps:[{id:nid(),desc:'关闭弹窗，打开研究台并预选道具'}],exceptions:[]},
+        {id:nid(),action:'坚持拆解',trigger:'点击「仍要拆解」',validation:'无',
+          steps:[{id:nid(),desc:'弹出二次确认弹窗'},{id:nid(),desc:'确认后执行拆解，返回拆解台'}],
+          exceptions:[{id:nid(),scenario:'批量拆解含文明遗产',trigger:'选中多个含文明遗产的道具',defense:'逐个弹出拦截或合并提示',recovery:'支持"全部跳转"或"全部拆解"'}]}
+      ],
+      boundaries:[]
+    }
+  ];
+}
+
+function renderD() {
+  const el = document.getElementById('panelD');
+  if (!store.D || store.D.length === 0) {
+    el.innerHTML = renderEmptyState();
+    return;
+  }
+  el.innerHTML = store.D.map(spec => `
+    <div class="card" data-spec="${spec.id}">
+      <div class="card-header">
+        <span class="drag-handle">⠿</span>
+        <div class="info">
+          <div class="title">📱 <span class="editable" contenteditable="true" data-f="d-name" data-i="${spec.id}">${esc(spec.specName)}</span></div>
+          ${renderRefTags(spec, 'D')}
+        </div>
+        <div class="actions">
+          <button class="ref-link-btn" onclick="openRefModal('${spec.id}','D')" title="管理引用关系">${ICONS.link}</button>
+          <button class="icon-btn" onclick="dCopySpec('${spec.id}')" title="复制交互稿内容">${ICONS.copy}</button>
+          <button class="del-btn" onclick="pendingDel('交互稿', ()=>dDelSpec('${spec.id}'))" title="删除">${ICONS.x}</button>
+          <button onclick="dToggle('${spec.id}')" title="${spec.collapsed?'展开':'收起'}">${spec.collapsed?ICONS.chevronRight:ICONS.chevronDown}</button>
+        </div>
+      </div>
+      <div class="card-body ${spec.collapsed?'collapsed':''}">
+        <!-- 🧩 元素状态与基础逻辑 -->
+        <div class="spec-section ${spec._colElem?'collapsed':''}">
+          <div class="spec-section-header visible">
+            <span>🧩 元素状态与基础逻辑（页面内容 / 控件 / 规则约束）</span>
+            <span class="sec-actions">
+              <button class="add-inline-btn" onclick="dAddArea('${spec.id}')">＋区域</button>
+              <button class="sec-copy-btn" onclick="dCopyElements('${spec.id}')" title="复制元素内容">${ICONS.copy}</button>
+              <button class="sec-toggle-btn" onclick="dToggleSec('${spec.id}','_colElem')" title="收起/展开">${spec._colElem?ICONS.chevronRight:ICONS.chevronDown}</button>
+            </span>
+          </div>
+          <div class="spec-section-body">
+            ${(spec.elements||[]).map(area=>renderDArea(spec.id,area)).join('')}
+          </div>
+        </div>
+        <!-- 🖱️ 核心场景交互流 -->
+        <div class="spec-section ${spec._colFlow?'collapsed':''}">
+          <div class="spec-section-header interact">
+            <span>🖱️ 核心场景交互流（操作 → 校验 → 反馈 → 异常分支）</span>
+            <span class="sec-actions">
+              <button class="add-inline-btn" onclick="dAddFlow('${spec.id}')">＋操作</button>
+              <button class="sec-copy-btn" onclick="dCopyFlows('${spec.id}')" title="复制交互流内容">${ICONS.copy}</button>
+              <button class="sec-toggle-btn" onclick="dToggleSec('${spec.id}','_colFlow')" title="收起/展开">${spec._colFlow?ICONS.chevronRight:ICONS.chevronDown}</button>
+            </span>
+          </div>
+          <div class="spec-section-body">
+            ${(spec.flows||[]).map(fl=>renderDFlow(spec.id,fl)).join('')}
+          </div>
+        </div>
+        <!-- 🚧 系统级边界 -->
+        <div class="spec-section ${spec._colBound?'collapsed':''}">
+          <div class="spec-section-header boundary">
+            <span>🚧 系统级边界（全局异常 / 配置缺失 / 网络断连）</span>
+            <span class="sec-actions">
+              <button class="add-inline-btn" onclick="dAddBoundary('${spec.id}')">＋边界</button>
+              <button class="sec-copy-btn" onclick="dCopyBoundaries('${spec.id}')" title="复制边界内容">${ICONS.copy}</button>
+              <button class="sec-toggle-btn" onclick="dToggleSec('${spec.id}','_colBound')" title="收起/展开">${spec._colBound?ICONS.chevronRight:ICONS.chevronDown}</button>
+            </span>
+          </div>
+          <div class="spec-section-body">
+            ${(spec.boundaries||[]).map(b=>renderDBoundary(spec.id,b)).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`).join('') +
+    '<div style="margin-top:12px;"><button class="add-btn" onclick="dAddSpec()">+ 新增交互说明</button></div>';
+}
+
+// ====== D: 渲染子组件 ======
+function renderDArea(spId, area) {
+  return `<div class="bound-item d-area-block">
+    <button class="step-del" onclick="dDelArea('${spId}','${area.id}')" aria-label="删除">${ICONS.x}</button>
+    <div class="d-area-title">
+      【<span class="editable" contenteditable="true" data-f="d-area" data-i="${area.id}" data-sp="${spId}">${esc(area.area)}</span>】
+    </div>
+    <ul class="step-list d-area-list">
+      ${(area.items||[]).map(it=>`
+        <li class="step-item"><span class="step-num">•</span>
+          <span class="editable d-area-item-label" contenteditable="true" data-f="d-elabel" data-i="${it.id}" data-area="${area.id}" data-sp="${spId}">${esc(it.label)}</span>
+          <span class="d-area-item-sep">：</span>
+          <span class="step-content editable" contenteditable="true" data-f="d-edesc" data-i="${it.id}" data-area="${area.id}" data-sp="${spId}">${esc(it.desc)}</span>
+          <button class="step-del" onclick="dDelAreaItem('${spId}','${area.id}','${it.id}')" aria-label="删除">${ICONS.x}</button>
+        </li>`).join('')}
+    </ul>
+    <div style="display:flex;justify-content:flex-end;margin-top:4px;"><button class="add-inline-btn" onclick="dAddAreaItem('${spId}','${area.id}')">＋条目</button></div>
+  </div>`;
+}
+
+function renderDFlow(spId, fl) {
+  return `<div class="bound-item d-flow-block">
+    <button class="step-del" onclick="dDelFlow('${spId}','${fl.id}')" aria-label="删除">${ICONS.x}</button>
+    <div class="d-flow-title">
+      <span>操作：<span class="editable" contenteditable="true" data-f="d-faction" data-i="${fl.id}" data-sp="${spId}">${esc(fl.action)}</span></span>
+      <button class="icon-btn" onclick="dCopyFlow('${spId}','${fl.id}')" title="复制该操作内容" style="margin-left:auto;">${ICONS.copy}</button>
+    </div>
+    <div class="d-flow-meta">触发条件：<span class="editable" contenteditable="true" data-f="d-ftrig" data-i="${fl.id}" data-sp="${spId}">${esc(fl.trigger)}</span></div>
+    <div class="d-flow-meta d-flow-meta-row">系统校验：<span class="editable" contenteditable="true" data-f="d-fvalid" data-i="${fl.id}" data-sp="${spId}">${esc(fl.validation)}</span></div>
+    <div class="d-flow-steps-title">
+      <span>UI 反馈：</span>
+      <button class="add-inline-btn" onclick="dAddFlowStep('${spId}','${fl.id}')">＋反馈</button>
+    </div>
+    <ul class="step-list d-flow-steps-list">
+      ${(fl.steps||[]).map((st,i)=>`
+        <li class="step-item"><span class="step-num">${i+1}.</span>
+          <span class="step-content editable" contenteditable="true" data-f="d-fstep" data-i="${st.id}" data-fl="${fl.id}" data-sp="${spId}">${esc(st.desc)}</span>
+          <button class="step-del" onclick="dDelFlowStep('${spId}','${fl.id}','${st.id}')" aria-label="删除">${ICONS.x}</button>
+        </li>`).join('')}
+    </ul>
+    ${(fl.exceptions||[]).length>0?`<div class="d-exception-wrap">
+      <div class="d-exception-header">
+        <span>异常分支</span>
+        <button class="add-inline-btn" onclick="dAddFlowException('${spId}','${fl.id}')">＋异常</button>
+      </div>
+      ${fl.exceptions.map(ex=>renderDException(spId,fl.id,ex)).join('')}
+    </div>`:`<div style="margin-top:6px;display:flex;justify-content:flex-end;"><button class="add-inline-btn" onclick="dAddFlowException('${spId}','${fl.id}')">＋异常分支</button></div>`}
+  </div>`;
+}
+
+function renderDException(spId, flId, ex) {
+  return `<div class="d-exception-item">
+    <div class="d-exception-title-row">
+      <div class="d-exception-title"><span class="editable" contenteditable="true" data-f="d-exscn" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.scenario)}</span></div>
+      <button class="d-exception-del" onclick="dDelFlowException('${spId}','${flId}','${ex.id}')" title="删除此异常分支" aria-label="删除">${ICONS.x}</button>
+    </div>
+    <div class="d-exception-field"><span class="d-exception-field-label">触发条件：</span><span class="editable d-exception-field-val" contenteditable="true" data-f="d-extrig" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.trigger)}</span></div>
+    <div class="d-exception-field"><span class="d-exception-field-label">防错设计：</span><span class="editable d-exception-field-val" contenteditable="true" data-f="d-exdef" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.defense)}</span></div>
+    <div class="d-exception-field"><span class="d-exception-field-label">流程反馈：</span><span class="editable d-exception-field-val" contenteditable="true" data-f="d-exrec" data-i="${ex.id}" data-fl="${flId}" data-sp="${spId}">${esc(ex.recovery)}</span></div>
+  </div>`;
+}
+
+function renderDBoundary(spId, b) {
+  return `<div class="bound-item d-boundary-block">
+    <button class="step-del" onclick="dDelBoundary('${spId}','${b.id}')" aria-label="删除">${ICONS.x}</button>
+    <div class="d-boundary-title">
+      <span class="editable" contenteditable="true" data-f="d-bscn" data-i="${b.id}" data-sp="${spId}">${esc(b.scenario)}</span>
+    </div>
+    <div class="d-boundary-field"><span class="d-boundary-field-label">触发条件：</span><span class="editable d-boundary-field-val" contenteditable="true" data-f="d-btrig" data-i="${b.id}" data-sp="${spId}">${esc(b.trigger)}</span></div>
+    <div class="d-boundary-field"><span class="d-boundary-field-label">防错设计：</span><span class="editable d-boundary-field-val" contenteditable="true" data-f="d-bdef" data-i="${b.id}" data-sp="${spId}">${esc(b.defense)}</span></div>
+    <div class="d-boundary-field"><span class="d-boundary-field-label">流程反馈：</span><span class="editable d-boundary-field-val" contenteditable="true" data-f="d-brec" data-i="${b.id}" data-sp="${spId}">${esc(b.recovery)}</span></div>
+  </div>`;
+}
+
+// Mode D helpers
+function dFindSpec(id){return store.D.find(s=>s.id===id);}
+function dToggle(id){const s=dFindSpec(id);if(s)s.collapsed=!s.collapsed;renderAll();}
+function dAddSpec(){const nId=nid();store.D.push({id:nId,specName:'',collapsed:false,elements:[],flows:[],boundaries:[]});save();renderAll();toast('已新增');focusEl(`[data-f="d-name"][data-i="${nId}"]`);}
+function dDelSpec(id){store.D=store.D.filter(s=>s.id!==id);save();renderAll();toast('已删除');}
+// Elements (区域)
+function dAddArea(spId){const sp=dFindSpec(spId);if(!sp)return;if(!sp.elements)sp.elements=[];const nId=nid();sp.elements.push({id:nId,area:'',items:[{id:nid(),label:'',desc:''}]});save();renderAll();toast('已新增');focusEl(`[data-f="d-area"][data-i="${nId}"]`);}
+function dDelArea(spId,areaId){const sp=dFindSpec(spId);if(!sp)return;sp.elements=(sp.elements||[]).filter(x=>x.id!==areaId);save();renderAll();toast('已删除');}
+function dAddAreaItem(spId,areaId){const sp=dFindSpec(spId);if(!sp)return;const area=(sp.elements||[]).find(x=>x.id===areaId);if(!area)return;const nId=nid();if(!area.items)area.items=[];area.items.push({id:nId,label:'',desc:''});save();renderAll();toast('已新增');focusEl(`[data-f="d-elabel"][data-i="${nId}"]`);}
+function dDelAreaItem(spId,areaId,itemId){const sp=dFindSpec(spId);if(!sp)return;const area=(sp.elements||[]).find(x=>x.id===areaId);if(!area)return;area.items=(area.items||[]).filter(x=>x.id!==itemId);save();renderAll();toast('已删除');}
+// Flows (交互流)
+function dAddFlow(spId){const sp=dFindSpec(spId);if(!sp)return;if(!sp.flows)sp.flows=[];const nId=nid();sp.flows.push({id:nId,action:'',trigger:'',validation:'',steps:[{id:nid(),desc:''}],exceptions:[]});save();renderAll();toast('已新增');focusEl(`[data-f="d-faction"][data-i="${nId}"]`);}
+function dDelFlow(spId,flId){const sp=dFindSpec(spId);if(!sp)return;sp.flows=(sp.flows||[]).filter(x=>x.id!==flId);save();renderAll();toast('已删除');}
+function dAddFlowStep(spId,flId){const sp=dFindSpec(spId);if(!sp)return;const fl=(sp.flows||[]).find(x=>x.id===flId);if(!fl)return;const nId=nid();if(!fl.steps)fl.steps=[];fl.steps.push({id:nId,desc:''});save();renderAll();toast('已新增');focusEl(`[data-f="d-fstep"][data-i="${nId}"]`);}
+function dDelFlowStep(spId,flId,stId){const sp=dFindSpec(spId);if(!sp)return;const fl=(sp.flows||[]).find(x=>x.id===flId);if(!fl)return;fl.steps=(fl.steps||[]).filter(x=>x.id!==stId);save();renderAll();toast('已删除');}
+function dAddFlowException(spId,flId){const sp=dFindSpec(spId);if(!sp)return;const fl=(sp.flows||[]).find(x=>x.id===flId);if(!fl)return;const nId=nid();if(!fl.exceptions)fl.exceptions=[];fl.exceptions.push({id:nId,scenario:'',trigger:'',defense:'',recovery:''});save();renderAll();toast('已新增');focusEl(`[data-f="d-exscn"][data-i="${nId}"]`);}
+function dDelFlowException(spId,flId,exId){const sp=dFindSpec(spId);if(!sp)return;const fl=(sp.flows||[]).find(x=>x.id===flId);if(!fl)return;fl.exceptions=(fl.exceptions||[]).filter(x=>x.id!==exId);save();renderAll();toast('已删除');}
+// Boundaries (系统级边界)
+function dAddBoundary(spId){const sp=dFindSpec(spId);if(!sp)return;if(!sp.boundaries)sp.boundaries=[];const nId=nid();sp.boundaries.push({id:nId,scenario:'',trigger:'',defense:'',recovery:''});save();renderAll();toast('已新增');focusEl(`[data-f="d-bscn"][data-i="${nId}"]`);}
+function dDelBoundary(spId,bId){const sp=dFindSpec(spId);if(!sp)return;sp.boundaries=(sp.boundaries||[]).filter(x=>x.id!==bId);save();renderAll();toast('已删除');}
+
+// ============================================================
+// onBlur — unified edit handler for all modes
+// ============================================================
+function onBlur(e) {
+  const el = e.target, ds = el.dataset, v = el.textContent.trim();
+  let ch = false;
+  const f = ds.f;
+  // Mode A
+  if (f === 'a-main' || f === 'a-hidden') {
+    const type = f === 'a-main' ? 'main' : 'hidden';
+    const g = store.A.goals[type].find(x => x.id === ds.i);
+    if (g && g.text !== v) { g.text = v; ch = true; }
+  } else if (f === 'a-stage-label') {
+    const st = (store.A.stages||[]).find(x => x.id === ds.i);
+    if (st && st.label !== v) { st.label = v; ch = true; }
+  } else if (f === 'a-modname') {
+    const m = aFindMod(ds.i);
+    if (m && m.name !== v) { m.name = v; ch = true; }
+  } else if (f === 'a-feat') {
+    const m = aFindMod(ds.mod);
+    const it = m?.features.find(x => x.id === ds.i);
+    if (it && it.text !== v) { it.text = v; ch = true; }
+  } else if (f === 'a-sug') {
+    const m = aFindMod(ds.mod);
+    const s = m?.suggestions.find(x => x.id === ds.i);
+    if (s && s.text !== v) { s.text = v; ch = true; }
+  } else if (f === 'a-sugr') {
+    const m = aFindMod(ds.mod);
+    const s = m?.suggestions.find(x => x.id === ds.i);
+    if (s && s.reason !== v) { s.reason = v; ch = true; }
+  }
+  // Mode B
+  else if (f === 'b-title') { const p = bFindP(ds.i); if (p && p.title !== v) { p.title = v; ch = true; } }
+  else if (f === 'b-start') { const p = bFindP(ds.i); if (p && p.startPoint !== v) { p.startPoint = v; ch = true; } }
+  else if (f === 'b-stitle') { const s = bFindS(ds.p, ds.i); if (s && s.title !== v) { s.title = v; ch = true; } }
+  else if (f === 'b-step') {
+    const s = bFindS(ds.p, ds.s); const it = s?.[ds.t]?.find(x => x.id === ds.i);
+    if (it && it.text !== v) { it.text = v; ch = true; }
+  }
+  else if (f === 'b-blabel') {
+    const s = bFindS(ds.p, ds.s); const b = s?.branches.find(x => x.id === ds.i);
+    if (b && b.label !== v) { b.label = v; ch = true; }
+  }
+  else if (f === 'b-bitem') {
+    const s = bFindS(ds.p, ds.s); const b = s?.branches.find(x => x.id === ds.b);
+    const it = b?.items.find(x => x.id === ds.i);
+    if (it && it.text !== v) { it.text = v; ch = true; }
+  }
+  // Mode C
+  else if (f === 'c-page') { const pg = cFindPage(ds.i); if (pg && pg.pageName !== v) { pg.pageName = v; ch = true; } }
+  else if (f === 'c-label') {
+    const pg = cFindPage(ds.pg); const n = pg ? cFindNode(pg.nodes, ds.i) : null;
+    if (n && n.label !== v) { n.label = v; ch = true; }
+  }
+  // Mode D — specName
+  else if (f === 'd-name') { const sp = dFindSpec(ds.i); if (sp && sp.specName !== v) { sp.specName = v; ch = true; } }
+  // Mode D — Elements (区域)
+  else if (f === 'd-area') { const sp = dFindSpec(ds.sp); const area = (sp?.elements||[]).find(x => x.id === ds.i); if (area && area.area !== v) { area.area = v; ch = true; } }
+  else if (f === 'd-elabel') { const sp = dFindSpec(ds.sp); const area = (sp?.elements||[]).find(x => x.id === ds.area); const it = (area?.items||[]).find(x => x.id === ds.i); if (it && it.label !== v) { it.label = v; ch = true; } }
+  else if (f === 'd-edesc') { const sp = dFindSpec(ds.sp); const area = (sp?.elements||[]).find(x => x.id === ds.area); const it = (area?.items||[]).find(x => x.id === ds.i); if (it && it.desc !== v) { it.desc = v; ch = true; } }
+  // Mode D — Flows (交互流)
+  else if (f === 'd-faction') { const sp = dFindSpec(ds.sp); const fl = (sp?.flows||[]).find(x => x.id === ds.i); if (fl && fl.action !== v) { fl.action = v; ch = true; } }
+  else if (f === 'd-ftrig') { const sp = dFindSpec(ds.sp); const fl = (sp?.flows||[]).find(x => x.id === ds.i); if (fl && fl.trigger !== v) { fl.trigger = v; ch = true; } }
+  else if (f === 'd-fvalid') { const sp = dFindSpec(ds.sp); const fl = (sp?.flows||[]).find(x => x.id === ds.i); if (fl && fl.validation !== v) { fl.validation = v; ch = true; } }
+  else if (f === 'd-fstep') { const sp = dFindSpec(ds.sp); const fl = (sp?.flows||[]).find(x => x.id === ds.fl); const st = (fl?.steps||[]).find(x => x.id === ds.i); if (st && st.desc !== v) { st.desc = v; ch = true; } }
+  // Mode D — Flow Exceptions (操作级异常)
+  else if (f === 'd-exscn') { const sp = dFindSpec(ds.sp); const fl = (sp?.flows||[]).find(x => x.id === ds.fl); const ex = (fl?.exceptions||[]).find(x => x.id === ds.i); if (ex && ex.scenario !== v) { ex.scenario = v; ch = true; } }
+  else if (f === 'd-extrig') { const sp = dFindSpec(ds.sp); const fl = (sp?.flows||[]).find(x => x.id === ds.fl); const ex = (fl?.exceptions||[]).find(x => x.id === ds.i); if (ex && ex.trigger !== v) { ex.trigger = v; ch = true; } }
+  else if (f === 'd-exdef') { const sp = dFindSpec(ds.sp); const fl = (sp?.flows||[]).find(x => x.id === ds.fl); const ex = (fl?.exceptions||[]).find(x => x.id === ds.i); if (ex && ex.defense !== v) { ex.defense = v; ch = true; } }
+  else if (f === 'd-exrec') { const sp = dFindSpec(ds.sp); const fl = (sp?.flows||[]).find(x => x.id === ds.fl); const ex = (fl?.exceptions||[]).find(x => x.id === ds.i); if (ex && ex.recovery !== v) { ex.recovery = v; ch = true; } }
+  // Mode D — Boundaries (系统级边界)
+  else if (f === 'd-bscn') { const sp = dFindSpec(ds.sp); const b = (sp?.boundaries||[]).find(x => x.id === ds.i); if (b && b.scenario !== v) { b.scenario = v; ch = true; } }
+  else if (f === 'd-btrig') { const sp = dFindSpec(ds.sp); const b = (sp?.boundaries||[]).find(x => x.id === ds.i); if (b && b.trigger !== v) { b.trigger = v; ch = true; } }
+  else if (f === 'd-bdef') { const sp = dFindSpec(ds.sp); const b = (sp?.boundaries||[]).find(x => x.id === ds.i); if (b && b.defense !== v) { b.defense = v; ch = true; } }
+  else if (f === 'd-brec') { const sp = dFindSpec(ds.sp); const b = (sp?.boundaries||[]).find(x => x.id === ds.i); if (b && b.recovery !== v) { b.recovery = v; ch = true; } }
+
+  if (ch) { save(); toast('已保存'); }
+}
+
+// ============================================================
+// Import / Export
+// ============================================================
+function importJSON() {
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `<div class="modal">
+    <h2>📥 导入 JSON 数据</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:10px;">粘贴 AI 输出的 JSON 数据，支持导入全部或单个模式的数据</p>
+    <textarea id="importArea" placeholder='粘贴 JSON 数据...'></textarea>
+    <div class="m-actions">
+      <button onclick="this.closest('.modal-overlay').remove()">取消</button>
+      <button class="primary" onclick="doImport()">导入</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+}
+
+function doImport() {
+  const ta = document.getElementById('importArea');
+  try {
+    const d = JSON.parse(ta.value);
+    // 只有当导入数据有实质内容时才覆盖，避免空数组/空对象清除已有数据
+    const hasContent = {
+      A: d.A && (d.A.goals?.main?.length > 0 || d.A.goals?.hidden?.length > 0 || d.A.modules?.length > 0 || d.A.stages?.length > 0),
+      B: d.B && Array.isArray(d.B) && d.B.length > 0,
+      C: d.C && Array.isArray(d.C) && d.C.length > 0,
+      D: d.D && Array.isArray(d.D) && d.D.length > 0
+    };
+    if (hasContent.A) store.A = d.A;
+    if (hasContent.B) store.B = d.B;
+    if (hasContent.C) store.C = d.C;
+    if (hasContent.D) store.D = d.D;
+    ensureRefs(); // 兼容无 refs 字段的旧数据
+    migrateD(); // 兼容旧版 D 模块数据结构
+    // 保存导入快照用于后续对比（仅记录实际导入的模式）
+    if (hasContent.A) importSnapshot.A = JSON.parse(JSON.stringify(store.A));
+    if (hasContent.B) importSnapshot.B = JSON.parse(JSON.stringify(store.B));
+    if (hasContent.C) importSnapshot.C = JSON.parse(JSON.stringify(store.C));
+    if (hasContent.D) importSnapshot.D = JSON.parse(JSON.stringify(store.D));
+    try { localStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(importSnapshot)); } catch(e) {}
+    save(); renderAll();
+    ta.closest('.modal-overlay').remove();
+    const imported = ['A','B','C','D'].filter(k => hasContent[k]);
+    toast(imported.length > 0 ? `导入成功（${imported.join('、')}）` : '导入的JSON中无有效数据');
+  } catch (e) { toast('JSON 格式错误：' + e.message); }
+}
+
+function exportMd() {
+  let md = '# UX 设计文档\n\n';
+  // Mode A
+  md += '## A 策划案分析\n\n### 🎯 核心目标拆解\n**主目标**\n';
+  store.A.goals?.main?.forEach((g, i) => { md += `${i + 1}. ${g.text}\n`; });
+  md += '\n**隐性需求**\n';
+  store.A.goals?.hidden?.forEach(g => { md += `* ${g.text}\n`; });
+  md += '\n### 🧩 功能模块\n';
+  (store.A.stages||[]).forEach(st => {
+    md += `\n#### 【${st.label}】\n`;
+    (st.modules||[]).forEach(m => {
+      md += `\n##### ${m.name}\n**包含功能**\n`;
+      m.features.forEach((f, i) => {
+        const tags = `[${f.layer||'L1'}][${f.priority||'Mid'}]${f.isUXSupplement?' [✦UX补全]':''}`;
+        md += `${i + 1}. ${f.text} ${tags}\n`;
+        if(f.isUXSupplement && f.supplementReason) md += `   > 依据：${f.supplementReason}\n`;
+        if(f.layer==='L3' && f.l3Reason) md += `   > L3理由：${f.l3Reason}\n`;
+      });
+      if (m.suggestions.length) {
+        md += '**✨ UX补充建议**\n';
+        m.suggestions.forEach(s => { md += `* \`${s.text}\`：${s.reason}\n`; });
+      }
+    });
+  });
+  // Mode B
+  md += '\n---\n\n## B 行为路径\n';
+  store.B.forEach(path => {
+    md += `\n### ${path.title}\n**【起点】** ${path.startPoint}\n\n`;
+    path.stages.forEach((s, si) => {
+      md += `#### 🌊 阶段 ${si + 1}：${s.title}\n👤 **用户操作**\n`;
+      s.actions.forEach((a, i) => { md += `${i + 1}. ${a.text}\n`; });
+      md += '   │\n   ▼\n💻 **系统反馈**\n';
+      s.feedbacks.forEach(f => { md += `* ${f.text}\n`; });
+      s.branches.forEach(b => { md += `\n👉 **${b.label}**\n`; b.items.forEach(it => { md += `* ${it.text}\n`; }); });
+      md += '\n';
+    });
+  });
+  // Mode C
+  md += '\n---\n\n## C 信息架构\n';
+  store.C.forEach(pg => {
+    md += `\n### 🏗️ ${pg.pageName}\n\`\`\`\n`;
+    function printNode(n, indent) {
+      md += `${indent}${n.icon || '├─'} ${n.label}${n.note ? ' (' + n.note + ')' : ''}\n`;
+      (n.children || []).forEach(c => printNode(c, indent + '  '));
+    }
+    pg.nodes.forEach(n => printNode(n, ''));
+    md += '```\n';
+  });
+  // Mode D
+  md += '\n---\n\n## D 交互稿\n';
+  store.D.forEach(sp => {
+    md += `\n### 📱 ${sp.specName}\n`;
+    md += '#### 🧩 元素状态与基础逻辑\n';
+    (sp.elements||[]).forEach(area => {
+      md += `\n**【${area.area}】**\n`;
+      (area.items||[]).forEach(it => { md += `* **${it.label}**：${it.desc}\n`; });
+    });
+    md += '\n#### 🖱️ 核心场景交互流\n';
+    (sp.flows||[]).forEach(fl => {
+      md += `\n**操作：${fl.action}**\n`;
+      if(fl.trigger) md += `* 触发条件：${fl.trigger}\n`;
+      if(fl.validation) md += `* 系统校验：${fl.validation}\n`;
+      if((fl.steps||[]).length) { md += '* UI 反馈：\n'; fl.steps.forEach((st,i) => { md += `  ${i+1}. ${st.desc}\n`; }); }
+      (fl.exceptions||[]).forEach(ex => {
+        md += `\n> ⚠️ **异常分支：${ex.scenario}**\n`;
+        md += `> * 触发条件：${ex.trigger}\n`;
+        md += `> * 防错设计：${ex.defense}\n`;
+        md += `> * 流程反馈：${ex.recovery}\n`;
+      });
+    });
+    md += '\n#### 🚧 系统级边界\n';
+    (sp.boundaries||[]).forEach(b => {
+      md += `\n**场景：${b.scenario}**\n`;
+      md += `* 触发条件：${b.trigger}\n`;
+      md += `* 防错设计：${b.defense}\n`;
+      md += `* 流程反馈：${b.recovery}\n`;
+    });
+  });
+  showExportModal('导出 Markdown', md, 'md');
+}
+
+function exportJson() {
+  showExportModal('导出 JSON', JSON.stringify(store, null, 2), 'json');
+}
+
+// ====== 模块级导出 ======
+const MODE_LABELS = { A: '策划案分析', B: '行为路径', C: '信息架构', D: '交互稿' };
+
+function exportJsonModFull() {
+  closeExportDropdown();
+  const m = activeMode;
+  const data = {};
+  data[m] = store[m];
+  showExportModal(`导出 ${MODE_LABELS[m]} 全部 JSON`, JSON.stringify(data, null, 2), 'json');
+}
+
+// ====== 复制为 Prompt ======
+const NEXT_MODE_MAP = { A: 'B', B: 'D' }; // A→B, B→D, D无下游
+function copyAsPrompt() {
+  closeExportDropdown();
+  const m = activeMode;
+  const next = NEXT_MODE_MAP[m];
+  if (!next) {
+    toast('交互稿为终极交付物，无下游模式');
+    return;
+  }
+  const data = {};
+  data[m] = store[m];
+  const prompt = `/UX-NEXT ${next}\n\n以下是${MODE_LABELS[m]}的数据：\n\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\``;
+  navigator.clipboard.writeText(prompt).then(() => {
+    toast(`已复制 /UX-NEXT ${next} Prompt`);
+  }).catch(() => {
+    // 降级：弹窗展示供手动复制
+    showExportModal(`复制为 Prompt（/UX-NEXT ${next}）`, prompt, 'txt');
+  });
+}
+
+// ====== 导出下拉菜单 ======
+function toggleExportDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('exportJsonDropdown');
+  // 更新 Prompt 按钮状态（D模式无下游，置灰）
+  const promptBtn = dd.querySelector('.dropdown-menu button:first-child');
+  if (NEXT_MODE_MAP[activeMode]) {
+    promptBtn.classList.remove('disabled');
+    promptBtn.onclick = copyAsPrompt;
+  } else {
+    promptBtn.classList.add('disabled');
+    promptBtn.onclick = () => { toast('交互稿为终极交付物，无下游模式'); };
+  }
+  dd.classList.toggle('open');
+}
+function closeExportDropdown() {
+  document.getElementById('exportJsonDropdown').classList.remove('open');
+}
+
+function showExportModal(title, content, ext) {
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `<div class="modal">
+    <h2>${title}</h2>
+    <pre>${esc(content)}</pre>
+    <div class="m-actions">
+      <button onclick="this.closest('.modal-overlay').remove()">关闭</button>
+      <button class="primary" onclick="navigator.clipboard.writeText(this.closest('.modal').querySelector('pre').textContent).then(()=>toast('已复制'))">复制</button>
+      <button class="primary" onclick="dlFile(this,'${ext}')">下载</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+}
+
+function dlFile(btn, ext) {
+  const text = btn.closest('.modal').querySelector('pre').textContent;
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `UX设计_${new Date().toISOString().slice(0, 10)}.${ext}`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('已下载');
+}
+
+// ============================================================
+// Keyboard Shortcuts
+// ============================================================
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+});
+
+// ====== LZ-String 压缩库（MIT License）======
+// LZ-String v1.5.0 (MIT License) - https://github.com/pieroxy/lz-string
+var LZString=function(){function o(o,r){if(!t[o]){t[o]={};for(var n=0;n<o.length;n++)t[o][o.charAt(n)]=n}return t[o][r]}var r=String.fromCharCode,n="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",e="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$",t={},i={compressToBase64:function(o){if(null==o)return"";var r=i._compress(o,6,function(o){return n.charAt(o)});switch(r.length%4){default:case 0:return r;case 1:return r+"===";case 2:return r+"==";case 3:return r+"="}},decompressFromBase64:function(r){return null==r?"":""==r?null:i._decompress(r.length,32,function(e){return o(n,r.charAt(e))})},compressToUTF16:function(o){return null==o?"":i._compress(o,15,function(o){return r(o+32)})+" "},decompressFromUTF16:function(o){return null==o?"":""==o?null:i._decompress(o.length,16384,function(r){return o.charCodeAt(r)-32})},compressToUint8Array:function(o){for(var r=i.compress(o),n=new Uint8Array(2*r.length),e=0,t=r.length;t>e;e++){var s=r.charCodeAt(e);n[2*e]=s>>>8,n[2*e+1]=s%256}return n},decompressFromUint8Array:function(o){if(null==o)return i.decompress(o);for(var n=new Array(o.length/2),e=0,t=n.length;t>e;e++)n[e]=256*o[2*e]+o[2*e+1];var s=[];return n.forEach(function(o){s.push(r(o))}),i.decompress(s.join(""))},compressToEncodedURIComponent:function(o){return null==o?"":i._compress(o,6,function(o){return e.charAt(o)})},decompressFromEncodedURIComponent:function(r){return null==r?"":""==r?null:(r=r.replace(/ /g,"+"),i._decompress(r.length,32,function(n){return o(e,r.charAt(n))}))},compress:function(o){return i._compress(o,16,function(o){return r(o)})},_compress:function(o,r,n){if(null==o)return"";var e,t,i,s={},p={},u="",c="",a="",l=2,f=3,h=2,d=[],m=0,v=0;for(i=0;i<o.length;i+=1)if(u=o.charAt(i),Object.prototype.hasOwnProperty.call(s,u)||(s[u]=f++,p[u]=!0),c=a+u,Object.prototype.hasOwnProperty.call(s,c))a=c;else{if(Object.prototype.hasOwnProperty.call(p,a)){if(a.charCodeAt(0)<256){for(e=0;h>e;e++)m<<=1,v==r-1?(v=0,d.push(n(m)),m=0):v++;for(t=a.charCodeAt(0),e=0;8>e;e++)m=m<<1|1&t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}else{for(t=1,e=0;h>e;e++)m=m<<1|t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t=0;for(t=a.charCodeAt(0),e=0;16>e;e++)m=m<<1|1&t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}l--,0==l&&(l=Math.pow(2,h),h++),delete p[a]}else for(t=s[a],e=0;h>e;e++)m=m<<1|1&t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;l--,0==l&&(l=Math.pow(2,h),h++),s[c]=f++,a=String(u)}if(""!==a){if(Object.prototype.hasOwnProperty.call(p,a)){if(a.charCodeAt(0)<256){for(e=0;h>e;e++)m<<=1,v==r-1?(v=0,d.push(n(m)),m=0):v++;for(t=a.charCodeAt(0),e=0;8>e;e++)m=m<<1|1&t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}else{for(t=1,e=0;h>e;e++)m=m<<1|t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t=0;for(t=a.charCodeAt(0),e=0;16>e;e++)m=m<<1|1&t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}l--,0==l&&(l=Math.pow(2,h),h++),delete p[a]}else for(t=s[a],e=0;h>e;e++)m=m<<1|1&t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;l--,0==l&&(l=Math.pow(2,h),h++)}for(t=2,e=0;h>e;e++)m=m<<1|1&t,v==r-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;for(;;){if(m<<=1,v==r-1){d.push(n(m));break}v++}return d.join("")},decompress:function(o){return null==o?"":""==o?null:i._decompress(o.length,32768,function(r){return o.charCodeAt(r)})},_decompress:function(o,n,e){var t,i,s,p,u,c,a,l=[],f=4,h=4,d=3,m="",v=[],g={val:e(0),position:n,index:1};for(t=0;3>t;t+=1)l[t]=t;for(s=0,u=Math.pow(2,2),c=1;c!=u;)p=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(p>0?1:0)*c,c<<=1;switch(s){case 0:for(s=0,u=Math.pow(2,8),c=1;c!=u;)p=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(p>0?1:0)*c,c<<=1;a=r(s);break;case 1:for(s=0,u=Math.pow(2,16),c=1;c!=u;)p=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(p>0?1:0)*c,c<<=1;a=r(s);break;case 2:return""}for(l[3]=a,i=a,v.push(a);;){if(g.index>o)return"";for(s=0,u=Math.pow(2,d),c=1;c!=u;)p=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(p>0?1:0)*c,c<<=1;switch(s){case 0:for(s=0,u=Math.pow(2,8),c=1;c!=u;)p=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(p>0?1:0)*c,c<<=1;l[h++]=r(s),s=h-1,f--;break;case 1:for(s=0,u=Math.pow(2,16),c=1;c!=u;)p=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(p>0?1:0)*c,c<<=1;l[h++]=r(s),s=h-1,f--;break;case 2:return v.join("")}if(0==f&&(f=Math.pow(2,d),d++),l[s])a=l[s];else{if(s!==h)return null;a=i+i.charAt(0)}v.push(a),l[h++]=i+a.charAt(0),f--,i=a,0==f&&(f=Math.pow(2,d),d++)}}};return i}();
+
+// ====== 分享（文件导出/导入） ======
+
+/**
+ * 打开分享面板（主入口）
+ */
+function openShareCodeManager() {
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `<div class="modal modal-sm">
+    <h2>📤 导出分享文件</h2>
+    <p class="modal-hint">下载 .uxshare 文件发送给对方，对方拖入编辑器即可加载</p>
+    <div class="share-modal-row">
+      <label class="share-modal-label">文件名（可选）：</label>
+      <input id="shareFileName" type="text" placeholder="如: 科技2.0-v3" class="share-modal-input" maxlength="50">
+    </div>
+    <label class="share-checkbox-row">
+      <input type="checkbox" id="shareSelectedOnly" style="accent-color:var(--accent);" onchange="onShareModeToggle()"> 仅导出当前模式（${MODE_LABELS[activeMode]}）
+    </label>
+    <div class="m-actions">
+      <button onclick="this.closest('.modal-overlay').remove()">取消</button>
+      <button class="primary" onclick="doExportShareFile()">📥 下载 .uxshare 文件</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+}
+
+/**
+ * 勾选/取消"仅导出当前模式"时，自动更新文件名
+ */
+function onShareModeToggle() {
+  const cb = document.getElementById('shareSelectedOnly');
+  const nameInput = document.getElementById('shareFileName');
+  if (!cb || !nameInput) return;
+  if (cb.checked) {
+    // 勾选时，如果文件名为空或是默认值，自动填入模式名称
+    const cur = nameInput.value.trim();
+    if (!cur) {
+      nameInput.value = MODE_LABELS[activeMode];
+    }
+  }
+}
+
+/**
+ * 导出 .uxshare 文件
+ */
+function doExportShareFile() {
+  if (isStoreEmpty()) {
+    toast('当前无数据，请先导入 JSON');
+    return;
+  }
+
+  const nameInput = document.getElementById('shareFileName');
+  const selectedOnly = document.getElementById('shareSelectedOnly')?.checked;
+
+  // 文件名
+  let fileName = (nameInput?.value || '').trim().replace(/[<>:"/\\|?*]/g, '');
+  if (!fileName) {
+    const now = new Date();
+    fileName = `UX-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+  }
+
+  // 准备数据
+  let dataToShare;
+  if (selectedOnly) {
+    dataToShare = { A: {}, B: [], C: [], D: [] };
+    dataToShare[activeMode] = store[activeMode];
+  } else {
+    dataToShare = JSON.parse(JSON.stringify(store));
+  }
+
+  const modes = selectedOnly ? [activeMode] : ['A','B','C','D'].filter(k => {
+    if (k === 'A') return store.A.goals?.main?.length > 0 || store.A.stages?.length > 0;
+    return store[k]?.length > 0;
+  });
+
+  // 构建分享文件内容
+  const shareFile = {
+    _format: 'uxshare',
+    _version: '1.0',
+    _created: new Date().toISOString(),
+    _modes: modes,
+    data: dataToShare
+  };
+
+  const json = JSON.stringify(shareFile);
+  const compressed = LZString.compressToBase64(json);
+
+  // 下载文件
+  const blob = new Blob([compressed], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName + '.uxshare';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  const originalKB = (JSON.stringify(dataToShare).length / 1024).toFixed(1);
+  const compressedKB = (compressed.length / 1024).toFixed(1);
+  toast(`已下载 ${fileName}.uxshare（${originalKB}KB → ${compressedKB}KB，含 ${modes.join('、')}）`);
+}
+
+/**
+ * 处理选择的分享文件
+ */
+function handleShareFileSelect(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    loadShareFileContent(e.target.result, file.name);
+  };
+  reader.readAsText(file);
+}
+
+/**
+ * 解析并加载分享文件内容
+ */
+function loadShareFileContent(content, fileName) {
+  try {
+    let data, label;
+
+    // 尝试作为压缩的 .uxshare 解析
+    const decompressed = LZString.decompressFromBase64(content.trim());
+    if (decompressed) {
+      const parsed = JSON.parse(decompressed);
+      if (parsed._format === 'uxshare' && parsed.data) {
+        data = parsed.data;
+        label = fileName || 'uxshare';
+      } else if (parsed.A || parsed.B || parsed.C || parsed.D) {
+        // 压缩的纯 JSON 数据
+        data = parsed;
+        label = fileName || 'share';
+      }
+    }
+
+    // 如果解压失败，尝试作为纯 JSON 解析
+    if (!data) {
+      const parsed = JSON.parse(content);
+      if (parsed._format === 'uxshare' && parsed.data) {
+        data = parsed.data;
+        label = fileName || 'uxshare';
+      } else if (parsed.A || parsed.B || parsed.C || parsed.D) {
+        data = parsed;
+        label = fileName || 'json';
+      }
+    }
+
+    if (!data) {
+      toast('文件格式无法识别');
+      return;
+    }
+
+    applyShareData(data, label);
+  } catch (e) {
+    toast('文件解析失败：' + e.message);
+  }
+}
+
+/**
+ * 应用分享数据到 store
+ */
+function applyShareData(data, label) {
+  if (!data.A && !data.B && !data.C && !data.D) {
+    toast('分享数据为空'); return;
+  }
+  const hasLocal = !isStoreEmpty();
+  if (hasLocal) {
+    if (!confirm(`加载 ${label} 的数据？\n含有数据的模式将覆盖当前对应模式的内容。`)) return;
+  }
+
+  const hasContent = {
+    A: data.A && (data.A.goals?.main?.length > 0 || data.A.goals?.hidden?.length > 0 || data.A.modules?.length > 0 || data.A.stages?.length > 0),
+    B: data.B && Array.isArray(data.B) && data.B.length > 0,
+    C: data.C && Array.isArray(data.C) && data.C.length > 0,
+    D: data.D && Array.isArray(data.D) && data.D.length > 0
+  };
+  if (hasContent.A) store.A = data.A;
+  if (hasContent.B) store.B = data.B;
+  if (hasContent.C) store.C = data.C;
+  if (hasContent.D) store.D = data.D;
+  ensureRefs();
+  migrateD();
+  if (hasContent.A) importSnapshot.A = JSON.parse(JSON.stringify(store.A));
+  if (hasContent.B) importSnapshot.B = JSON.parse(JSON.stringify(store.B));
+  if (hasContent.C) importSnapshot.C = JSON.parse(JSON.stringify(store.C));
+  if (hasContent.D) importSnapshot.D = JSON.parse(JSON.stringify(store.D));
+  try { localStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(importSnapshot)); } catch(e) {}
+  save(); renderAll();
+
+  document.querySelector('.modal-overlay')?.remove();
+  const imported = ['A','B','C','D'].filter(k => hasContent[k]);
+  toast(`加载成功（${imported.join('、')}）`);
+}
+
+/**
+ * 兼容旧版分享链接（URL hash 方式）
+ */
+function loadFromShareLink() {
+  const hash = location.hash;
+  if (!hash || !hash.startsWith('#data=')) return false;
+  try {
+    const compressed = hash.substring(6);
+    const json = LZString.decompressFromEncodedURIComponent(compressed);
+    if (!json) return false;
+    const data = JSON.parse(json);
+    if (!data.A && !data.B && !data.C && !data.D) return false;
+    const hasLocal = localStorage.getItem(STORAGE_KEY);
+    if (hasLocal) {
+      if (!confirm('检测到分享数据，是否加载？\n（将覆盖当前本地数据）')) {
+        history.replaceState(null, '', location.pathname);
+        return false;
+      }
+    }
+    if (data.A) store.A = data.A;
+    if (data.B) store.B = data.B;
+    if (data.C) store.C = data.C;
+    if (data.D) store.D = data.D;
+    ensureRefs();
+    importSnapshot = JSON.parse(JSON.stringify(store));
+    try { localStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(importSnapshot)); } catch(e) {}
+    history.replaceState(null, '', location.pathname);
+    return true;
+  } catch (e) {
+    console.error('Share link parse failed:', e);
+    return false;
+  }
+}
+
+// ============================================================
+// Init
+// ============================================================
+document.getElementById('undoBtn').onclick = undo;
+document.getElementById('redoBtn').onclick = redo;
+document.getElementById('importBtn').onclick = importJSON;
+document.getElementById('exportJsonBtn').onclick = toggleExportDropdown;
+document.addEventListener('click', () => closeExportDropdown());
+document.getElementById('shareLinkBtn').onclick = openShareCodeManager;
+document.getElementById('clearStorageBtn').onclick = clearStorage;
+document.querySelectorAll('.mode-tab').forEach(t => {
+  t.onclick = () => switchMode(t.dataset.mode);
+});
+
+// 优先检测分享链接
+const sharedLoaded = loadFromShareLink();
+
+if (!sharedLoaded) {
+  // 尝试从 LocalStorage 加载，如果没有则保持空状态等待导入
+  if (!loadFromStorage()) {
+    // 首次进入，保持空状态
+    store = { A: {}, B: [], C: [], D: [] };
+  }
+}
+
+// 加载导入快照
+try {
+  const snapData = localStorage.getItem(SNAPSHOT_STORAGE_KEY);
+  if (snapData) importSnapshot = JSON.parse(snapData);
+} catch(e) {}
+
+// 加载引用指纹
+try {
+  const fpData = localStorage.getItem(FINGERPRINT_STORAGE_KEY);
+  if (fpData) refFingerprints = JSON.parse(fpData);
+} catch(e) {}
+
+// 确保 refs 字段存在 + 构建反向索引
+ensureRefs();
+// 迁移旧版 A 模块数据到新结构（v4→v5：modules[]→stages[].modules[]）
+migrateA_v4_to_v5();
+// 迁移旧版 D 模块数据到新结构
+migrateD();
+
+save();
+renderAll();
+
+if (sharedLoaded) {
+  toast('已加载分享数据，可自由编辑');
+} else if (isStoreEmpty()) {
+  toast('欢迎使用，请导入 JSON 数据');
+} else {
+  toast('数据已加载');
+}
+
+// 全局拖拽导入 .uxshare 文件
+document.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); });
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  const file = e.dataTransfer?.files?.[0];
+  if (file && (file.name.endsWith('.uxshare') || file.name.endsWith('.json'))) {
+    handleShareFileSelect(file);
+  }
+});
+</script>
+</body>
+</html>

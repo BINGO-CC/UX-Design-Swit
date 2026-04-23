@@ -3462,27 +3462,6 @@ document.addEventListener('blur', (e) => {
 // S2-4: LocalStorage 持久化
 const MM_STORAGE_KEY = 'mm-editor-data';
 
-// ── v5.0.0 旧版数据迁移：清除 v4.x 卡片编辑器残留的 LocalStorage ──
-(function migrateFromV4() {
-  const LEGACY_KEYS = [
-    'ux_design_editor_data',
-    'ux_design_editor_annotations',
-    'ux_design_editor_snapshot',
-    'ux_design_editor_fingerprints'
-  ];
-  const found = LEGACY_KEYS.filter(k => localStorage.getItem(k) !== null);
-  if (found.length) {
-    found.forEach(k => localStorage.removeItem(k));
-    console.log('[v5 migrate] 已清除旧版 v4.x LocalStorage 数据:', found);
-    // 延迟提示，等 DOM 就绪
-    setTimeout(() => {
-      if (typeof mmToast === 'function') {
-        mmToast('编辑器已升级至 v5.0，旧版数据已自动清除');
-      }
-    }, 1500);
-  }
-})();
-
 // ── 历史栈（撤销 / 重做）──────────────────────────────
 // 架构对齐 ux-design-editor.bak.html：
 //   save() 是唯一的数据保存入口 → 先推快照 → 再持久化

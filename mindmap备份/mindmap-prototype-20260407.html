@@ -1,0 +1,2894 @@
+<updated-code><!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mindmap 编辑器原型</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== CSS Reset & Base ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { width: 100%; height: 100%; overflow: auto; }
+  body { width: 100%; height: 100%; overflow: hidden; min-width: 960px; min-height: 600px; }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: #141414;
+    color: #EBEBEB;
+    font-size: 14px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; border: none; background: none; cursor: pointer; color: inherit; }
+
+  /* ===== Layout ===== */
+  #app { display: flex; flex-direction: column; height: 100vh; }
+
+  /* ===== Header ===== */
+  .mm-header {
+    height: 48px;
+    background: #141414;
+    border-bottom: 1px solid #1e1e1e;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 10px;
+    flex-shrink: 0;
+    z-index: 100;
+    position: relative;
+  }
+  .mm-header-brand {
+    font-size: 13px;
+    font-weight: 600;
+    color: #EBEBEB;
+    opacity: 0.9;
+    letter-spacing: -0.2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .mm-header-nav-btn {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 5px; color: #555555;
+    transition: background 150ms ease, color 150ms ease;
+  }
+  .mm-header-nav-btn:hover { background: #1e1e1e; color: #EBEBEB; }
+  .mm-header-divider { width: 1px; height: 18px; background: #242424; margin: 0 2px; }
+  .mm-header-tabs {
+    position: absolute;
+    left: 50%; transform: translateX(-50%);
+    display: flex; gap: 2px;
+  }
+  .mm-header-tab {
+    font-size: 13px; font-weight: 400; color: #555555;
+    padding: 5px 12px; border-radius: 5px;
+    transition: background 100ms ease, color 100ms ease;
+  }
+  .mm-header-tab:hover { color: #EBEBEB; background: #1e1e1e; }
+  .mm-header-tab.active {
+    color: #EBEBEB; background: #252525; font-weight: 500;
+  }
+  .mm-header-spacer { flex: 1; }
+  .mm-header-actions { display: flex; align-items: center; gap: 6px; }
+  .mm-header-status {
+    font-size: 12px; color: #555555;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .mm-header-status-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #CCFF00;
+  }
+  .mm-header-action-btn {
+    font-size: 13px; font-weight: 400; color: #555555;
+    padding: 5px 10px; border-radius: 5px;
+    transition: background 150ms ease, color 150ms ease;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .mm-header-action-btn:hover { background: #1e1e1e; color: #EBEBEB; }
+
+  /* ===== Body ===== */
+  .mm-body { display: flex; flex: 1; overflow: hidden; padding: 12px 16px 16px; gap: 0; }
+
+  /* ===== Canvas Wrapper (带描边容器) ===== */
+  .mm-canvas-wrapper {
+    width: max-content;
+    max-width: 100%;
+    margin: 0 auto;
+    flex-shrink: 1;
+    border: 1px solid #252525;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    background: #141414;
+    min-width: 0;
+  }
+
+  /* ===== Stage List (画布内最左列) ===== */
+  .mm-stage-col {
+    width: 160px;
+    flex-shrink: 0;
+    background: #141414;
+    border-right: 1px solid #1e1e1e;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .mm-stage-col-header {
+    padding: 14px 12px 8px;
+    font-size: 10px;
+    font-weight: 500;
+    color: #3a3a3a;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .mm-stage-list {
+    flex: 1; overflow-y: auto; padding: 0 6px;
+  }
+  .mm-stage-item {
+    padding: 7px 8px;
+    border-radius: 6px;
+    font-size: 12px; font-weight: 400; color: #666666;
+    cursor: pointer;
+    transition: background 100ms ease, color 100ms ease;
+    margin-bottom: 2px;
+    display: flex; align-items: center; gap: 6px;
+    user-select: none;
+  }
+  .mm-stage-item:hover { background: #1a1a1a; color: #EBEBEB; }
+  .mm-stage-item.active { background: #FFFFFF; color: #000000; font-weight: 500; }
+  .mm-stage-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: currentColor; opacity: 0.5; flex-shrink: 0;
+  }
+  .mm-stage-item.active .mm-stage-dot { opacity: 1; background: #000; }
+  .mm-stage-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mm-stage-edit-btn {
+    width: 16px; height: 16px; border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; color: #888888; opacity: 0;
+    transition: opacity 150ms ease, background 150ms ease;
+  }
+  .mm-stage-item:hover .mm-stage-edit-btn { opacity: 1; }
+  .mm-stage-item.active .mm-stage-edit-btn { color: #555; }
+  .mm-stage-edit-btn:hover { background: rgba(0,0,0,0.08); }
+  .mm-stage-item:not(.active) .mm-stage-edit-btn:hover { background: #2a2a2a; color: #EBEBEB; }
+  .mm-stage-add {
+    margin: 0 6px 4px; padding: 7px 8px;
+    border-radius: 6px; font-size: 12px; font-weight: 400; color: #666666;
+    display: flex; align-items: center; gap: 5px;
+    cursor: pointer; border: 1px dashed #333333;
+    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+    flex-shrink: 0;
+  }
+  .mm-stage-add:hover { background: #1a1a1a; color: #EBEBEB; border-color: #333333; }
+  /* Stage 编辑模式 — 重命名输入框 */
+  .mm-stage-rename-input {
+    flex: 1; min-width: 0;
+    background: #1a1a1a; border: 1px solid #CCFF00;
+    border-radius: 4px; padding: 2px 6px;
+    font-size: 12px; font-weight: 400; color: #EBEBEB;
+    font-family: inherit; outline: none;
+  }
+  /* Stage 编辑模式 — 删除按钮 */
+  .mm-stage-del-btn {
+    width: 18px; height: 18px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; color: #FF4444; opacity: 0.6;
+    transition: opacity 150ms ease, background 150ms ease;
+  }
+  .mm-stage-del-btn:hover { opacity: 1; background: rgba(255,68,68,0.12); }
+  .mm-stage-item.active .mm-stage-del-btn { color: #FF4444; }
+  /* Stage 编辑模式 — 完成编辑按钮 */
+  .mm-stage-done {
+    margin: 0 6px 4px; padding: 7px 8px;
+    border-radius: 6px; font-size: 12px; font-weight: 500;
+    color: #141414; background: #CCFF00;
+    text-align: center; cursor: pointer;
+    transition: opacity 150ms ease;
+  }
+  .mm-stage-done:hover { opacity: 0.85; }
+
+  /* B2-11: 模块名称编辑输入框 */
+  .mm-card-title-input {
+    flex: 1; min-width: 0;
+    background: transparent; border: none; outline: none;
+    font-size: 12px; font-weight: 500; color: #EBEBEB;
+    font-family: inherit; padding: 0;
+    border-bottom: 1px solid #CCFF00;
+  }
+
+  /* ===== Canvas Scroll Area ===== */
+  .mm-canvas {
+    flex: 1; overflow-x: auto; overflow-y: auto;
+    position: relative; min-width: 0;
+  }
+  .mm-canvas-inner {
+    display: flex; padding: 0; gap: 0;
+    min-height: 100%; position: relative;
+    width: max-content;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ===== Layer Columns ===== */
+  .mm-layer-col {
+    width: 360px; flex-shrink: 0;
+    display: flex; flex-direction: column;
+    position: relative;
+    border-right: 1px solid #1e1e1e;
+  }
+  /* L1/L2/L3 底板 */
+  .mm-layer-col[data-layer="L1"],
+  .mm-layer-col[data-layer="L2"],
+  .mm-layer-col[data-layer="L3"] { background: #303030; }
+
+  .mm-layer-col[data-layer="L1.5"],
+  .mm-layer-col[data-layer="L2.5"] { background: #1a1a1a; }
+
+  /* 列头 */
+  .mm-col-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 12px 12px;
+    position: relative; flex-shrink: 0;
+  }
+  .mm-col-label-wrap { position: relative; display: inline-block; }
+  .mm-col-label {
+    font-size: 28px; font-weight: 700;
+    color: rgba(255,255,255,0.18);
+    letter-spacing: -1px;
+    cursor: default; user-select: none;
+    line-height: 1;
+    transition: color 150ms ease;
+  }
+  .mm-col-label-wrap:hover .mm-col-label { color: rgba(255,255,255,0.35); }
+
+  /* Global Floating Tooltip */
+  .mm-global-tip {
+    position: fixed;
+    transform: translateX(-50%);
+    background: #1a1a1a; border: 1px solid #333333;
+    border-radius: 6px; padding: 5px 8px;
+    font-size: 12px; font-weight: 400; color: #EBEBEB;
+    white-space: nowrap; z-index: 9999;
+    opacity: 0; pointer-events: none;
+    transition: opacity 150ms ease;
+  }
+  .mm-global-tip.visible { opacity: 1; }
+
+  /* Layer Tooltip (长文本，固定宽度) */
+  .mm-tooltip {
+    position: absolute; left: 0; top: calc(100% + 8px);
+    background: #1a1a1a; border: 1px solid #333333;
+    border-radius: 7px; padding: 8px 10px;
+    font-size: 12px; font-weight: 400; color: #EBEBEB;
+    white-space: normal; z-index: 300;
+    opacity: 0; pointer-events: none;
+    transition: opacity 150ms ease; transition-delay: 0ms;
+    width: 260px; line-height: 1.5;
+  }
+  .mm-col-label-wrap:hover .mm-tooltip { opacity: 1; transition-delay: 400ms; }
+
+  .mm-col-add-btn {
+    width: 22px; height: 22px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    color: #666666;
+    transition: background 150ms ease, color 150ms ease;
+    flex-shrink: 0;
+  }
+  .mm-col-add-btn:hover { background: #2a2a2a; color: #EBEBEB; }
+
+  .mm-col-cards {
+    flex: 1; padding: 0 8px 24px;
+    position: relative;
+  }
+
+  /* ===== Module Card ===== */
+  .mm-card {
+    background: #242424;
+    border: 1px solid rgba(80,80,80,0.5);
+    border-radius: 8px;
+    overflow: visible;
+    position: absolute;
+    left: 60px; right: 60px;
+    animation: cardFadeIn 150ms ease forwards;
+    transition: border-color 150ms ease;
+    z-index: 4;
+  }
+  .mm-card:hover { border-color: #777777; }
+  .mm-card.orphan { border: 1px dashed #3a3a3a; }
+  /* 卡片拖动中 */
+  .mm-card.card-dragging { opacity: 0.35; pointer-events: none; }
+  /* 卡片拖动放置指示线 */
+  .mm-card-drop-indicator {
+    height: 2px; background: #CCFF00; border-radius: 2px;
+    margin: 3px 0; pointer-events: none;
+    box-shadow: 0 0 8px rgba(204,255,0,0.5);
+  }
+  /* 卡片标题拖动抓手 */
+  .mm-card-header { cursor: grab; }
+  .mm-card-header:active { cursor: grabbing; }
+  /* 功能节点跨卡片拖动：目标卡片高亮 */
+  .mm-card.feat-drop-target { box-shadow: 0 0 0 1.5px #CCFF00; border-color: #CCFF00 !important; }
+  /* 功能节点跨卡片拖动：目标卡片末尾落点指示 */
+  .mm-card-feat-drop-bottom {
+    height: 2px; background: #CCFF00; border-radius: 2px;
+    margin: 2px 4px 4px; pointer-events: none;
+    box-shadow: 0 0 8px rgba(204,255,0,0.5);
+  }
+  /* 孤立候选卡片（连线模式）：禁止常态 hover 反馈（标题高亮、按钮出现等） */
+  .mm-card.connect-candidate .mm-card-title:hover { background: transparent; }
+  .mm-card.connect-candidate .mm-card-btn { opacity: 0 !important; pointer-events: none; }
+  .mm-card.connect-candidate .mm-feature { cursor: default; }
+  .mm-card.connect-candidate .mm-feature:hover { background: #262626; }
+  .mm-card.connect-candidate .mm-feature-wrap:hover .mm-feature-del,
+  .mm-card.connect-candidate .mm-feature-wrap:hover .mm-feature-connect { opacity: 0 !important; pointer-events: none; }
+  /* 候选卡片悬浮态描边变为预览高亮色 */
+  .mm-card.connect-candidate.candidate-hovered { border-color: #CCFF00 !important; border-style: solid !important; box-shadow: 0 0 14px rgba(204,255,0,0.22); }
+
+  @keyframes cardFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .mm-card-header {
+    min-height: 36px;
+    display: flex; align-items: center;
+    padding: 8px 8px 8px 12px; gap: 6px;
+  }
+  .mm-card-title {
+    flex: 1;
+    font-size: 15px; font-weight: 600; color: #FFFFFF;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    cursor: text; border-radius: 4px; padding: 2px 4px; margin: -2px -4px;
+    transition: background 150ms ease;
+  }
+  .mm-card-title:hover { background: #2e2e2e; }
+  .mm-card-btn {
+    width: 20px; height: 20px; border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; opacity: 0;
+    transition: opacity 150ms ease, background 150ms ease;
+  }
+  .mm-card:hover .mm-card-btn { opacity: 1; }
+  .mm-card-btn.add { color: #666666; }
+  .mm-card-btn.add:hover { background: #333333; color: #EBEBEB; }
+  .mm-card-btn.del { color: #FF4444; }
+  .mm-card-btn.del:hover { background: #3a1a1a; }
+
+  .mm-card-features {
+    padding: 0 4px 4px; display: flex; flex-direction: column; gap: 4px;
+  }
+
+  /* ===== Feature Node 容器（包含外部左右元素） ===== */
+  .mm-feature-wrap {
+    display: flex; align-items: center; gap: 0;
+    position: relative;
+  }
+
+  /* 优先级圆点（节点左侧外部） */
+  .mm-priority-dot-single {
+    width: 8px; height: 8px; border-radius: 50%;
+    flex-shrink: 0; cursor: pointer;
+    transition: transform 150ms ease;
+    margin-right: 6px; margin-left: 2px;
+  }
+  .mm-priority-dot-single:hover { transform: scale(1.3); }
+
+  /* Priority Pill（展开态） */
+  .mm-priority-pill {
+    display: flex; align-items: center; gap: 4px;
+    background: #2a2a2a; border: 1px solid #333333;
+    border-radius: 20px; padding: 4px 8px;
+    position: absolute; left: -4px;
+    z-index: 400; opacity: 0; pointer-events: none;
+    transform: scale(0.9);
+    transition: opacity 100ms ease, transform 100ms ease;
+    white-space: nowrap;
+  }
+  .mm-priority-pill.open { opacity: 1; pointer-events: auto; transform: scale(1); }
+  .mm-priority-pill-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    cursor: pointer; flex-shrink: 0;
+    transition: transform 150ms ease, opacity 150ms ease;
+    opacity: 0.5;
+  }
+  .mm-priority-pill-dot:hover { transform: scale(1.3); opacity: 1; }
+  .mm-priority-pill-dot.selected { opacity: 1; }
+
+  /* ===== Feature Node ===== */
+  .mm-feature {
+    flex: 1; height: 32px;
+    display: flex; align-items: center;
+    padding: 0 8px 0 10px;
+    border-radius: 5px; background: #262626;
+    box-shadow: 0 0 0 1px rgba(51,51,51,0.5);
+    position: relative; gap: 6px; cursor: default;
+    transition: background 150ms ease, box-shadow 150ms ease;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .mm-feature:hover { background: #303030; }
+
+  .mm-feature-text {
+    flex: 1;
+    font-size: 13px; font-weight: 400; color: #999999;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    cursor: text; min-width: 0;
+  }
+
+  /* feature.layer 层级标签（消费 MODE_A_PROMPT 输出的 layer 字段） */
+  .mm-layer-tag {
+    font-size: 10px; font-weight: 500; color: #444444;
+    flex-shrink: 0; letter-spacing: 0.2px;
+    padding: 1px 4px; border-radius: 3px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid #333333;
+    white-space: nowrap; position: relative;
+  }
+  .mm-layer-tag.l3 { color: #888888; border-color: #444444; cursor: default; }
+  .mm-layer-tag .mm-l3-tooltip {
+    position: absolute; right: 0; top: calc(100% + 8px);
+    background: #1a1a1a; border: 1px solid #333333;
+    border-radius: 7px; padding: 8px 10px;
+    font-size: 12px; font-weight: 400; color: #EBEBEB; white-space: normal;
+    width: 200px; z-index: 300; opacity: 0; pointer-events: none;
+    transition: opacity 150ms ease; transition-delay: 0ms; line-height: 1.5;
+  }
+  .mm-layer-tag.l3:hover .mm-l3-tooltip { opacity: 1; transition-delay: 400ms; }
+
+  /* UX Supplement icon */
+  .mm-ux-icon {
+    font-size: 13px; color: #FFD700;
+    flex-shrink: 0; cursor: default; position: relative;
+  }
+  .mm-ux-tooltip {
+    position: absolute; right: 0; top: calc(100% + 8px);
+    background: #1a1a1a; border: 1px solid #333333;
+    border-radius: 7px; padding: 8px 10px;
+    font-size: 12px; font-weight: 400; color: #EBEBEB; white-space: normal;
+    width: 200px; z-index: 300;
+    opacity: 0; pointer-events: none;
+    transition: opacity 150ms ease; transition-delay: 0ms; line-height: 1.5;
+  }
+  .mm-ux-icon:hover .mm-ux-tooltip { opacity: 1; transition-delay: 400ms; }
+
+  /* 删除按钮（内部右侧，hover 显示） */
+  .mm-feature-del {
+    width: 16px; height: 16px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; color: #FF4444;
+    opacity: 0; transition: opacity 150ms ease; cursor: pointer;
+  }
+  .mm-feature-wrap:hover .mm-feature-del { opacity: 1; }
+
+  /* 连接按钮（绝对定位，卡片右边缘外侧，仅对未链接节点显示） */
+  .mm-feature-right {
+    position: absolute;
+    left: 100%; margin-left: 6px;
+    top: 50%; transform: translateY(-50%);
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 5px;
+  }
+  /* 无 child → hover 显示连接按钮 */
+  .mm-feature-connect {
+    color: #444444; opacity: 0;
+    transition: opacity 150ms ease, color 150ms ease;
+    cursor: pointer;
+  }
+  .mm-feature-wrap:hover .mm-feature-connect { opacity: 1; }
+  .mm-feature-connect:hover { color: #CCFF00; }
+
+  /* Feature 内联编辑输入框 (B2-8) */
+  .mm-feature-edit-input {
+    flex: 1; min-width: 0;
+    background: transparent; border: none; outline: none;
+    font-size: 13px; font-weight: 400; color: #EBEBEB;
+    font-family: inherit; padding: 0;
+  }
+  .mm-feature.editing { box-shadow: 0 0 0 1px #CCFF00; background: #2a2a2a; }
+
+  /* Feature 拖拽排序 (B2-9) */
+  .mm-feature-wrap.dragging { opacity: 0.4; }
+  .mm-feature-wrap { position: relative; }
+  .mm-feature-wrap.drag-over-top::before,
+  .mm-feature-wrap.drag-over-bottom::after {
+    content: '';
+    position: absolute; left: 0; right: 0;
+    height: 2px; background: #CCFF00; border-radius: 1px;
+    pointer-events: none; z-index: 5;
+  }
+  .mm-feature-wrap.drag-over-top::before { top: -1px; }
+  .mm-feature-wrap.drag-over-bottom::after { bottom: -1px; }
+
+  /* 连线 hover 高亮 (B2-10) */
+  #mm-lines .line-path.hovered { opacity: 1; }
+  #mm-lines .line-dot.hovered { opacity: 1; }
+
+  /* ===== SVG Lines Layer ===== */
+  #mm-lines {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; overflow: visible;
+    z-index: 1; /* 默认在卡片(z-index:4)之下 */
+    transition: z-index 0s;
+  }
+  #mm-lines.elevated {
+    z-index: 20; /* hover/选中时提到最上层 */
+  }
+  #mm-lines .line-path {
+    fill: none; stroke: #5E6B3B; stroke-width: 1.5;
+    opacity: 1;
+    transition: stroke 150ms ease-out, stroke-width 150ms ease-out, opacity 150ms ease-out;
+  }
+  #mm-lines .line-path.hovered { stroke: #CCFF00; opacity: 1; }
+  #mm-lines .line-path.selected { stroke: #FFFFFF; stroke-width: 2; opacity: 1; }
+  #mm-lines .line-dot {
+    fill: #5E6B3B; opacity: 1;
+    transition: fill 150ms ease-out, opacity 150ms ease-out;
+  }
+  #mm-lines .line-dot.hovered { fill: #CCFF00; }
+  #mm-lines .line-dot.selected { fill: #FFFFFF; opacity: 1; }
+  /* 选中态菱形把手 */
+  #mm-lines .line-diamond {
+    fill: #FFFFFF; opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease-out;
+  }
+  #mm-lines .line-diamond.selected { opacity: 1; }
+  #mm-lines .line-diamond.hovered { opacity: 0.6; }
+  #mm-lines .line-hit {
+    fill: none; stroke: transparent; stroke-width: 10;
+    pointer-events: stroke; cursor: pointer;
+  }
+
+  /* ===== Scrollbar ===== */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #252525; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #333333; }
+
+  /* ===== B5: 预览卡片（创建模式） ===== */
+  .mm-preview-card {
+    position: absolute;
+    left: 60px; right: 60px;
+    background: #242424;
+    border: 1.5px solid #CCFF00;
+    border-radius: 8px;
+    z-index: 15;
+    opacity: 0.6;
+    box-shadow: 0 0 20px rgba(204,255,0,0.15), 0 0 40px rgba(204,255,0,0.08);
+    pointer-events: auto;
+    transition: opacity 150ms ease;
+  }
+  .mm-preview-card .preview-header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(80,80,80,0.3);
+  }
+  .mm-preview-card .preview-title {
+    flex: 1; min-width: 0;
+    font-size: 12px; font-weight: 500; color: #EBEBEB;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mm-preview-card .preview-close {
+    width: 18px; height: 18px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: #FF4444; font-size: 12px;
+    background: transparent; border: none; padding: 0;
+    opacity: 0.6; transition: opacity 120ms;
+  }
+  .mm-preview-card .preview-close:hover { opacity: 1; }
+  .mm-preview-card .preview-feat {
+    padding: 6px 10px;
+    font-size: 13px; color: #666666; font-weight: 400;
+  }
+
+  /* B5: 预览连线 */
+  .mm-preview-line {
+    fill: none; stroke: #CCFF00; stroke-width: 1.5; opacity: 0.6;
+  }
+  .mm-preview-dot {
+    fill: #CCFF00; opacity: 0.6;
+  }
+  .mm-preview-arrow {
+    fill: #CCFF00; opacity: 0.6;
+  }
+
+  /* B5: 创建/连线模式下非目标卡片降透 */
+  .mm-card.dimmed { opacity: 0.35; pointer-events: none; }
+  /* B5: 等待连接的孤立卡片高亮（描边变色，hover 效果由 JS 控制 candidate-hovered 类） */
+  .mm-card.connect-candidate { border-color: #CCFF00; cursor: pointer; }
+
+  /* B5: 创建模式底部提示条 */
+  .mm-create-hint {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #1a1a1a; border: 1px solid #333333; border-radius: 8px;
+    padding: 8px 16px; font-size: 12px; color: #888888;
+    z-index: 9001; display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  }
+  .mm-create-hint kbd {
+    display: inline-block; background: #2a2a2a; border: 1px solid #444;
+    border-radius: 3px; padding: 1px 5px; font-size: 11px; color: #EBEBEB;
+    font-family: inherit;
+  }
+
+
+  /* ===== Empty State ===== */
+  .mm-empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 60px 20px;
+    color: #333333; font-size: 12px; gap: 8px; user-select: none;
+  }
+
+  /* ===== Reduced Motion ===== */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Header -->
+  <header class="mm-header">
+    <span class="mm-header-brand">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <rect x="1" y="1" width="5" height="5" rx="1.5" fill="#CCFF00"/>
+        <rect x="8" y="1" width="5" height="5" rx="1.5" fill="#444444"/>
+        <rect x="1" y="8" width="5" height="5" rx="1.5" fill="#444444"/>
+        <rect x="8" y="8" width="5" height="5" rx="1.5" fill="#333333"/>
+      </svg>
+      UX Editor
+    </span>
+    <button class="mm-header-nav-btn" title="撤销">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M3 6H9C10.6 6 12 7.4 12 9C12 10.6 10.6 12 9 12H5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        <path d="M5.5 3.5L3 6L5.5 8.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <button class="mm-header-nav-btn" title="重做">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M11 6H5C3.4 6 2 7.4 2 9C2 10.6 3.4 12 5 12H9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        <path d="M8.5 3.5L11 6L8.5 8.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="mm-header-divider"></div>
+    <div class="mm-header-tabs">
+      <button class="mm-header-tab active">策划案分析</button>
+      <button class="mm-header-tab">行为路径</button>
+      <button class="mm-header-tab">交互稿</button>
+    </div>
+    <div class="mm-header-spacer"></div>
+    <div class="mm-header-actions">
+      <div class="mm-header-status">
+        <div class="mm-header-status-dot"></div>
+        <span>已保存</span>
+      </div>
+      <div class="mm-header-divider"></div>
+      <button class="mm-header-action-btn">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1V8M3 5L6 8L9 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 10H11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        导入
+      </button>
+      <button class="mm-header-action-btn">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 8V1M3 4L6 1L9 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 10H11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        导出
+      </button>
+      <button class="mm-header-action-btn">分享</button>
+      <div class="mm-header-divider"></div>
+      <button class="mm-header-action-btn" style="color:#FF5555;">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 3H10M4 3V2H8V3M9 3L8.5 10H3.5L3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        清除数据
+      </button>
+    </div>
+  </header>
+
+  <!-- Body -->
+  <div class="mm-body">
+    <div class="mm-canvas-wrapper">
+      <!-- Stage list (画布内最左列) -->
+      <div class="mm-stage-col">
+        <div class="mm-stage-add" id="stageAddBtn">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M6.5 1.5L8.5 3.5L3 9H1V7L6.5 1.5Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          阶段管理
+        </div>
+        <div class="mm-stage-list" id="stageList"></div>
+      </div>
+
+      <!-- Canvas -->
+      <main class="mm-canvas">
+        <div class="mm-canvas-inner" id="canvasInner">
+          <svg id="mm-lines"></svg>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// Mock Data
+// ============================================================
+const mockData = {
+  activeStageId: "s004",
+  stages: [
+    {
+      id: "s001", label: "A.准备阶段",
+      modules: [
+        {
+          id: "m001", name: "配方选择", layer: "L1",
+          features: [
+            { id: "f001", text: "配方列表", priority: "High", isUXSupplement: false, supplementReason: "", childModule: null },
+            {
+              id: "f002", text: "配方详情入口", priority: "High", isUXSupplement: false, supplementReason: "",
+              childModule: {
+                id: "cm001", name: "配方详情", targetLayer: "L1.5",
+                features: [
+                  { id: "f003", text: "配方名称展示", priority: "High", isUXSupplement: false, supplementReason: "", childModule: null },
+                  { id: "f004", text: "材料需求清单", priority: "High", isUXSupplement: false, supplementReason: "", childModule: null },
+                  {
+                    id: "f005", text: "材料不足跳转", priority: "Mid", isUXSupplement: true,
+                    supplementReason: "玩家缺乏必要信息无法决策，需提供材料获取路径",
+                    childModule: {
+                      id: "cm002", name: "材料获取引导", targetLayer: "L2",
+                      features: [
+                        {
+                          id: "f006", text: "缺少材料列表", priority: "High", isUXSupplement: false, supplementReason: "",
+                          childModule: {
+                            id: "cm004", name: "材料详情弹窗", targetLayer: "L2.5",
+                            features: [
+                              { id: "f050", text: "材料名称与图标", priority: "High", isUXSupplement: false, supplementReason: "", childModule: null },
+                              { id: "f051", text: "当前持有数量", priority: "High", isUXSupplement: false, supplementReason: "", childModule: null },
+                              { id: "f052", text: "获取来源说明", priority: "Mid", isUXSupplement: false, supplementReason: "", childModule: null }
+                            ]
+                          }
+                        },
+                        { id: "f007", text: "快速获取跳转", priority: "Mid", isUXSupplement: false, supplementReason: "", childModule: null }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            { id: "f008", text: "类型筛选", priority: "Mid", isUXSupplement: false, supplementReason: "", childModule: null },
+            { id: "f009", text: "排序切换", priority: "Low", isUXSupplement: false, supplementReason: "", childModule: null }
+          ]
+        },
+        {
+          id: "m002", name: "资源状态", layer: "L1",
+          features: [
+            { id: "f010", text: "当前材料库存", priority: "High", isUXSupplement: false, supplementReason: "", childModule: null },
+            { id: "f011", text: "消耗预览", priority: "High", isUXSupplement: true, supplementReason: "执行高成本操作前玩家需要确认消耗", childModule: null }
+          ]
+        }
+      ]
+    },
+    {
+      id: "s002", label: "B.执行阶段",
+      modules: [
+        {
+          id: "m003", name: "研究进度", layer: "L1",
+          features: [
+            { id: "f012", text: "倒计时显示", priority: "High", isUXSupplement: false, supplementReason: "", childModule: null },
+            {
+              id: "f013", text: "加速入口", priority: "Mid", isUXSupplement: false, supplementReason: "",
+              childModule: {
+                id: "cm003", name: "加速操作", targetLayer: "L1.5",
+                features: [
+                  { id: "f014", text: "加速道具选择", priority: "High", isUXSupplement: false, supplementReason: "", childModule: null },
+                  { id: "f015", text: "加速确认", priority: "High", isUXSupplement: false, supplementReason: "", childModule: null }
+                ]
+              }
+            },
+            { id: "f016", text: "取消研究", priority: "Low", isUXSupplement: false, supplementReason: "", childModule: null }
+          ]
+        }
+      ]
+    },
+    { id: "s003", label: "C.验证阶段", modules: [] },
+    {
+      id: "s004", label: "D.四连接压测",
+      modules: [
+        {
+          id: "m010", name: "主入口模块", layer: "L1",
+          features: [
+            {
+              id: "f030", text: "进入面板A", priority: "High", isUXSupplement: false, supplementReason: "",
+              childModule: {
+                id: "cm010", name: "面板A：基础信息", targetLayer: "L1.5",
+                features: [
+                  { id: "f031", text: "基础信息展示", priority: "High", isUXSupplement: false, supplementReason: "", childModule: null },
+                  { id: "f032", text: "编辑入口", priority: "Mid", isUXSupplement: false, supplementReason: "", childModule: null }
+                ]
+              }
+            },
+            {
+              id: "f033", text: "进入面板B", priority: "High", isUXSupplement: false, supplementReason: "",
+              childModule: {
+                id: "cm011", name: "面板B：设置项", targetLayer: "L1.5",
+                features: [
+                  { id: "f034", text: "通知开关", priority: "High", isUXSupplement: false, supplementReason: "", childModule: null },
+                  { id: "f035", text: "显示密度", priority: "Mid", isUXSupplement: false, supplementReason: "", childModule: null },
+                  { id: "f036", text: "语言切换", priority: "Low", isUXSupplement: false, supplementReason: "", childModule: null }
+                ]
+              }
+            },
+            {
+              id: "f037", text: "进入面板C", priority: "Mid", isUXSupplement: true, supplementReason: "用户执行高风险操作前需要明确确认",
+              childModule: {
+                id: "cm012", name: "面板C：确认弹窗", targetLayer: "L1.5",
+                features: [
+                  { id: "f038", text: "风险说明文案", priority: "High", isUXSupplement: false, supplementReason: "", childModule: null },
+                  { id: "f039", text: "确认 / 取消", priority: "High", isUXSupplement: false, supplementReason: "", childModule: null }
+                ]
+              }
+            },
+            {
+              id: "f040", text: "进入面板D", priority: "Low", isUXSupplement: false, supplementReason: "",
+              childModule: {
+                id: "cm013", name: "面板D：历史记录", targetLayer: "L1.5",
+                features: [
+                  { id: "f041", text: "记录列表", priority: "High", isUXSupplement: false, supplementReason: "", childModule: null },
+                  { id: "f042", text: "时间范围筛选", priority: "Mid", isUXSupplement: false, supplementReason: "", childModule: null },
+                  { id: "f043", text: "清空记录", priority: "Low", isUXSupplement: false, supplementReason: "", childModule: null },
+                  { id: "f044", text: "导出 CSV", priority: "Low", isUXSupplement: false, supplementReason: "", childModule: null }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          id: "m011", name: "辅助功能", layer: "L1",
+          features: [
+            { id: "f045", text: "帮助文档", priority: "Low", isUXSupplement: false, supplementReason: "", childModule: null },
+            { id: "f046", text: "意见反馈", priority: "Low", isUXSupplement: false, supplementReason: "", childModule: null }
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+// ============================================================
+// State
+// ============================================================
+const state = {
+  activeStageId: mockData.activeStageId,
+  selectedLineId: null,
+  openPriorityFeatId: null,
+  stageEditMode: false,        // B2-2: Stage TAB 编辑模式
+  renamingStageId: null,       // B2-5: 正在重命名的 Stage ID
+  editingFeatureId: null,      // B2-8: 正在内联编辑的功能节点 ID
+  editingModuleId: null,       // B2-11: 正在编辑名称的模块 ID
+  draggingFeature: null,       // B2-9: 拖拽排序状态
+  draggingCard: null,          // 卡片拖动状态 { moduleId, sourceLayer }
+  // B5: 创建/连线模式
+  connectMode: null,           // null | { featId, moduleId, sourceLayer, defaultTargetLayer, sourceModuleName }
+};
+
+// ============================================================
+// Constants
+// ============================================================
+const LAYERS = ["L1", "L1.5", "L2", "L2.5", "L3"];
+const LAYER_TOOLTIPS = {
+  "L1":   "系统第一级独立页面，主承载面板。关闭后回到 HUD。",
+  "L1.5": "依附于 L1 的覆盖层（浮层/侧边栏）。关闭后回到 L1。",
+  "L2":   "从 L1/L1.5 某功能点进入的X系统第二级独立页面。关闭后回到 L1。",
+  "L2.5": "依附于 L2 的覆盖层。关闭后回到 L2。",
+  "L3":   "从 L2 进入的第三级页面。严格控制，必须附理由。",
+};
+const PRIORITY_COLORS = {
+  High: "rgba(204,255,0,0.6)",
+  Mid:  "rgba(204,255,0,0.4)",
+  Low:  "rgba(204,255,0,0.3)",
+};
+const PRIORITY_LEVELS = ["High", "Mid", "Low"];
+const CARD_GAP    = 16;
+const CANVAS_PAD  = 16;
+const LINE_RADIUS = 6;
+
+// ============================================================
+// Helpers
+// ============================================================
+function getActiveStage() {
+  return mockData.stages.find(s => s.id === state.activeStageId) || null;
+}
+
+function buildCardMap(stage) {
+  if (!stage) return {};
+  const map = {};
+  function traverse(module, layer) {
+    map[module.id] = { module, layer, colIndex: LAYERS.indexOf(layer) };
+    for (const feat of (module.features || [])) {
+      if (feat.childModule) traverse(feat.childModule, feat.childModule.targetLayer);
+    }
+  }
+  for (const mod of (stage.modules || [])) traverse(mod, mod.targetLayer || "L1");
+  return map;
+}
+
+function buildColCards(stage) {
+  const cols = {};
+  for (const l of LAYERS) cols[l] = [];
+  function traverse(module, layer) {
+    cols[layer].push(module.id);
+    for (const feat of (module.features || [])) {
+      if (feat.childModule) traverse(feat.childModule, feat.childModule.targetLayer);
+    }
+  }
+  for (const mod of (stage ? stage.modules || [] : [])) traverse(mod, mod.targetLayer || "L1");
+  return cols;
+}
+
+// ============================================================
+// Render — Stage List (B2-1 ~ B2-6)
+// ============================================================
+function renderStageTabs() {
+  const el = document.getElementById('stageList');
+  el.innerHTML = '';
+  for (const stage of mockData.stages) {
+    const item = document.createElement('div');
+    item.className = 'mm-stage-item' + (stage.id === state.activeStageId ? ' active' : '');
+    item.dataset.stageId = stage.id;
+
+    const dot = document.createElement('div');
+    dot.className = 'mm-stage-dot';
+    item.appendChild(dot);
+
+    // ── 重命名态：内联 input ──
+    if (state.renamingStageId === stage.id) {
+      const input = document.createElement('input');
+      input.className = 'mm-stage-rename-input';
+      input.value = stage.label;
+      let committed = false;
+      const commit = () => {
+        if (committed) return; committed = true;
+        stage.label = input.value.trim() || stage.label; state.renamingStageId = null; render();
+      };
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') commit();
+        if (e.key === 'Escape') { committed = true; state.renamingStageId = null; render(); }
+      });
+      input.addEventListener('blur', commit);
+      item.appendChild(input);
+      // 点击 item 不切换 stage
+      item.addEventListener('click', (e) => e.stopPropagation());
+      el.appendChild(item);
+      requestAnimationFrame(() => { input.focus(); input.select(); });
+      continue;
+    }
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'mm-stage-label';
+    labelSpan.textContent = stage.label;
+    item.appendChild(labelSpan);
+
+    // ── 编辑模式：显示删除按钮，双击重命名 ──
+    if (state.stageEditMode) {
+      // 双击进入重命名
+      labelSpan.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        state.renamingStageId = stage.id;
+        render();
+      });
+      // 删除按钮
+      if (mockData.stages.length > 1) {
+        const delBtn = document.createElement('button');
+        delBtn.className = 'mm-stage-del-btn';
+        attachTip(delBtn, '删除阶段');
+        delBtn.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>`;
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          deleteStage(stage.id);
+        });
+        item.appendChild(delBtn);
+      }
+      item.addEventListener('click', () => { state.activeStageId = stage.id; render(); });
+    } else {
+      // 普通模式：点击切换
+      item.addEventListener('click', () => { state.activeStageId = stage.id; render(); });
+    }
+
+    el.appendChild(item);
+  }
+
+  // ── 底部按钮区 ──
+  renderStageFooter();
+}
+
+// B2-2/B2-6: 编辑模式入口 & 退出
+function renderStageFooter() {
+  const mainBtn = document.getElementById('stageAddBtn');
+  if (state.stageEditMode) {
+    // 编辑模式：主按钮变为「完成编辑」（与「阶段管理」同位置）
+    mainBtn.className = 'mm-stage-done';
+    mainBtn.textContent = '完成编辑';
+    mainBtn.onclick = () => { state.stageEditMode = false; state.renamingStageId = null; render(); };
+    // 在其后插入「新增阶段」按钮
+    let addNewBtn = document.getElementById('stageAddNewBtn');
+    if (!addNewBtn) {
+      addNewBtn = document.createElement('div');
+      addNewBtn.id = 'stageAddNewBtn';
+      addNewBtn.className = 'mm-stage-add';
+      addNewBtn.innerHTML = `
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+          <path d="M5.5 1V10M1 5.5H10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        新增阶段`;
+      addNewBtn.addEventListener('click', () => addStage());
+      mainBtn.parentNode.insertBefore(addNewBtn, mainBtn.nextSibling);
+    }
+  } else {
+    // 普通模式：显示「阶段管理」
+    mainBtn.className = 'mm-stage-add';
+    mainBtn.innerHTML = `
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M6.5 1.5L8.5 3.5L3 9H1V7L6.5 1.5Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      阶段管理`;
+    mainBtn.onclick = () => { state.stageEditMode = true; render(); };
+    // 移除「新增阶段」按钮
+    const addNewBtn = document.getElementById('stageAddNewBtn');
+    if (addNewBtn) addNewBtn.remove();
+  }
+}
+
+// B2-3: 新增阶段
+function addStage() {
+  const newId = 's' + String(Date.now()).slice(-6);
+  const idx = mockData.stages.length;
+  const letter = String.fromCharCode(65 + idx); // A, B, C...
+  const newStage = { id: newId, label: `${letter}.新阶段`, modules: [] };
+  mockData.stages.push(newStage);
+  state.activeStageId = newId;
+  state.renamingStageId = newId; // 自动进入重命名
+  render();
+}
+
+// B2-4: 删除阶段
+function deleteStage(stageId) {
+  const idx = mockData.stages.findIndex(s => s.id === stageId);
+  if (idx === -1 || mockData.stages.length <= 1) return;
+  mockData.stages.splice(idx, 1);
+  if (state.activeStageId === stageId) {
+    state.activeStageId = mockData.stages[Math.min(idx, mockData.stages.length - 1)].id;
+  }
+  render();
+}
+
+// ============================================================
+// Render — Canvas
+// ============================================================
+function render() {
+  renderStageTabs();
+  renderCanvas();
+  // 通知外部数据变更（集成接口，原型内部无副作用）
+  if (typeof _notifyDataChange === 'function') _notifyDataChange();
+}
+
+function renderCanvas() {
+  const stage = getActiveStage();
+  const cardMap = buildCardMap(stage);
+  const colCards = buildColCards(stage);
+  const canvasInner = document.getElementById('canvasInner');
+  const svg = document.getElementById('mm-lines');
+  canvasInner.innerHTML = '';
+  canvasInner.appendChild(svg);
+
+  for (const layer of LAYERS) {
+    const col = renderLayerCol(layer, colCards[layer], cardMap, stage);
+    canvasInner.appendChild(col);
+  }
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    applyAutoLayout(stage, cardMap, colCards);
+    // 再等一帧让浏览器刷新布局后再画线，确保 getBoundingClientRect 取到最新位置
+    requestAnimationFrame(() => renderLines(stage, cardMap));
+  }));
+}
+
+// ============================================================
+// Render — Layer Column
+// ============================================================
+function renderLayerCol(layer, cardIds, cardMap, stage) {
+  const col = document.createElement('div');
+  col.className = 'mm-layer-col';
+  col.dataset.layer = layer;
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'mm-col-header';
+
+  const labelWrap = document.createElement('div');
+  labelWrap.className = 'mm-col-label-wrap';
+  const label = document.createElement('span');
+  label.className = 'mm-col-label';
+  label.textContent = layer;
+  const tooltip = document.createElement('div');
+  tooltip.className = 'mm-tooltip';
+  tooltip.textContent = LAYER_TOOLTIPS[layer];
+  labelWrap.appendChild(label);
+  labelWrap.appendChild(tooltip);
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'mm-col-add-btn';
+  attachTip(addBtn, `在 ${layer} 列新增模块`);
+  addBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+    <path d="M6.5 2V11M2 6.5H11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+  </svg>`;
+  // B3-4: 列头新增模块卡片
+  addBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    addModuleToLayer(layer);
+  });
+
+  header.appendChild(labelWrap);
+  header.appendChild(addBtn);
+  col.appendChild(header);
+
+  // Cards area
+  const cardsArea = document.createElement('div');
+  cardsArea.className = 'mm-col-cards';
+  cardsArea.dataset.layer = layer;
+
+  // ── 卡片拖动：列接受卡片放置 ──
+  cardsArea.addEventListener('dragover', (e) => {
+    if (!state.draggingCard) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    // 清除旧指示线
+    cardsArea.querySelectorAll('.mm-card-drop-indicator').forEach(el => el.remove());
+    // 找插入位置：遍历子卡片，找到鼠标 Y 之前的最后一张
+    const cards = [...cardsArea.querySelectorAll('.mm-card:not(.card-dragging)')];
+    let insertBefore = null;
+    for (const c of cards) {
+      const rect = c.getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height / 2) { insertBefore = c; break; }
+    }
+    // 插入指示线
+    const ind = document.createElement('div');
+    ind.className = 'mm-card-drop-indicator';
+    if (insertBefore) cardsArea.insertBefore(ind, insertBefore);
+    else cardsArea.appendChild(ind);
+  });
+  cardsArea.addEventListener('dragleave', (e) => {
+    if (!state.draggingCard) return;
+    if (!cardsArea.contains(e.relatedTarget)) {
+      cardsArea.querySelectorAll('.mm-card-drop-indicator').forEach(el => el.remove());
+    }
+  });
+  cardsArea.addEventListener('drop', (e) => {
+    if (!state.draggingCard) return;
+    e.preventDefault();
+    cardsArea.querySelectorAll('.mm-card-drop-indicator').forEach(el => el.remove());
+    const { moduleId } = state.draggingCard;
+    // 找插入位置
+    const cards = [...cardsArea.querySelectorAll('.mm-card:not(.card-dragging)')];
+    let insertBeforeModuleId = null;
+    for (const c of cards) {
+      const rect = c.getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height / 2) { insertBeforeModuleId = c.dataset.moduleId; break; }
+    }
+    state.draggingCard = null;
+    moveCardToLayer(moduleId, layer, insertBeforeModuleId);
+  });
+
+  if (cardIds.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'mm-empty-state';
+    empty.innerHTML = `<span>暂无模块</span>`;
+    cardsArea.appendChild(empty);
+  } else {
+    for (const moduleId of cardIds) {
+      const entry = cardMap[moduleId];
+      if (!entry) continue;
+      const card = renderCard(entry.module);
+      card.dataset.moduleId = moduleId;
+      cardsArea.appendChild(card);
+    }
+  }
+
+  col.appendChild(cardsArea);
+  return col;
+}
+
+// ============================================================
+// Render — Module Card
+// ============================================================
+function renderCard(module) {
+  const card = document.createElement('div');
+  // B5/M1: 孤立卡片检测（在 stage.modules 顶层 + targetLayer 非 L1 + 无入向连线）
+  const stage = getActiveStage();
+  const isOrphan = stage && (module.targetLayer && module.targetLayer !== 'L1')
+                   && stage.modules.some(m => m.id === module.id)
+                   && isOrphanModule(stage, module.id);
+  card.className = 'mm-card' + (isOrphan ? ' orphan' : '');
+  card.dataset.moduleId = module.id;
+
+  const header = document.createElement('div');
+  header.className = 'mm-card-header';
+
+  // B2-11: 模块名称内联编辑
+  if (state.editingModuleId === module.id) {
+    const titleInput = document.createElement('input');
+    titleInput.className = 'mm-card-title-input';
+    titleInput.value = module.name || '';
+    let committed = false;
+    const commit = () => {
+      if (committed) return; committed = true;
+      const val = titleInput.value.trim();
+      if (!val && !module.name) {
+        // 新建的空模块，提交空名称 → 删除该模块
+        state.editingModuleId = null;
+        deleteModule(module.id);
+        return;
+      }
+      module.name = val || module.name; state.editingModuleId = null; render();
+    };
+    titleInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') commit();
+      if (e.key === 'Escape') {
+        committed = true;
+        if (!module.name) { state.editingModuleId = null; deleteModule(module.id); return; }
+        state.editingModuleId = null; render();
+      }
+    });
+    titleInput.addEventListener('blur', commit);
+    header.appendChild(titleInput);
+    card.appendChild(header);
+    const featuresEl = document.createElement('div');
+    featuresEl.className = 'mm-card-features';
+    for (const feat of (module.features || [])) { featuresEl.appendChild(renderFeatureWrap(feat, module)); }
+    card.appendChild(featuresEl);
+    requestAnimationFrame(() => { titleInput.focus(); titleInput.select(); });
+    return card;
+  }
+
+  const title = document.createElement('div');
+  title.className = 'mm-card-title';
+  title.textContent = module.name || '未命名模块';
+  attachTip(title, module.name || '');
+  // B2-11: 双击编辑模块名称
+  title.addEventListener('dblclick', (e) => {
+    e.stopPropagation();
+    state.editingModuleId = module.id;
+    render();
+  });
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'mm-card-btn add';
+  attachTip(addBtn, '新增功能节点');
+  addBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+    <path d="M5.5 1V10M1 5.5H10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+  </svg>`;
+  // B3-2: 新增功能节点
+  addBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    addFeatureToModule(module.id);
+  });
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'mm-card-btn del';
+  attachTip(delBtn, '删除模块');
+  delBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+    <path d="M2 2L9 9M9 2L2 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+  </svg>`;
+  // B3-1: 删除模块卡片
+  delBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    deleteModule(module.id);
+  });
+
+  header.appendChild(title);
+  header.appendChild(addBtn);
+  header.appendChild(delBtn);
+  card.appendChild(header);
+
+  // ── 卡片 hover → 连线提升至最上层 ──
+  card.addEventListener('mouseenter', () => {
+    const svgEl = document.getElementById('mm-lines');
+    if (svgEl) svgEl.classList.add('elevated');
+  });
+  card.addEventListener('mouseleave', () => {
+    const svgEl = document.getElementById('mm-lines');
+    // 仅在无连线被选中时才降低 z-index，保持选中态的 elevated 不受影响
+    if (svgEl && !state.selectedLineId) {
+      svgEl.classList.remove('elevated');
+    }
+  });
+
+  // ── 卡片拖动（标题区触发，支持跨 Layer） ──
+  header.draggable = true;
+  header.addEventListener('dragstart', (e) => {
+    e.stopPropagation();
+    const sourceLayer = card.closest('.mm-layer-col')?.dataset.layer || module.targetLayer || 'L1';
+    state.draggingCard = { moduleId: module.id, sourceLayer };
+    state.draggingFeature = null; // 防止冲突
+    setTimeout(() => card.classList.add('card-dragging'), 0);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', 'card:' + module.id);
+  });
+  header.addEventListener('dragend', () => {
+    card.classList.remove('card-dragging');
+    state.draggingCard = null;
+    document.querySelectorAll('.mm-card-drop-indicator').forEach(el => el.remove());
+  });
+
+  // ── 卡片作为功能节点跨卡片拖动的放置目标 ──
+  card.addEventListener('dragover', (e) => {
+    if (!state.draggingFeature) return;
+    if (state.draggingFeature.moduleId === module.id) return; // 同卡片不处理
+    e.preventDefault(); e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    card.classList.add('feat-drop-target');
+    // 末尾落点指示线
+    const featuresEl = card.querySelector('.mm-card-features');
+    if (featuresEl && !featuresEl.querySelector('.mm-card-feat-drop-bottom')) {
+      const ind = document.createElement('div');
+      ind.className = 'mm-card-feat-drop-bottom';
+      featuresEl.appendChild(ind);
+    }
+  });
+  card.addEventListener('dragleave', (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      card.classList.remove('feat-drop-target');
+      card.querySelectorAll('.mm-card-feat-drop-bottom').forEach(el => el.remove());
+    }
+  });
+  card.addEventListener('drop', (e) => {
+    if (!state.draggingFeature) return;
+    if (state.draggingFeature.moduleId === module.id) return;
+    e.preventDefault(); e.stopPropagation();
+    card.classList.remove('feat-drop-target');
+    card.querySelectorAll('.mm-card-feat-drop-bottom').forEach(el => el.remove());
+    moveFeatureToModule(state.draggingFeature.featId, state.draggingFeature.moduleId, module.id);
+    state.draggingFeature = null;
+  });
+
+  const featuresEl = document.createElement('div');
+  featuresEl.className = 'mm-card-features';
+  for (const feat of (module.features || [])) {
+    featuresEl.appendChild(renderFeatureWrap(feat, module));
+  }
+  card.appendChild(featuresEl);
+
+  // B2-13: 卡片 hover → 高亮指向该卡片的连线
+  card.addEventListener('mouseenter', () => highlightLinesForModule(module.id, true));
+  card.addEventListener('mouseleave', () => highlightLinesForModule(module.id, false));
+
+  return card;
+}
+
+// ============================================================
+// Render — Feature Wrap (B2-7/B2-8/B2-9)
+// ============================================================
+function renderFeatureWrap(feat, parentModule) {
+  const wrap = document.createElement('div');
+  wrap.className = 'mm-feature-wrap';
+  wrap.dataset.featureWrapId = feat.id;
+
+  // ── B2-9: 拖拽排序 ──
+  wrap.draggable = true;
+  wrap.addEventListener('dragstart', (e) => {
+    state.draggingFeature = { featId: feat.id, moduleId: parentModule.id };
+    wrap.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', feat.id);
+  });
+  wrap.addEventListener('dragend', () => {
+    wrap.classList.remove('dragging');
+    state.draggingFeature = null;
+    document.querySelectorAll('.drag-over-top, .drag-over-bottom').forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
+  });
+  wrap.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (!state.draggingFeature) return;
+    if (state.draggingFeature.featId === feat.id) return;
+    e.dataTransfer.dropEffect = 'move';
+    const rect = wrap.getBoundingClientRect();
+    const mid = rect.top + rect.height / 2;
+    wrap.classList.toggle('drag-over-top', e.clientY < mid);
+    wrap.classList.toggle('drag-over-bottom', e.clientY >= mid);
+    // 跨卡片：保持卡片整体高亮，清除末尾指示线（精确落点改由 wrap 的 drag-over-top/bottom 显示）
+    if (state.draggingFeature.moduleId !== parentModule.id) {
+      e.stopPropagation();
+      const parentCard = wrap.closest('.mm-card');
+      if (parentCard) {
+        parentCard.classList.add('feat-drop-target'); // 持续保持卡片高亮
+        parentCard.querySelectorAll('.mm-card-feat-drop-bottom').forEach(el => el.remove());
+      }
+    }
+  });
+  wrap.addEventListener('dragleave', () => {
+    wrap.classList.remove('drag-over-top', 'drag-over-bottom');
+  });
+  wrap.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    wrap.classList.remove('drag-over-top', 'drag-over-bottom');
+    if (!state.draggingFeature) return;
+    const { featId: dragFeatId, moduleId: srcModuleId } = state.draggingFeature;
+    const rect = wrap.getBoundingClientRect();
+    const insertBefore = e.clientY < rect.top + rect.height / 2;
+
+    if (srcModuleId === parentModule.id) {
+      // ── 同卡片内排序（原有逻辑）──
+      const feats = parentModule.features;
+      const fromIdx = feats.findIndex(f => f.id === dragFeatId);
+      const toIdx = feats.findIndex(f => f.id === feat.id);
+      if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+      const [moved] = feats.splice(fromIdx, 1);
+      const newIdx = feats.indexOf(feat);
+      feats.splice(insertBefore ? newIdx : newIdx + 1, 0, moved);
+      syncPriorityByOrder(feats);
+    } else {
+      // ── 跨卡片精确落点──
+      // insertBefore=true → 插到 feat 之前；false → 插到 feat 之后（即 feat 的下一个之前）
+      const tgtFeats = parentModule.features || [];
+      const refIdx = tgtFeats.findIndex(f => f.id === feat.id);
+      const insertBeforeFeatId = insertBefore
+        ? feat.id
+        : (tgtFeats[refIdx + 1]?.id || null); // null = 末尾
+      moveFeatureToModule(dragFeatId, srcModuleId, parentModule.id, insertBeforeFeatId);
+      state.draggingFeature = null;
+      return; // moveFeatureToModule 内部已 render()
+    }
+
+    state.draggingFeature = null;
+    render();
+  });
+
+  // ── 内部节点 ──
+  const featureEl = document.createElement('div');
+  featureEl.className = 'mm-feature' + (state.editingFeatureId === feat.id ? ' editing' : '');
+  featureEl.dataset.featureId = feat.id;
+
+  // ── B2-8: 内联编辑态 ──
+  if (state.editingFeatureId === feat.id) {
+    wrap.draggable = false; // 编辑态禁用拖拽，避免选中文字触发 drag
+    const input = document.createElement('input');
+    input.className = 'mm-feature-edit-input';
+    input.value = feat.text || '';
+    let committed = false;
+    const commit = () => {
+      if (committed) return; committed = true;
+      const val = input.value.trim();
+      if (!val && !feat.text) {
+        // 新建的空节点，提交空文本 → 删除该节点
+        state.editingFeatureId = null;
+        deleteFeature(feat.id, parentModule);
+        return;
+      }
+      feat.text = val || feat.text; state.editingFeatureId = null; render();
+    };
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') commit();
+      if (e.key === 'Escape') {
+        committed = true;
+        if (!feat.text) { state.editingFeatureId = null; deleteFeature(feat.id, parentModule); return; }
+        state.editingFeatureId = null; render();
+      }
+    });
+    input.addEventListener('blur', commit);
+    featureEl.appendChild(input);
+    wrap.appendChild(featureEl);
+    requestAnimationFrame(() => { input.focus(); input.select(); });
+    return wrap;
+  }
+
+  // ── 文本 ──
+  const textEl = document.createElement('div');
+  textEl.className = 'mm-feature-text';
+  textEl.textContent = feat.text || '功能点名称';
+  attachTip(textEl, '双击编辑名称');
+  // B2-8: 双击进入编辑
+  textEl.addEventListener('dblclick', (e) => {
+    e.stopPropagation();
+    state.editingFeatureId = feat.id;
+    render();
+  });
+
+  // feature.layer 层级标签（消费 MODE_A_PROMPT 输出的 layer / l3Reason 字段）
+  let layerTag = null;
+  if (feat.layer) {
+    layerTag = document.createElement('div');
+    const isL3 = feat.layer === 'L3';
+    layerTag.className = 'mm-layer-tag' + (isL3 ? ' l3' : '');
+    layerTag.textContent = feat.layer;
+    if (isL3 && feat.l3Reason) {
+      const l3Tip = document.createElement('div');
+      l3Tip.className = 'mm-l3-tooltip';
+      l3Tip.textContent = 'L3理由：' + feat.l3Reason;
+      layerTag.appendChild(l3Tip);
+    }
+  }
+
+  // UX Supplement icon
+  let uxIcon = null;
+  if (feat.isUXSupplement) {
+    uxIcon = document.createElement('div');
+    uxIcon.className = 'mm-ux-icon';
+    uxIcon.textContent = '✦';
+    const uxTooltip = document.createElement('div');
+    uxTooltip.className = 'mm-ux-tooltip';
+    uxTooltip.textContent = feat.supplementReason || '';
+    uxIcon.appendChild(uxTooltip);
+  }
+
+  // B2-7 / B3-3: 删除按钮（内部右侧，hover 显示）
+  const delBtn = document.createElement('div');
+  delBtn.className = 'mm-feature-del';
+  attachTip(delBtn, '删除功能节点');
+  delBtn.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+    <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+  </svg>`;
+  delBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    deleteFeature(feat.id, parentModule);
+  });
+
+  featureEl.appendChild(textEl);
+  if (layerTag) featureEl.appendChild(layerTag);
+  if (uxIcon) featureEl.appendChild(uxIcon);
+  featureEl.appendChild(delBtn);
+  wrap.appendChild(featureEl);
+
+  // B2-13: 功能节点 hover → 高亮其发起的连线
+  if (feat.childModule) {
+    featureEl.addEventListener('mouseenter', () => highlightLinesForFeature(feat.id, true));
+    featureEl.addEventListener('mouseleave', () => highlightLinesForFeature(feat.id, false));
+  }
+
+  // ── B2-7 / B5: 右侧连接按钮（已链接节点不显示箭头，连线本身表达连接关系） ──
+  if (!feat.childModule) {
+    // 未链接：hover 显示 > 按钮
+    // L3 过滤用数据层判断（渲染时 wrap 未入 DOM，不能用 .closest）
+    const moduleLayer = parentModule.targetLayer || parentModule.layer || 'L1';
+    if (moduleLayer !== 'L3') {
+      const rightEl = document.createElement('div');
+      rightEl.className = 'mm-feature-right';
+      const connectBtn = document.createElement('div');
+      connectBtn.className = 'mm-feature-connect';
+      attachTip(connectBtn, '创建子模块连线');
+      connectBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M3 7H11M8 4L11 7L8 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+      // B5: 点击 > 进入创建/连线模式（点击时才从 DOM 读取实际层级）
+      connectBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const srcCol = wrap.closest('.mm-layer-col');
+        const sourceLayer = srcCol ? srcCol.dataset.layer : moduleLayer;
+        const srcIdx = LAYERS.indexOf(sourceLayer);
+        const defaultTargetLayer = srcIdx < LAYERS.length - 1 ? LAYERS[srcIdx + 1] : LAYERS[LAYERS.length - 1];
+        enterConnectMode(feat.id, parentModule.id, sourceLayer, defaultTargetLayer);
+      });
+      rightEl.appendChild(connectBtn);
+      wrap.appendChild(rightEl);
+    }
+  }
+
+  return wrap;
+}
+
+// ============================================================
+// Layout Result Map（applyAutoLayout → renderLines 共享数据）
+// ============================================================
+const _layoutResult = {}; // moduleId → { idealY, headerCenterInCard, layer }
+
+// ============================================================
+// Auto Layout
+// ============================================================
+function applyAutoLayout(stage, cardMap, colCards) {
+  if (!stage) return;
+  // 清空上一次结果
+  Object.keys(_layoutResult).forEach(k => delete _layoutResult[k]);
+
+  const CANVAS_PAD_TOP = 24;
+  const cardEls = {};
+  document.querySelectorAll('.mm-card').forEach(el => {
+    if (el.dataset.moduleId) cardEls[el.dataset.moduleId] = el;
+  });
+
+  // ── 一次性统一读取所有列和卡片的 X 坐标（批量 getBoundingClientRect，避免散落在 renderLines 里多次触发 reflow）
+  const canvasInner = document.getElementById('canvasInner');
+  const canvasRect  = canvasInner ? canvasInner.getBoundingClientRect() : { left: 0, top: 0 };
+  const scrollLeft  = canvasInner ? canvasInner.closest('.mm-canvas').scrollLeft : 0;
+  const scrollTop   = canvasInner ? canvasInner.closest('.mm-canvas').scrollTop  : 0;
+
+  // 列 X 信息：colXInfo[layer] = { colLeft, colRight, cardLeft, cardRight }
+  const colXInfo = {};
+  for (const layer of LAYERS) {
+    const colEl      = document.querySelector(`.mm-layer-col[data-layer="${layer}"]`);
+    const colCardsEl = document.querySelector(`.mm-col-cards[data-layer="${layer}"]`);
+    if (!colEl || !colCardsEl) continue;
+    const colRect      = colEl.getBoundingClientRect();
+    const colCardsRect = colCardsEl.getBoundingClientRect();
+    // 卡片的 left/right 由 CSS `left:60px; right:60px` 决定，直接从第一张卡片读或用 colCards 宽度推算
+    const sampleCard = colCardsEl.querySelector('.mm-card');
+    let cardLeft, cardRight;
+    if (sampleCard) {
+      const cr = sampleCard.getBoundingClientRect();
+      cardLeft  = cr.left  - canvasRect.left + scrollLeft;
+      cardRight = cr.right - canvasRect.left + scrollLeft;
+    } else {
+      // 无卡片时用 colCards 区域推算（60px padding 两侧）
+      cardLeft  = colCardsRect.left  - canvasRect.left + scrollLeft + 60;
+      cardRight = colCardsRect.right - canvasRect.left + scrollLeft - 60;
+    }
+    colXInfo[layer] = {
+      colLeft:   colRect.left      - canvasRect.left + scrollLeft,
+      colRight:  colRect.right     - canvasRect.left + scrollLeft,
+      colCardsTop: colCardsRect.top - canvasRect.top  + scrollTop,
+      cardLeft,
+      cardRight,
+    };
+  }
+
+  for (const layer of LAYERS) {
+    const ids = colCards[layer];
+    if (!ids || ids.length === 0) continue;
+    let currentY = CANVAS_PAD_TOP;
+    const xi = colXInfo[layer];
+
+    for (const moduleId of ids) {
+      const el = cardEls[moduleId];
+      if (!el) continue;
+      let idealY = currentY;
+      let headerCenterInCard = 18;
+
+      if (layer !== "L1") {
+        const parentFeatEl = findParentFeatureEl(moduleId, stage);
+        if (parentFeatEl) {
+          const colCardsEl = el.closest('.mm-col-cards');
+          const colRect = colCardsEl ? colCardsEl.getBoundingClientRect() : null;
+          const featRect = parentFeatEl.getBoundingClientRect();
+          if (colRect && featRect) {
+            const featCenterY = featRect.top - colRect.top + featRect.height / 2;
+            const headerEl = el.querySelector('.mm-card-header');
+            headerCenterInCard = headerEl
+              ? headerEl.offsetTop + headerEl.offsetHeight / 2
+              : 18;
+            idealY = Math.max(currentY, featCenterY - headerCenterInCard);
+          }
+        }
+      }
+
+      el.style.top = idealY + 'px';
+      // 将本次计算结果存入共享 map，供 renderLines 直接引用，完全避免 renderLines 再读 DOM
+      _layoutResult[moduleId] = {
+        idealY, headerCenterInCard, layer,
+        // X 坐标（canvas 坐标系）
+        cardLeft:  xi ? xi.cardLeft  : 0,
+        cardRight: xi ? xi.cardRight : 0,
+        colRight:  xi ? xi.colRight  : 0,
+        colCardsTop: xi ? xi.colCardsTop : 0,
+        // 画布基准（当次 snapshot，所有模块共用同一 canvasRect 快照）
+        _canvasSnapLeft: canvasRect.left,
+        _canvasSnapTop:  canvasRect.top,
+        _scrollLeft: scrollLeft,
+        _scrollTop:  scrollTop,
+      };
+
+      currentY = idealY + (el.offsetHeight || 80) + CARD_GAP;
+    }
+
+    const colCardsEl = document.querySelector(`.mm-col-cards[data-layer="${layer}"]`);
+    if (colCardsEl) colCardsEl.style.minHeight = (currentY + CANVAS_PAD_TOP) + 'px';
+  }
+}
+
+function findParentFeatureEl(moduleId, stage) {
+  function searchModule(module) {
+    for (const feat of (module.features || [])) {
+      if (feat.childModule && feat.childModule.id === moduleId) {
+        return document.querySelector(`[data-feature-wrap-id="${feat.id}"] .mm-feature`);
+      }
+      if (feat.childModule) {
+        const found = searchModule(feat.childModule);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+  for (const mod of (stage ? stage.modules || [] : [])) {
+    const found = searchModule(mod);
+    if (found) return found;
+  }
+  return null;
+}
+
+// ============================================================
+// Render Lines (SVG)
+// ============================================================
+function renderLines(stage, cardMap) {
+  const svg = document.getElementById('mm-lines');
+  svg.innerHTML = '';
+  if (!stage) return;
+
+  // 定义箭头 marker（实心三角）
+  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+  // 默认箭头（#5E6B3B）
+  const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+  marker.setAttribute('id', 'arrowhead');
+  marker.setAttribute('markerWidth', '7');
+  marker.setAttribute('markerHeight', '7');
+  marker.setAttribute('refX', '6');
+  marker.setAttribute('refY', '3.5');
+  marker.setAttribute('orient', 'auto');
+  const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  poly.setAttribute('points', '0 0, 7 3.5, 0 7');
+  poly.setAttribute('fill', '#5E6B3B');
+  marker.appendChild(poly);
+  defs.appendChild(marker);
+  // hover 态箭头（#CCFF00）
+  const markerH = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+  markerH.setAttribute('id', 'arrowhead-hover');
+  markerH.setAttribute('markerWidth', '7');
+  markerH.setAttribute('markerHeight', '7');
+  markerH.setAttribute('refX', '6');
+  markerH.setAttribute('refY', '3.5');
+  markerH.setAttribute('orient', 'auto');
+  const polyH = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  polyH.setAttribute('points', '0 0, 7 3.5, 0 7');
+  polyH.setAttribute('fill', '#CCFF00');
+  markerH.appendChild(polyH);
+  defs.appendChild(markerH);
+  // 选中态箭头（白色）
+  const markerW = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+  markerW.setAttribute('id', 'arrowhead-white');
+  markerW.setAttribute('markerWidth', '7');
+  markerW.setAttribute('markerHeight', '7');
+  markerW.setAttribute('refX', '6');
+  markerW.setAttribute('refY', '3.5');
+  markerW.setAttribute('orient', 'auto');
+  const polyW = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  polyW.setAttribute('points', '0 0, 7 3.5, 0 7');
+  polyW.setAttribute('fill', '#FFFFFF');
+  markerW.appendChild(polyW);
+  defs.appendChild(markerW);
+  svg.appendChild(defs);
+
+  // 根据选中状态设置层级
+  if (state.selectedLineId) {
+    svg.classList.add('elevated');
+  } else {
+    svg.classList.remove('elevated');
+  }
+
+  const RADIUS = LINE_RADIUS;
+
+  function collectLines(module) {
+    for (const feat of (module.features || [])) {
+      if (!feat.childModule) continue;
+      const childId = feat.childModule.id;
+      const featWrapEl = document.querySelector(`[data-feature-wrap-id="${feat.id}"]`);
+      const childCardEl = document.querySelector(`.mm-card[data-module-id="${childId}"]`);
+      if (!featWrapEl || !childCardEl) continue;
+
+      // ── 起点 (xs, ys)：完全使用 _layoutResult 预存坐标，零 DOM 读取 ──
+      const srcCard = featWrapEl.closest('.mm-card');
+      const srcModuleId = srcCard ? srcCard.dataset.moduleId : null;
+      const srcLayout = srcModuleId ? _layoutResult[srcModuleId] : null;
+      if (!srcLayout) continue; // 布局尚未建立，跳过本次渲染
+
+      const xs = srcLayout.cardRight + 4; // 卡片右边缘 + 4px 间距
+
+      const FEATURE_H = 32;
+      const GAP       = 4;
+      const featIndex = Array.from(srcCard.querySelectorAll('.mm-feature-wrap')).indexOf(featWrapEl);
+      const featCenterInCard = (srcCard.querySelector('.mm-card-header')
+                                  ? srcCard.querySelector('.mm-card-header').offsetHeight : 36)
+                               + 4
+                               + featIndex * (FEATURE_H + GAP)
+                               + FEATURE_H / 2;
+      const ys = srcLayout.colCardsTop + srcLayout.idealY + featCenterInCard;
+
+      // ── 终点 (xe, ye)：同样用 _layoutResult ──
+      const childLayout = _layoutResult[childId];
+      if (!childLayout) continue;
+
+      const xe = childLayout.cardLeft;
+      const ye_calc = childLayout.colCardsTop + childLayout.idealY + childLayout.headerCenterInCard;
+      const ye = Math.abs(ye_calc - ys) <= 2 ? ys : ye_calc;
+
+      // ── 折点 X = 源列右边界（已在 _layoutResult 预存） ──
+      const divX = srcLayout.colRight;
+
+      // ── 路径：带圆角折角 ──
+      const r = RADIUS;
+      let d;
+      if (Math.abs(ys - ye) < 2) {
+        d = `M ${xs} ${ys} L ${xe} ${ye}`;
+      } else {
+        const goDown = ye > ys;
+        if (goDown) {
+          d = [
+            `M ${xs} ${ys}`,
+            `L ${divX - r} ${ys}`,
+            `Q ${divX} ${ys} ${divX} ${ys + r}`,
+            `L ${divX} ${ye - r}`,
+            `Q ${divX} ${ye} ${divX + r} ${ye}`,
+            `L ${xe} ${ye}`,
+          ].join(' ');
+        } else {
+          d = [
+            `M ${xs} ${ys}`,
+            `L ${divX - r} ${ys}`,
+            `Q ${divX} ${ys} ${divX} ${ys - r}`,
+            `L ${divX} ${ye + r}`,
+            `Q ${divX} ${ye} ${divX + r} ${ye}`,
+            `L ${xe} ${ye}`,
+          ].join(' ');
+        }
+      }
+
+      const lineId = `line-${feat.id}-${childId}`;
+
+      // 透明宽击打区（pointer-events 便于点击细线）
+      const hitPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      hitPath.setAttribute('d', d);
+      hitPath.setAttribute('class', 'line-hit');
+      hitPath.setAttribute('stroke', 'transparent');
+      hitPath.style.pointerEvents = 'stroke';
+      hitPath.dataset.lineId = lineId;
+      hitPath.dataset.featId = feat.id;
+      hitPath.addEventListener('click', (e) => {
+        e.stopPropagation();
+        state.selectedLineId = (state.selectedLineId === lineId) ? null : lineId;
+        requestAnimationFrame(() => renderLines(stage, cardMap));
+      });
+      // B2-10: 连线 hover 高亮 + 层级提升
+      hitPath.addEventListener('mouseenter', () => {
+        svg.classList.add('elevated');
+        svg.querySelectorAll(`.line-path[data-line-id="${lineId}"]`).forEach(p => {
+          p.classList.add('hovered');
+          if (!p.classList.contains('selected')) p.setAttribute('marker-end', 'url(#arrowhead-hover)');
+        });
+        svg.querySelectorAll(`.line-dot[data-line-id="${lineId}"]`).forEach(d => d.classList.add('hovered'));
+        svg.querySelectorAll(`.line-diamond[data-line-id="${lineId}"]`).forEach(d => d.classList.add('hovered'));
+      });
+      hitPath.addEventListener('mouseleave', () => {
+        if (!state.selectedLineId) svg.classList.remove('elevated');
+        svg.querySelectorAll('.line-path.hovered').forEach(p => {
+          p.classList.remove('hovered');
+          if (!p.classList.contains('selected')) p.setAttribute('marker-end', 'url(#arrowhead)');
+        });
+        svg.querySelectorAll('.line-dot.hovered').forEach(d => d.classList.remove('hovered'));
+        svg.querySelectorAll('.line-diamond.hovered').forEach(d => d.classList.remove('hovered'));
+      });
+
+      // 视觉线
+      const isSelected = state.selectedLineId === lineId;
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('class', 'line-path' + (isSelected ? ' selected' : ''));
+      path.setAttribute('marker-end', isSelected ? 'url(#arrowhead-white)' : 'url(#arrowhead)');
+      path.dataset.featId  = feat.id;
+      path.dataset.childId = childId;
+      path.dataset.lineId  = lineId;
+
+      svg.appendChild(hitPath);
+      svg.appendChild(path);
+
+      // 起点实心圆（isSelected 已在视觉线处声明）
+      const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('cx', xs);
+      dot.setAttribute('cy', ys);
+      dot.setAttribute('r', '3');
+      dot.setAttribute('class', 'line-dot' + (isSelected ? ' selected' : ''));
+      dot.dataset.featId  = feat.id;
+      dot.dataset.childId = childId;
+      dot.dataset.lineId  = lineId;
+      svg.appendChild(dot);
+
+      // B4-1: 菱形把手（折点中心，选中时显示）
+      const midX = divX;
+      const midY = (ys + ye) / 2;
+      const ds = 5; // 菱形半径
+      const diamond = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      diamond.setAttribute('points', `${midX},${midY-ds} ${midX+ds},${midY} ${midX},${midY+ds} ${midX-ds},${midY}`);
+      diamond.setAttribute('class', 'line-diamond' + (isSelected ? ' selected' : ''));
+      diamond.dataset.lineId = lineId;
+      svg.appendChild(diamond);
+
+      collectLines(feat.childModule);
+    }
+  }
+
+  for (const mod of (stage.modules || [])) collectLines(mod);
+
+  // B5: 如果处于创建模式，重绘预览连线（避免 svg.innerHTML='' 清除）
+  if (state.connectMode && _previewCardEl) {
+    requestAnimationFrame(() => drawPreviewLine());
+  }
+}
+
+// ============================================================
+// 全局点击：关闭优先级 pill / 取消连线选中 (B4-3)
+// ============================================================
+document.addEventListener('click', (e) => {
+  // B5: 创建/连线模式下，点击由 onConnectClick 处理
+  if (state.connectMode) return;
+
+  if (state.openPriorityFeatId !== null) {
+    state.openPriorityFeatId = null;
+    render();
+    return;
+  }
+  if (state.selectedLineId !== null && !e.target.closest('#mm-lines')) {
+    state.selectedLineId = null;
+    const stage = getActiveStage();
+    const cardMap = buildCardMap(stage);
+    requestAnimationFrame(() => renderLines(stage, cardMap));
+  }
+});
+
+// ============================================================
+// B4-2: Delete / Backspace 删除选中连线
+// ============================================================
+document.addEventListener('keydown', (e) => {
+  // B5: 创建/连线模式下，Escape 由 onConnectKeyDown 处理，其他键忽略
+  if (state.connectMode) return;
+
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    // 如果焦点在 input 内，不拦截
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    if (state.selectedLineId) {
+      e.preventDefault();
+      // 从 SVG hitPath 元素上读取 featId（避免解析 lineId 字符串）
+      const hitEl = document.querySelector(`[data-line-id="${state.selectedLineId}"][data-feat-id]`);
+      const featId = hitEl ? hitEl.dataset.featId : null;
+      if (featId) {
+        const stage = getActiveStage();
+        if (stage) {
+          const feat = findFeatureById(stage, featId);
+          if (feat && feat.childModule) {
+            // 将断开的子模块提升到 stage 根列表（保留孤立卡片）
+            const orphan = feat.childModule;
+            feat.childModule = null;
+            stage.modules.push(orphan);
+            state.selectedLineId = null;
+            render();
+          }
+        }
+      }
+    }
+  }
+});
+
+// ============================================================
+// B2-12: 拖拽排序后同步优先级字段
+// ============================================================
+function syncPriorityByOrder(features) {
+  for (let i = 0; i < features.length; i++) {
+    if (i === 0) features[i].priority = 'High';
+    else if (i === features.length - 1 && features.length > 1) features[i].priority = 'Low';
+    else features[i].priority = 'Mid';
+  }
+}
+
+// ============================================================
+// B2-13: 连线高亮（根据模块 ID 或功能节点 ID）
+// ============================================================
+function highlightLinesForModule(moduleId, on) {
+  const svg = document.getElementById('mm-lines');
+  if (!svg) return;
+  svg.querySelectorAll('.line-path, .line-dot').forEach(el => {
+    if (el.dataset.childId === moduleId) {
+      el.classList.toggle('hovered', on);
+      // 同步切换箭头颜色（仅 path 元素有 marker-end）
+      if (el.nodeName === 'path' && !el.classList.contains('selected')) {
+        el.setAttribute('marker-end', on ? 'url(#arrowhead-hover)' : 'url(#arrowhead)');
+      }
+    }
+  });
+}
+
+function highlightLinesForFeature(featId, on) {
+  const svg = document.getElementById('mm-lines');
+  if (!svg) return;
+  svg.querySelectorAll('.line-path, .line-dot').forEach(el => {
+    if (el.dataset.featId === featId) {
+      el.classList.toggle('hovered', on);
+    }
+  });
+  // 同步切换箭头颜色
+  svg.querySelectorAll('.line-path').forEach(el => {
+    if (el.dataset.featId === featId && !el.classList.contains('selected')) {
+      el.setAttribute('marker-end', on ? 'url(#arrowhead-hover)' : 'url(#arrowhead)');
+    }
+  });
+}
+
+// ============================================================
+// B3-1: 删除模块卡片（级联删除子孙 + 清除父级连线引用）
+// ============================================================
+function deleteModule(moduleId) {
+  const stage = getActiveStage();
+  if (!stage) return;
+
+  // 从 stage.modules（L1 根模块）中查找并删除
+  const rootIdx = stage.modules.findIndex(m => m.id === moduleId);
+  if (rootIdx !== -1) {
+    stage.modules.splice(rootIdx, 1);
+    render();
+    return;
+  }
+
+  // 递归在所有 feature.childModule 中查找并断开引用
+  function removeFromTree(modules) {
+    for (const mod of modules) {
+      for (const feat of (mod.features || [])) {
+        if (feat.childModule && feat.childModule.id === moduleId) {
+          feat.childModule = null; // 断开连线
+          render();
+          return true;
+        }
+        if (feat.childModule) {
+          if (removeFromTree([feat.childModule])) return true;
+        }
+      }
+    }
+    return false;
+  }
+  removeFromTree(stage.modules || []);
+}
+
+// ============================================================
+// B3-2: 卡片内新增功能节点
+// ============================================================
+function addFeatureToModule(moduleId) {
+  const stage = getActiveStage();
+  if (!stage) return;
+  const mod = findModuleById(stage, moduleId);
+  if (!mod) return;
+  const newFeat = {
+    id: 'f' + String(Date.now()).slice(-6) + Math.random().toString(36).slice(2, 5),
+    text: '',
+    priority: 'Mid',
+  };
+  mod.features = mod.features || [];
+  mod.features.push(newFeat);
+  syncPriorityByOrder(mod.features);
+  state.editingFeatureId = newFeat.id; // 自动进入编辑态
+  render();
+}
+
+// ============================================================
+// B3-3: 删除功能节点（含级联删除子模块树）
+// ============================================================
+function deleteFeature(featId, parentModule) {
+  const idx = parentModule.features.findIndex(f => f.id === featId);
+  if (idx === -1) return;
+  // 清理可能残留的编辑态
+  if (state.editingFeatureId === featId) state.editingFeatureId = null;
+  parentModule.features.splice(idx, 1);
+  syncPriorityByOrder(parentModule.features);
+  render();
+}
+
+// ============================================================
+// 卡片跨 Layer 拖动
+// ============================================================
+/**
+ * 将卡片移动到目标 Layer，可携带子孙模块整体迁移
+ * @param {string} moduleId - 被拖动的模块 ID
+ * @param {string} targetLayer - 目标 Layer（如 'L1.5'）
+ * @param {string|null} insertBeforeModuleId - 插入到哪张卡片之前，null = 末尾
+ */
+function moveCardToLayer(moduleId, targetLayer, insertBeforeModuleId) {
+  const stage = getActiveStage();
+  if (!stage) return;
+
+  // 找到被拖模块
+  function findModuleById(modules, id) {
+    for (const m of modules) {
+      if (m.id === id) return m;
+      for (const f of (m.features || [])) {
+        if (f.childModule) {
+          const found = findModuleById([f.childModule], id);
+          if (found) return found;
+        }
+      }
+    }
+    return null;
+  }
+
+  const mod = findModuleById(stage.modules, moduleId);
+  if (!mod) return;
+
+  const oldLayer = mod.targetLayer || 'L1';
+  if (oldLayer === targetLayer && insertBeforeModuleId === null) return;
+
+  // 计算层级偏移（用于子孙模块同步）
+  const layerOffset = LAYERS.indexOf(targetLayer) - LAYERS.indexOf(oldLayer);
+
+  // 递归更新该模块及其所有子孙的 targetLayer
+  function shiftLayers(m, offset) {
+    const idx = LAYERS.indexOf(m.targetLayer || 'L1');
+    const newIdx = Math.max(0, Math.min(LAYERS.length - 1, idx + offset));
+    m.targetLayer = LAYERS[newIdx];
+    for (const f of (m.features || [])) {
+      if (f.childModule) shiftLayers(f.childModule, offset);
+    }
+  }
+  if (layerOffset !== 0) shiftLayers(mod, layerOffset);
+
+  // 仅对 stage.modules 根列表中的卡片做排序调整
+  // 嵌套卡片（childModule）只更新 targetLayer，连接关系保持不变
+  const rootIdx = stage.modules.findIndex(m => m.id === moduleId);
+  if (rootIdx !== -1) {
+    stage.modules.splice(rootIdx, 1);
+    if (insertBeforeModuleId) {
+      const insertIdx = stage.modules.findIndex(m => m.id === insertBeforeModuleId);
+      if (insertIdx !== -1) stage.modules.splice(insertIdx, 0, mod);
+      else stage.modules.push(mod);
+    } else {
+      stage.modules.push(mod);
+    }
+  }
+  // 嵌套卡片：targetLayer 已在上面更新，不改变数据结构，连线自动保留
+
+  render();
+}
+
+// ============================================================
+// 功能节点跨卡片迁移
+// ============================================================
+/**
+ * 将功能节点从源卡片移动到目标卡片末尾，childModule 随之迁移
+ * @param {string} featId
+ * @param {string} srcModuleId
+ * @param {string} targetModuleId
+ */
+/**
+ * 将功能节点从源卡片移动到目标卡片，childModule 随之迁移
+ * @param {string} featId
+ * @param {string} srcModuleId
+ * @param {string} targetModuleId
+ * @param {string|null} insertBeforeFeatId - 插入到目标卡片的哪个节点之前，null = 末尾
+ */
+function moveFeatureToModule(featId, srcModuleId, targetModuleId, insertBeforeFeatId = null) {
+  const stage = getActiveStage();
+  if (!stage) return;
+
+  function findModuleById(modules, id) {
+    for (const m of modules) {
+      if (m.id === id) return m;
+      for (const f of (m.features || [])) {
+        if (f.childModule) {
+          const found = findModuleById([f.childModule], id);
+          if (found) return found;
+        }
+      }
+    }
+    return null;
+  }
+
+  const srcModule = findModuleById(stage.modules, srcModuleId);
+  const tgtModule = findModuleById(stage.modules, targetModuleId);
+  if (!srcModule || !tgtModule) return;
+
+  const featIdx = (srcModule.features || []).findIndex(f => f.id === featId);
+  if (featIdx === -1) return;
+
+  const [movedFeat] = srcModule.features.splice(featIdx, 1);
+  tgtModule.features = tgtModule.features || [];
+
+  if (insertBeforeFeatId) {
+    const insertIdx = tgtModule.features.findIndex(f => f.id === insertBeforeFeatId);
+    if (insertIdx !== -1) tgtModule.features.splice(insertIdx, 0, movedFeat);
+    else tgtModule.features.push(movedFeat);
+  } else {
+    tgtModule.features.push(movedFeat);
+  }
+
+  syncPriorityByOrder(srcModule.features);
+  syncPriorityByOrder(tgtModule.features);
+  render();
+}
+
+// ============================================================
+// B3-4: 列头新增模块卡片
+// ============================================================
+function addModuleToLayer(layer) {
+  const stage = getActiveStage();
+  if (!stage) return;
+  const newId = 'm' + String(Date.now()).slice(-6) + Math.random().toString(36).slice(2, 5);
+  const newFeatId = 'f' + newId + '_1';
+  const newModule = {
+    id: newId,
+    name: '模块名称',
+    targetLayer: layer,
+    features: [
+      { id: newFeatId, name: '功能点名称', priority: null, uxComplete: false }
+    ],
+  };
+
+  if (layer === 'L1') {
+    // L1 直接加入 stage.modules
+    stage.modules = stage.modules || [];
+    stage.modules.push(newModule);
+  } else {
+    // 非 L1 层：创建为独立卡片，先加入 stage 根（后续由连线系统绑定到父级）
+    // 暂时挂在 stage.modules 下作为临时根节点，targetLayer 决定其渲染列
+    stage.modules = stage.modules || [];
+    stage.modules.push(newModule);
+  }
+
+  state.editingModuleId = newId; // 自动进入名称编辑态
+  render();
+}
+
+// ============================================================
+// 辅助：根据 ID 查找模块（递归遍历整棵树）
+// ============================================================
+function findModuleById(stage, moduleId) {
+  function search(modules) {
+    for (const mod of modules) {
+      if (mod.id === moduleId) return mod;
+      for (const feat of (mod.features || [])) {
+        if (feat.childModule) {
+          const found = search([feat.childModule]);
+          if (found) return found;
+        }
+      }
+    }
+    return null;
+  }
+  return search(stage.modules || []);
+}
+
+// B4-2 辅助：根据 ID 查找功能节点
+function findFeatureById(stage, featId) {
+  function search(modules) {
+    for (const mod of modules) {
+      for (const feat of (mod.features || [])) {
+        if (feat.id === featId) return feat;
+        if (feat.childModule) {
+          const found = search([feat.childModule]);
+          if (found) return found;
+        }
+      }
+    }
+    return null;
+  }
+  return search(stage.modules || []);
+}
+
+// ============================================================
+// Helpers
+// ============================================================
+function escapeHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Global Tooltip ──
+const _tipEl = (() => {
+  const el = document.createElement('div');
+  el.className = 'mm-global-tip';
+  document.body.appendChild(el);
+  return el;
+})();
+let _tipTimer = null;
+
+function attachTip(el, text) {
+  el.addEventListener('mouseenter', () => {
+    clearTimeout(_tipTimer);
+    _tipTimer = setTimeout(() => {
+      _tipEl.textContent = text;
+      const rect = el.getBoundingClientRect();
+      _tipEl.style.left = (rect.left + rect.width / 2) + 'px';
+      _tipEl.style.top = (rect.bottom + 6) + 'px';
+      _tipEl.classList.add('visible');
+    }, 400);
+  });
+  el.addEventListener('mouseleave', () => {
+    clearTimeout(_tipTimer);
+    _tipEl.classList.remove('visible');
+  });
+}
+
+// ============================================================
+// B5: 创建/连线模式（完整交互系统 — 重写版）
+// ============================================================
+
+// ── 全局引用 ──
+let _previewCardEl = null;       // 预览卡片 DOM
+let _hintEl = null;              // 底部提示条
+let _currentTargetLayer = null;  // 当前预览卡片所在列
+let _candidateHovered = null;    // 当前悬浮中的候选孤立卡片 DOM
+
+function enterConnectMode(featId, moduleId, sourceLayer, defaultTargetLayer) {
+  const stage = getActiveStage();
+  if (!stage) return;
+
+  // 查找源模块名称（预览卡片标题继承源模块名称）
+  const sourceModule = findModuleById(stage, moduleId);
+  const sourceModuleName = sourceModule ? sourceModule.name || '子模块名称' : '子模块名称';
+
+  // 检查是否有孤立卡片在目标层级中可供连线（路径 B 判定）
+  const orphanCandidates = findOrphanCandidates(stage, sourceLayer);
+
+  state.connectMode = { featId, moduleId, sourceLayer, defaultTargetLayer, sourceModuleName };
+  _currentTargetLayer = defaultTargetLayer;
+
+  // 创建底部提示条
+  _hintEl = document.createElement('div');
+  _hintEl.className = 'mm-create-hint';
+  if (orphanCandidates.length > 0) {
+    _hintEl.innerHTML = `鼠标移至目标层级，点击确认创建 · 或点击<span style="color:#CCFF00">高亮卡片</span>直接连线 · <kbd>Esc</kbd> 取消`;
+  } else {
+    _hintEl.innerHTML = `鼠标移至目标层级，点击确认创建 · <kbd>Esc</kbd> 取消`;
+  }
+  document.body.appendChild(_hintEl);
+
+  // 降透非目标卡片 + 孤立候选卡片高亮
+  applyConnectModeVisuals(stage, orphanCandidates);
+
+  // 在默认目标列显示预览卡片 + 预览连线
+  showPreviewCard(_currentTargetLayer);
+
+  // 绑定全局事件
+  document.addEventListener('mousemove', onConnectMouseMove);
+  document.addEventListener('keydown', onConnectKeyDown);
+  document.addEventListener('click', onConnectClick, true);
+}
+
+function exitConnectMode() {
+  state.connectMode = null;
+  _currentTargetLayer = null;
+  _candidateHovered = null;
+
+  // 清除候选卡片 hovered 状态
+  document.querySelectorAll('.mm-card.candidate-hovered').forEach(el => el.classList.remove('candidate-hovered'));
+
+  // 移除预览卡片
+  if (_previewCardEl) { _previewCardEl.remove(); _previewCardEl = null; }
+  // 移除预览连线
+  clearPreviewLine();
+  // 移除提示条
+  if (_hintEl) { _hintEl.remove(); _hintEl = null; }
+  // 清除视觉效果
+  document.querySelectorAll('.mm-card.dimmed').forEach(el => el.classList.remove('dimmed'));
+  document.querySelectorAll('.mm-card.connect-candidate').forEach(el => {
+    el.classList.remove('connect-candidate');
+    el.removeEventListener('click', onCandidateCardClick);
+  });
+
+  // 解绑全局事件
+  document.removeEventListener('mousemove', onConnectMouseMove);
+  document.removeEventListener('keydown', onConnectKeyDown);
+  document.removeEventListener('click', onConnectClick, true);
+}
+
+function applyConnectModeVisuals(stage, orphanCandidates) {
+  const cm = state.connectMode;
+  if (!cm) return;
+  const srcIdx = LAYERS.indexOf(cm.sourceLayer);
+
+  // 对现有卡片设置 dimmed / connect-candidate
+  document.querySelectorAll('.mm-card').forEach(cardEl => {
+    const modId = cardEl.dataset.moduleId;
+    if (orphanCandidates.includes(modId)) {
+      cardEl.classList.add('connect-candidate');
+      cardEl.addEventListener('click', onCandidateCardClick);
+    } else {
+      const col = cardEl.closest('.mm-layer-col');
+      const colLayer = col ? col.dataset.layer : '';
+      const colIdx = LAYERS.indexOf(colLayer);
+      if (colIdx > srcIdx) {
+        cardEl.classList.add('dimmed');
+      }
+    }
+  });
+}
+
+// ── 显示预览卡片（真实卡片外观，60% 透明 + 主题色外发光） ──
+function showPreviewCard(targetLayer) {
+  const cm = state.connectMode;
+  if (!cm) return;
+
+  // 移除旧预览卡片
+  if (_previewCardEl) { _previewCardEl.remove(); _previewCardEl = null; }
+
+  const cardsArea = document.querySelector(`.mm-col-cards[data-layer="${targetLayer}"]`);
+  if (!cardsArea) return;
+
+  // 创建预览卡片 DOM
+  _previewCardEl = document.createElement('div');
+  _previewCardEl.className = 'mm-preview-card';
+
+  // 标题行（继承源模块名称）
+  const header = document.createElement('div');
+  header.className = 'preview-header';
+  const title = document.createElement('div');
+  title.className = 'preview-title';
+  title.textContent = cm.sourceModuleName;
+  header.appendChild(title);
+  _previewCardEl.appendChild(header);
+
+  // 占位功能点
+  const feat = document.createElement('div');
+  feat.className = 'preview-feat';
+  feat.textContent = '功能点名称';
+  _previewCardEl.appendChild(feat);
+
+  // 计算 Y 位置：放在该列现有卡片最下方
+  const cards = cardsArea.querySelectorAll('.mm-card');
+  let bottomY = 24;
+  cards.forEach(c => {
+    const top = parseFloat(c.style.top) || 0;
+    const h = c.offsetHeight || 80;
+    bottomY = Math.max(bottomY, top + h + CARD_GAP);
+  });
+  _previewCardEl.style.top = bottomY + 'px';
+  cardsArea.appendChild(_previewCardEl);
+
+  // 渲染预览连线
+  requestAnimationFrame(() => drawPreviewLine());
+}
+
+// ── 预览连线（复用真实连线路由算法，渲染在 #mm-lines 内） ──
+function drawPreviewLine() {
+  clearPreviewLine();
+  const cm = state.connectMode;
+  if (!cm || !_previewCardEl) return;
+
+  const svg = document.getElementById('mm-lines');
+  if (!svg) return;
+  const canvasInner = document.getElementById('canvasInner');
+  const canvasRect = canvasInner.getBoundingClientRect();
+  const scrollLeft = canvasInner.closest('.mm-canvas').scrollLeft;
+  const scrollTop  = canvasInner.closest('.mm-canvas').scrollTop;
+
+  // 起点：源功能节点
+  const featWrapEl = document.querySelector(`[data-feature-wrap-id="${cm.featId}"]`);
+  if (!featWrapEl) return;
+  const srcCard = featWrapEl.closest('.mm-card');
+  if (!srcCard) return;
+
+  const featEl = featWrapEl.querySelector('.mm-feature');
+  const srcRect = (featEl || featWrapEl).getBoundingClientRect();
+  const srcCardRect = srcCard.getBoundingClientRect();
+  // 起点与卡片右边缘保持 4px 间距（与 renderLines 一致）
+  const xs = srcCardRect.right - canvasRect.left + scrollLeft + 4;
+  const ys = srcRect.top + srcRect.height / 2 - canvasRect.top + scrollTop;
+
+  // 终点：预览卡片的 header 中心
+  const previewRect = _previewCardEl.getBoundingClientRect();
+  const previewHeader = _previewCardEl.querySelector('.preview-header');
+  const headerRect = previewHeader ? previewHeader.getBoundingClientRect() : previewRect;
+  const xe = previewRect.left - canvasRect.left + scrollLeft;
+  const ye = headerRect.top + headerRect.height / 2 - canvasRect.top + scrollTop;
+
+  // 折点 X = 源列右边界（与 renderLines 一致）
+  const srcCol = featWrapEl.closest('.mm-layer-col');
+  const srcColRect = srcCol ? srcCol.getBoundingClientRect() : null;
+  const divX = srcColRect ? srcColRect.right - canvasRect.left + scrollLeft : (xs + xe) / 2;
+
+  const r = LINE_RADIUS;
+  let d;
+  if (Math.abs(ys - ye) < 2) {
+    d = `M ${xs} ${ys} L ${xe} ${ye}`;
+  } else {
+    const goDown = ye > ys;
+    if (goDown) {
+      d = [`M ${xs} ${ys}`, `L ${divX - r} ${ys}`, `Q ${divX} ${ys} ${divX} ${ys + r}`,
+        `L ${divX} ${ye - r}`, `Q ${divX} ${ye} ${divX + r} ${ye}`, `L ${xe} ${ye}`].join(' ');
+    } else {
+      d = [`M ${xs} ${ys}`, `L ${divX - r} ${ys}`, `Q ${divX} ${ys} ${divX} ${ys - r}`,
+        `L ${divX} ${ye + r}`, `Q ${divX} ${ye} ${divX + r} ${ye}`, `L ${xe} ${ye}`].join(' ');
+    }
+  }
+
+  // 起点圆点
+  const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  dot.setAttribute('cx', xs);
+  dot.setAttribute('cy', ys);
+  dot.setAttribute('r', '3.5');
+  dot.setAttribute('class', 'mm-preview-dot');
+  dot.dataset.previewLine = '1';
+  svg.appendChild(dot);
+
+  // 连线路径
+  const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  pathEl.setAttribute('d', d);
+  pathEl.setAttribute('class', 'mm-preview-line');
+  pathEl.setAttribute('marker-end', 'url(#arrowhead)');
+  pathEl.dataset.previewLine = '1';
+  svg.appendChild(pathEl);
+}
+
+function clearPreviewLine() {
+  const svg = document.getElementById('mm-lines');
+  if (!svg) return;
+  svg.querySelectorAll('[data-preview-line]').forEach(el => el.remove());
+}
+
+// ── 悬浮候选孤立卡片时，绘制指向该卡片的预览连线 ──
+function drawPreviewLineToCandidate(cardEl) {
+  clearPreviewLine();
+  const cm = state.connectMode;
+  if (!cm || !cardEl) return;
+
+  const svg = document.getElementById('mm-lines');
+  if (!svg) return;
+  const canvasInner = document.getElementById('canvasInner');
+  const canvasRect = canvasInner.getBoundingClientRect();
+  const scrollLeft = canvasInner.closest('.mm-canvas').scrollLeft;
+  const scrollTop  = canvasInner.closest('.mm-canvas').scrollTop;
+
+  // 起点：源功能节点
+  const featWrapEl = document.querySelector(`[data-feature-wrap-id="${cm.featId}"]`);
+  if (!featWrapEl) return;
+  const srcCard = featWrapEl.closest('.mm-card');
+  if (!srcCard) return;
+  const featEl = featWrapEl.querySelector('.mm-feature');
+  const srcRect = (featEl || featWrapEl).getBoundingClientRect();
+  const srcCardRect = srcCard.getBoundingClientRect();
+  const xs = srcCardRect.right - canvasRect.left + scrollLeft + 4;
+  const ys = srcRect.top + srcRect.height / 2 - canvasRect.top + scrollTop;
+
+  // 终点：候选卡片的 header 中心
+  const cardRect = cardEl.getBoundingClientRect();
+  const headerEl = cardEl.querySelector('.mm-card-header');
+  const headerRect = headerEl ? headerEl.getBoundingClientRect() : cardRect;
+  const xe = cardRect.left - canvasRect.left + scrollLeft;
+  const ye = headerRect.top + headerRect.height / 2 - canvasRect.top + scrollTop;
+
+  // 折点 X = 源列右边界
+  const srcCol = featWrapEl.closest('.mm-layer-col');
+  const srcColRect = srcCol ? srcCol.getBoundingClientRect() : null;
+  const divX = srcColRect ? srcColRect.right - canvasRect.left + scrollLeft : (xs + xe) / 2;
+
+  const r = LINE_RADIUS;
+  let d;
+  if (Math.abs(ys - ye) < 2) {
+    d = `M ${xs} ${ys} L ${xe} ${ye}`;
+  } else {
+    const goDown = ye > ys;
+    if (goDown) {
+      d = [`M ${xs} ${ys}`, `L ${divX - r} ${ys}`, `Q ${divX} ${ys} ${divX} ${ys + r}`,
+        `L ${divX} ${ye - r}`, `Q ${divX} ${ye} ${divX + r} ${ye}`, `L ${xe} ${ye}`].join(' ');
+    } else {
+      d = [`M ${xs} ${ys}`, `L ${divX - r} ${ys}`, `Q ${divX} ${ys} ${divX} ${ys - r}`,
+        `L ${divX} ${ye + r}`, `Q ${divX} ${ye} ${divX + r} ${ye}`, `L ${xe} ${ye}`].join(' ');
+    }
+  }
+
+  // 起点圆点
+  const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  dot.setAttribute('cx', xs);
+  dot.setAttribute('cy', ys);
+  dot.setAttribute('r', '3.5');
+  dot.setAttribute('class', 'mm-preview-dot');
+  dot.dataset.previewLine = '1';
+  svg.appendChild(dot);
+
+  // 连线路径
+  const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  pathEl.setAttribute('d', d);
+  pathEl.setAttribute('class', 'mm-preview-line');
+  pathEl.setAttribute('marker-end', 'url(#arrowhead-hover)');
+  pathEl.dataset.previewLine = '1';
+  svg.appendChild(pathEl);
+}
+
+// ── 辅助：在模块树中找到模块 ──
+function findModuleById(stage, moduleId) {
+  function search(modules) {
+    for (const mod of modules) {
+      if (mod.id === moduleId) return mod;
+      for (const feat of (mod.features || [])) {
+        if (feat.childModule) {
+          const found = search([feat.childModule]);
+          if (found) return found;
+        }
+      }
+    }
+    return null;
+  }
+  return search(stage.modules || []);
+}
+
+function findOrphanCandidates(stage, sourceLayer) {
+  const srcIdx = LAYERS.indexOf(sourceLayer);
+  const candidates = [];
+  for (const mod of (stage.modules || [])) {
+    const modLayer = mod.targetLayer || 'L1';
+    const modIdx = LAYERS.indexOf(modLayer);
+    if (modIdx > srcIdx) {
+      if (isOrphanModule(stage, mod.id)) {
+        candidates.push(mod.id);
+      }
+    }
+  }
+  return candidates;
+}
+
+function isOrphanModule(stage, moduleId) {
+  function checkModules(modules) {
+    for (const mod of modules) {
+      for (const feat of (mod.features || [])) {
+        if (feat.childModule && feat.childModule.id === moduleId) return false;
+        if (feat.childModule) {
+          if (!checkModules([feat.childModule])) return false;
+        }
+      }
+    }
+    return true;
+  }
+  return checkModules(stage.modules || []);
+}
+
+// ── 鼠标移动：检测目标列，预览卡片+连线跟随 ──
+function onConnectMouseMove(e) {
+  const cm = state.connectMode;
+  if (!cm) return;
+  const mx = e.clientX;
+  const my = e.clientY;
+  const srcIdx = LAYERS.indexOf(cm.sourceLayer);
+
+  // 检测是否悬浮在孤立候选卡片上
+  let hoveredCandidate = null;
+  document.querySelectorAll('.mm-card.connect-candidate').forEach(cardEl => {
+    const rect = cardEl.getBoundingClientRect();
+    if (mx >= rect.left && mx <= rect.right && my >= rect.top && my <= rect.bottom) {
+      hoveredCandidate = cardEl;
+    }
+  });
+
+  // 更新所有候选卡片的 candidate-hovered 状态
+  document.querySelectorAll('.mm-card.connect-candidate').forEach(cardEl => {
+    cardEl.classList.toggle('candidate-hovered', cardEl === hoveredCandidate);
+  });
+
+  if (hoveredCandidate) {
+    // 悬浮在候选卡片上：隐藏预览卡片，改为向候选卡片绘制预览线
+    if (_previewCardEl) { _previewCardEl.style.display = 'none'; }
+    _candidateHovered = hoveredCandidate;
+    requestAnimationFrame(() => drawPreviewLineToCandidate(hoveredCandidate));
+    return;
+  } else {
+    // 离开候选卡片：恢复预览卡片
+    if (_previewCardEl) { _previewCardEl.style.display = ''; }
+    _candidateHovered = null;
+  }
+
+  let hoveredLayer = null;
+  document.querySelectorAll('.mm-layer-col').forEach(colEl => {
+    const layer = colEl.dataset.layer;
+    const layerIdx = LAYERS.indexOf(layer);
+    if (layerIdx <= srcIdx) return;
+    const rect = colEl.getBoundingClientRect();
+    if (mx >= rect.left && mx <= rect.right) {
+      hoveredLayer = layer;
+    }
+  });
+
+  if (hoveredLayer && hoveredLayer !== _currentTargetLayer) {
+    _currentTargetLayer = hoveredLayer;
+    showPreviewCard(hoveredLayer);
+  } else if (hoveredLayer && _previewCardEl) {
+    // 同层内：确保预览连线正常显示
+    requestAnimationFrame(() => drawPreviewLine());
+  }
+}
+
+// ── 键盘 Escape 取消 ──
+function onConnectKeyDown(e) {
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    e.stopPropagation();
+    exitConnectMode();
+  }
+}
+
+// ── 全局点击：确认创建 / 连线 / 取消 ──
+function onConnectClick(e) {
+  const cm = state.connectMode;
+  if (!cm) return;
+
+  // 点击源功能节点 → 取消
+  const featWrapEl = document.querySelector(`[data-feature-wrap-id="${cm.featId}"]`);
+  if (featWrapEl && featWrapEl.contains(e.target)) {
+    e.preventDefault(); e.stopPropagation();
+    exitConnectMode();
+    return;
+  }
+
+  // 点击候选孤立卡片 → 路径 B
+  if (e.target.closest('.mm-card.connect-candidate')) return;
+
+  // 点击预览卡片本身或有效目标区域 → 确认创建
+  // （左键点击 = 确认创建当前预览位置的卡片）
+  const clickedCol = e.target.closest('.mm-layer-col');
+  if (clickedCol) {
+    const clickedLayer = clickedCol.dataset.layer;
+    const clickedIdx = LAYERS.indexOf(clickedLayer);
+    const srcIdx = LAYERS.indexOf(cm.sourceLayer);
+    if (clickedIdx > srcIdx) {
+      e.preventDefault(); e.stopPropagation();
+      // 使用当前预览卡片所在列
+      const targetLayer = _currentTargetLayer || cm.defaultTargetLayer;
+      confirmCreateChild(cm.featId, targetLayer);
+      return;
+    }
+  }
+
+  // 点击预览卡片
+  if (_previewCardEl && _previewCardEl.contains(e.target)) {
+    e.preventDefault(); e.stopPropagation();
+    const targetLayer = _currentTargetLayer || cm.defaultTargetLayer;
+    confirmCreateChild(cm.featId, targetLayer);
+    return;
+  }
+
+  // 点击提示条区域不处理
+  if (e.target.closest('.mm-create-hint')) return;
+
+  // 点击其他区域 → 取消
+  e.preventDefault(); e.stopPropagation();
+  exitConnectMode();
+}
+
+// ── 路径 B：点击候选孤立卡片 ──
+function onCandidateCardClick(e) {
+  e.preventDefault(); e.stopPropagation();
+  const cm = state.connectMode;
+  if (!cm) return;
+  const cardEl = e.currentTarget;
+  const targetModuleId = cardEl.dataset.moduleId;
+  if (!targetModuleId) return;
+  confirmLinkExisting(cm.featId, targetModuleId);
+}
+
+// ── 路径 A 确认：创建新子模块 ──
+function confirmCreateChild(featId, targetLayer) {
+  const stage = getActiveStage();
+  if (!stage) { exitConnectMode(); return; }
+
+  const feat = findFeatureById(stage, featId);
+  if (!feat || feat.childModule) { exitConnectMode(); return; }
+
+  const cm = state.connectMode;
+  const inheritedName = cm ? cm.sourceModuleName : '';
+
+  const newId = 'cm' + String(Date.now()).slice(-6) + Math.random().toString(36).slice(2, 5);
+  const newFeatId = 'f' + newId + '_1';
+  feat.childModule = {
+    id: newId,
+    name: inheritedName,
+    targetLayer: targetLayer,
+    features: [
+      { id: newFeatId, name: '功能点名称', priority: null, uxComplete: false }
+    ],
+  };
+
+  exitConnectMode();
+  state.editingModuleId = newId;
+  render();
+}
+
+// ── 路径 B 确认：连线到已有孤立卡片 ──
+function confirmLinkExisting(featId, targetModuleId) {
+  const stage = getActiveStage();
+  if (!stage) { exitConnectMode(); return; }
+
+  const feat = findFeatureById(stage, featId);
+  if (!feat || feat.childModule) { exitConnectMode(); return; }
+
+  const idx = stage.modules.findIndex(m => m.id === targetModuleId);
+  if (idx === -1) { exitConnectMode(); return; }
+
+  const orphanModule = stage.modules[idx];
+  stage.modules.splice(idx, 1);
+  feat.childModule = orphanModule;
+
+  exitConnectMode();
+  render();
+}
+
+// ============================================================
+// Init
+// ============================================================
+render();
+
+// M4/B6-3: 窗口 resize / 浏览器缩放时重绘连线（含防抖）
+// 时序：setTimeout → rAF1（等浏览器缩放 reflow 完成）
+//       → applyAutoLayout（读稳定坐标 + 写 style.top）
+//       → rAF2 → renderLines
+let _resizeTimer = null;
+function _doRelayout() {
+  requestAnimationFrame(() => {
+    const stage = getActiveStage();
+    const cardMap = buildCardMap(stage);
+    const colCards = buildColCards(stage);
+    applyAutoLayout(stage, cardMap, colCards);
+    requestAnimationFrame(() => {
+      renderLines(stage, cardMap);
+    });
+  });
+}
+
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(_doRelayout, 100);
+});
+
+// 切回 Tab 时补一次重绘（浏览器缩放后切回页面确保坐标正确）
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    _doRelayout();
+  }
+});
+
+// ============================================================
+// B6-6 集成接口（供主编辑器 ux-design-editor.html 集成时调用）
+// ============================================================
+
+let _onDataChangeCallback = null;
+
+/**
+ * 主编辑器调用：传入 storeA 数据初始化 Mindmap
+ * @param {Object} storeA - 与 mockData 结构相同的数据对象
+ */
+function initMindmap(storeA) {
+  if (!storeA || !Array.isArray(storeA.stages)) {
+    console.warn('[Mindmap] initMindmap: 无效的 storeA 数据');
+    return;
+  }
+  mockData.activeStageId = storeA.activeStageId || (storeA.stages[0] && storeA.stages[0].id) || null;
+  mockData.stages = storeA.stages;
+  // 保留 MODE_A_PROMPT 输出的元数据字段（不影响渲染，供外部查询）
+  if (storeA.groupingType) mockData.groupingType = storeA.groupingType;
+  if (storeA.goals) mockData.goals = storeA.goals;
+  state.activeStageId = mockData.activeStageId;
+  render();
+}
+
+/**
+ * 主编辑器调用：注册数据变更回调，每次 Mindmap 内部数据发生变更时触发
+ * @param {Function} callback - 接收最新 storeA 数据的回调函数 callback(newStoreA)
+ */
+function onDataChange(callback) {
+  if (typeof callback === 'function') {
+    _onDataChangeCallback = callback;
+  }
+}
+
+/**
+ * 主编辑器调用：外部数据变更后强制重新加载（如导入新数据）
+ * @param {Object} storeA - 新的 storeA 数据
+ */
+function reload(storeA) {
+  initMindmap(storeA);
+}
+
+/**
+ * 内部：每次数据变更后通知外部（在 render() 中调用）
+ */
+function _notifyDataChange() {
+  if (typeof _onDataChangeCallback === 'function') {
+    _onDataChangeCallback({
+      activeStageId: state.activeStageId,
+      stages: mockData.stages
+    });
+  }
+}
+
+// 暴露集成接口到全局
+window.mindmap = { initMindmap, onDataChange, reload };
+</script>
+</body>
+</html>

@@ -12,5 +12,23 @@ desktop.ini
 # 废弃文件（不需要部署）
 behavior-path-editor.html
 
-# CodeMaker MCP 配置（含敏感信息，不提交到 Git）
-.codemaker/mcp.json
+# CodeMaker 开发辅助文件（不公开）
+.codemaker/*
+!.codemaker/skills/
+.codemaker/skills/*
+!.codemaker/skills/ux-design.md
+
+# 第三方 AI 工具 skill 目录（禁止入库）
+.adal/
+.agents/
+.augment/
+.claude/
+.codebuddy/
+.commandcode/
+.continue/
+.cortex/
+.crush/
+.factory/
+.goose/
+.iflow/
+.junie/
