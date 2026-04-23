@@ -1,14 +1,18 @@
-
 {
   "wiki": [
     {
-      "name": "UX设计交互专家全局执行规则",
-      "description": "覆盖模式A/B/C/D的全局执行规则，包含：①四模式通用的JSON优先输出+按需Markdown规则；②模式B行为路径的输出前5步检查单与路径顺序框架；③四模式统一自检清单",
-      "path": ".codemaker/ux-design-rules.md"
+      "name": "UX设计交互编辑器项目续接文档",
+      "description": "v5.0.0 Mindmap编辑器的完整项目上下文，包含：三模式架构原则、数据模型(A/B/C)、UI组件规格、连线系统、已实现功能清单、版本历史、待办事项。新对话恢复上下文必读。",
+      "path": "PROJECT_RESUME.md"
     },
     {
-      "name": "UX设计交互编辑器项目规则",
-      "description": "UX设计交互编辑器的强制执行规则，包含自动保存PROJECT_RESUME.md、Git提交推送、编码规范等，每次修改项目文件后必须自动执行",
+      "name": "UX设计交互专家Skill执行规范",
+      "description": "AI四模式执行规范（A策划案分析/B行为路径/C交互稿），定义JSON输出格式、分段输出规则、自检清单。涉及Skill功能（/UX、/FLOWER指令）时自动加载。",
+      "path": ".codemaker/skills/ux-design.md"
+    },
+    {
+      "name": "UX设计交互编辑器项目强制执行规则",
+      "description": "每次修改项目文件后必须自动执行的规则：同步更新PROJECT_RESUME.md、Git提交推送（含commit规范）、编码规范（架构原则/命名/Design Tokens）、执行顺序。",
       "path": ".codemaker/rules"
     }
   ]

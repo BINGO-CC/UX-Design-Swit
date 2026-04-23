@@ -181,7 +181,7 @@
   }
   .mm-modal {
     background: var(--mm-surface-3); border: 1px solid var(--mm-border-strong);
-    border-radius: 12px; padding: 24px; max-width: 600px; width: 90%;
+    border-radius: 12px; padding: 24px; max-width: 640px; width: 90%;
     box-shadow: 0 16px 48px rgba(0,0,0,0.6); max-height: 80vh; display: flex; flex-direction: column;
   }
   .mm-modal h2 { font-size: 16px; font-weight: 700; margin: 0 0 12px; color: var(--mm-text-primary); }
@@ -214,9 +214,9 @@
   }
   .mm-modal-actions button:hover { background: var(--mm-surface-1); color: var(--mm-text-primary); }
   .mm-modal-actions button.primary {
-    background: var(--mm-accent); color: #000; border-color: var(--mm-accent); font-weight: 600;
+    background: #FFFFFF; color: #000; border-color: #FFFFFF; font-weight: 600;
   }
-  .mm-modal-actions button.primary:hover { filter: brightness(1.1); }
+  .mm-modal-actions button.primary:hover { background: #F0F0F0; }
   .mm-modal-actions button.danger-btn {
     background: rgba(255,68,68,0.15); color: #FF4444; border-color: rgba(255,68,68,0.3);
   }
@@ -239,8 +239,9 @@
   }
   .mm-c-detail-empty {
     display: flex; flex-direction: column; align-items: center; gap: 12px;
-    color: var(--mm-text-muted); font-size: 14px;
+    color: #999999; font-size: 14px;
     padding: 80px 0; text-align: center;
+    min-height: 60vh; justify-content: center;
   }
   /* ── Mode C: Spec 管理按钮 ── */
   .mm-spec-add {
@@ -338,6 +339,15 @@
   .c-sec-toggle { background: none; border: none; cursor: pointer; color: inherit; padding: 2px 4px; display: inline-flex; align-items: center; font-size: 11px; }
   .c-sec-copy { background: none; border: none; color: inherit; cursor: pointer; padding: 2px 4px; border-radius: 4px; opacity: 0.5; transition: opacity 150ms; font-size: 12px; display: inline-flex; align-items: center; }
   .c-sec-copy:hover { opacity: 1; }
+  /* 左侧面板 Spec 列表项的复制按钮 */
+  .c-spec-copy-btn {
+    background: none; border: none; color: inherit; cursor: pointer;
+    padding: 2px 4px; border-radius: 4px; opacity: 0; transition: opacity 150ms;
+    font-size: 12px; display: inline-flex; align-items: center;
+    margin-left: auto; flex-shrink: 0;
+  }
+  .mm-stage-item:hover .c-spec-copy-btn { opacity: 0.5; }
+  .c-spec-copy-btn:hover { opacity: 1 !important; }
 
   /* ── C Mode: Area Block ── */
   .c-area-block { margin: 6px 0; padding: 8px 28px 8px 10px; border-radius: 5px; border: 1px solid rgba(76,175,137,0.15); background: rgba(76,175,137,0.04); position: relative; }
@@ -408,7 +418,7 @@
   .c-add-spec:hover { border-color: var(--mm-accent); color: var(--mm-accent); background: var(--mm-accent-subtle); }
 
   /* ===== Body ===== */
-  .mm-body { display: flex; flex: 1; overflow: hidden; padding: 12px 16px 16px; gap: 0; }
+  .mm-body { display: flex; flex: 1; overflow: hidden; padding: 12px 16px 16px; gap: 0; position: relative; }
 
   /* ===== Canvas Wrapper (带描边容器) ===== */
   .mm-canvas-wrapper {
@@ -1085,6 +1095,26 @@
     color: #333333; font-size: 12px; gap: 8px; user-select: none;
   }
 
+  /* ── 全局空状态遮罩（覆盖整个 body 区域） ── */
+  .mm-empty-overlay {
+    position: absolute; inset: 0; z-index: 200;
+    background: var(--mm-bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; user-select: none;
+    color: #888888;
+    border-radius: 10px;
+  }
+  .mm-empty-overlay-text {
+    font-size: 15px; color: #999999; font-weight: 500;
+  }
+  .mm-empty-overlay-sub {
+    font-size: 12px; color: #666666; line-height: 1.5; text-align: center;
+  }
+  /* 拖拽悬浮态 */
+  .mm-empty-overlay.drag-over { border: 2px dashed var(--mm-accent); }
+  .mm-empty-overlay.drag-over svg { color: var(--mm-accent); }
+  .mm-empty-overlay.drag-over .mm-empty-overlay-text { color: var(--mm-accent); }
+
   /* ===== Reduced Motion ===== */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -1402,6 +1432,17 @@
 
   <!-- Body (Mode A / B 画布) -->
   <div class="mm-body">
+    <!-- 全局空状态遮罩（无数据时显示） -->
+    <div id="mmEmptyOverlay" class="mm-empty-overlay" style="display:none;">
+      <svg width="56" height="56" viewBox="0 0 48 48" fill="none">
+        <rect x="6" y="10" width="36" height="28" rx="3" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M6 18h36" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M20 28l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M24 22v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <div class="mm-empty-overlay-text">请导入 JSON 或拖入文件</div>
+      <div class="mm-empty-overlay-sub">点击顶栏「导入」按钮粘贴 JSON，或直接将 .json / .uxshare 文件拖入窗口</div>
+    </div>
     <div class="mm-canvas-wrapper">
       <!-- Stage list (画布内最左列) -->
       <div class="mm-stage-col">
@@ -1436,1470 +1477,7 @@
 // ============================================================
 // Mock Data
 // ============================================================
-const mockDataB = {
-  "s001": {
-    loops: [
-      {
-        id: "n2001",
-        title: "升级技能",
-        type: "happy_path",
-        refStage: "s001",
-        startPoint: "玩家在 L1 摇篮装备界面点击技能组展示区域",
-        endPoint: "技能升级完成，L1 综合评分与基础数据刷新",
-        collapsed: false,
-        coveredFeatures: ["f_ce_2", "f_ce_3", "f_ce_4", "f_st_1", "f_st_2", "f_st_3", "f_su_1", "f_su_2"],
-        steps: [
-          {
-            id: "n2002",
-            kind: "validation",
-            condition: "IF: 已装备摇篮且技能可查看",
-            elseNote: "摇篮未装备或技能被锁定，技能组入口不可点击，提示玩家先完成装备",
-            children: [
-              {
-                id: "n2003",
-                kind: "action",
-                text: "浏览综合评分与基础数据",
-                refFeature: "f_ce_3",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2004",
-                    kind: "feedback",
-                    text: "L1 综合评分与基础数据已展示，玩家获知当前装备状态",
-                    feedbackType: "visual_only",
-                    expression: "综合评分数值与基础数据面板平滑渲染显示，数字浮现动效",
-                    outcome: null,
-                    refFeature: "f_ce_2",
-                    targetLayer: "L1"
-                  }
-                ]
-              },
-              {
-                id: "n2005",
-                kind: "action",
-                text: "点击技能组展示区域",
-                refFeature: "f_ce_4",
-                triggersLayer: "L1.5",
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2006",
-                    kind: "feedback",
-                    text: "L1.5 技能Tips弹窗开启，覆盖于 L1 之上",
-                    feedbackType: "layer_transition",
-                    expression: "L1.5 弹窗从底部滑入，伴随遮罩层渐显，覆盖 L1 界面",
-                    outcome: "当前层级切换至 L1.5，L1 交互暂时被遮罩阻断",
-                    refFeature: null,
-                    targetLayer: "L1.5"
-                  }
-                ]
-              },
-              {
-                id: "n2007",
-                kind: "action",
-                text: "查阅技能详细描述与基本属性加成",
-                refFeature: "f_st_1",
-                triggersLayer: null,
-                isAnchor: true,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2008",
-                    kind: "feedback",
-                    text: "L1.5 弹窗内展示技能详细描述文本与属性加成数值",
-                    feedbackType: "visual_only",
-                    expression: "弹窗内技能描述文本与属性加成数值逐行淡入呈现",
-                    outcome: null,
-                    refFeature: "f_st_2",
-                    targetLayer: "L1.5"
-                  }
-                ]
-              },
-              {
-                id: "n2009",
-                kind: "action",
-                text: "点击技能升级入口按钮",
-                refFeature: "f_st_3",
-                triggersLayer: "L2",
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2010",
-                    kind: "feedback",
-                    text: "L2 技能升级面板开启，展示升级所需消耗",
-                    feedbackType: "layer_transition",
-                    expression: "L2 升级面板以上推动效果弹出，L1.5 被推入背景层",
-                    outcome: "当前层级切换至 L2，显示升级消耗数据",
-                    refFeature: null,
-                    targetLayer: "L2"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            id: "n2011",
-            kind: "validation",
-            condition: "IF: 升级材料充足",
-            elseNote: "材料不足时走 edge_case 分支，升级确认按钮置灰，引导玩家补齐材料",
-            targetLoopId: "n2050",
-            children: [
-              {
-                id: "n2012",
-                kind: "action",
-                text: "确认消耗材料清单",
-                refFeature: "f_su_1",
-                triggersLayer: null,
-                isAnchor: true,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2013",
-                    kind: "feedback",
-                    text: "L2 各消耗材料项展示当前持有量与所需量对比",
-                    feedbackType: "visual_only",
-                    expression: "L2 面板材料列表渲染持有量与所需量并排对比，充足项绿色标注",
-                    outcome: null,
-                    refFeature: "f_su_1",
-                    targetLayer: "L2"
-                  }
-                ]
-              },
-              {
-                id: "n2014",
-                kind: "action",
-                text: "点击升级确认按钮",
-                refFeature: "f_su_2",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2015",
-                    kind: "feedback",
-                    text: "技能升级完成，L2 面板关闭，L1 综合评分数值刷新、基础数据更新",
-                    feedbackType: "state_change",
-                    expression: "L2 面板向下收起消失，L1 界面综合评分数字跳变动效，基础数据各项数值刷新",
-                    outcome: "技能等级 +1 写入，综合评分与基础数据状态全局更新",
-                    refFeature: "f_ce_2",
-                    targetLayer: "L1"
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        supplements: [
-          {
-            id: "n2016",
-            refNearFeature: "f_ce_2",
-            text: "玩家模型展示",
-            reason: "Low 优先级的视觉装饰性展示，不影响主干操作流程"
-          }
-        ]
-      },
-      {
-        id: "n2017",
-        title: "替换摇篮",
-        type: "happy_path",
-        refStage: "s001",
-        startPoint: "玩家在 L1 装备详情点击摇篮管理入口",
-        endPoint: "摇篮替换完成，L1 装备详情与递质属性刷新",
-        collapsed: false,
-        coveredFeatures: ["f_ce_5", "f_ce_6", "f_cm_1", "f_cm_2", "f_cm_3", "f_cp_2"],
-        steps: [
-          {
-            id: "n2018",
-            kind: "validation",
-            condition: "IF: 存在可替换的摇篮",
-            elseNote: "无可替换摇篮时摇篮管理入口显示空列表，引导玩家前往打造摇篮",
-            children: [
-              {
-                id: "n2019",
-                kind: "action",
-                text: "查看当前递质属性数值",
-                refFeature: "f_ce_5",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2020",
-                    kind: "feedback",
-                    text: "L1 递质属性面板展示当前装备的属性详情",
-                    feedbackType: "visual_only",
-                    expression: "递质属性面板展开，各属性数值依次渲染，当前装备摇篮高亮标识",
-                    outcome: null,
-                    refFeature: "f_ce_5",
-                    targetLayer: "L1"
-                  }
-                ]
-              },
-              {
-                id: "n2021",
-                kind: "action",
-                text: "点击摇篮管理入口",
-                refFeature: "f_ce_6",
-                triggersLayer: "L2",
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2022",
-                    kind: "feedback",
-                    text: "L2 摇篮管理面板开启",
-                    feedbackType: "layer_transition",
-                    expression: "L2 摇篮管理面板从右侧滑入，遮罩渐显覆盖 L1",
-                    outcome: "层级切换至 L2，摇篮列表数据开始加载",
-                    refFeature: null,
-                    targetLayer: "L2"
-                  }
-                ]
-              },
-              {
-                id: "n2023",
-                kind: "action",
-                text: "浏览摇篮列表",
-                refFeature: "f_cm_1",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2024",
-                    kind: "feedback",
-                    text: "L2 摇篮列表已加载，展示全部可用摇篮",
-                    feedbackType: "visual_only",
-                    expression: "摇篮卡片列表从上至下依次渲染，每项显示摇篮图标与基础信息",
-                    outcome: null,
-                    refFeature: "f_cm_1",
-                    targetLayer: "L2"
-                  }
-                ]
-              },
-              {
-                id: "n2025",
-                kind: "action",
-                text: "使用排序筛选功能定位目标摇篮",
-                refFeature: "f_cm_2",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2026",
-                    kind: "feedback",
-                    text: "L2 摇篮列表按筛选条件重新排列",
-                    feedbackType: "visual_only",
-                    expression: "摇篮列表以动画重新排序，筛选标签高亮激活状态",
-                    outcome: null,
-                    refFeature: "f_cm_2",
-                    targetLayer: "L2"
-                  }
-                ]
-              },
-              {
-                id: "n2027",
-                kind: "action",
-                text: "点击目标摇篮查看详情预览",
-                refFeature: "f_cm_3",
-                triggersLayer: "L2.5",
-                isAnchor: true,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2028",
-                    kind: "feedback",
-                    text: "L2.5 摇篮预览面板弹出，展示3D模型与属性对比",
-                    feedbackType: "layer_transition",
-                    expression: "L2.5 预览弹窗以缩放动效弹出，3D模型旋转展示，属性对比区浮现",
-                    outcome: "层级切换至 L2.5，目标摇篮3D模型与属性对比数据加载完毕",
-                    refFeature: null,
-                    targetLayer: "L2.5"
-                  }
-                ]
-              },
-              {
-                id: "n2029",
-                kind: "action",
-                text: "点击装备替换按钮",
-                refFeature: "f_cp_2",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2030",
-                    kind: "feedback",
-                    text: "摇篮替换完成，L2.5/L2 面板关闭，L1 装备详情与递质属性全面刷新",
-                    feedbackType: "state_change",
-                    expression: "L2.5/L2 面板依次收起，L1 摇篮图标切换为新摇篮，递质属性数值更新动效",
-                    outcome: "当前装备摇篮 ID 写入，L1 装备详情与递质属性数据全局刷新",
-                    refFeature: "f_ce_5",
-                    targetLayer: "L1"
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        supplements: [
-          {
-            id: "n2031",
-            refNearFeature: "f_cm_3",
-            text: "3D模型旋转",
-            reason: "Low 优先级的预览增强交互，玩家可在预览面板内旋转查看摇篮3D模型，不影响替换主干流程"
-          }
-        ]
-      },
-      {
-        id: "n2050",
-        title: "升级材料不足",
-        type: "edge_case",
-        refStage: "s001",
-        startPoint: "玩家在 L2 技能升级面板查看消耗材料",
-        endPoint: "玩家获知材料缺口，升级确认按钮置灰",
-        collapsed: false,
-        coveredFeatures: ["f_su_1", "f_su_2"],
-        steps: [
-          {
-            id: "n2051",
-            kind: "validation",
-            condition: "ELSE IF: 升级所需材料不足",
-            elseNote: "材料充足时走 happy_path 升级分支，升级确认按钮可用",
-            targetLoopId: "n2001",
-            children: [
-              {
-                id: "n2052",
-                kind: "action",
-                text: "系统检测材料库存并标记不足项",
-                refFeature: "f_su_1",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2053",
-                    kind: "feedback",
-                    text: "L2 消耗材料列表中不足项红色高亮，缺口数量显著标注",
-                    feedbackType: "visual_only",
-                    expression: "不足材料行背景变为红色警示色，缺口数字以粗体红色标注，闪烁提示",
-                    outcome: null,
-                    refFeature: "f_su_1",
-                    targetLayer: "L2"
-                  }
-                ]
-              },
-              {
-                id: "n2054",
-                kind: "action",
-                text: "升级确认按钮被系统置灰",
-                refFeature: "f_su_2",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2055",
-                    kind: "feedback",
-                    text: "L2 升级确认按钮不可点击，玩家获知需先补齐材料",
-                    feedbackType: "block",
-                    expression: "升级确认按钮呈灰色禁用态，点击时触发轻微震动反馈与提示文案",
-                    outcome: "升级操作被系统拦截，按钮 disabled 状态写入，玩家无法继续升级",
-                    refFeature: "f_su_2",
-                    targetLayer: "L2"
-                  }
-                ]
-              },
-              {
-                id: "n2056",
-                kind: "action",
-                text: "点击不足材料项跳转获取途径",
-                refFeature: "f_su_1",
-                triggersLayer: "L2.5",
-                isAnchor: true,
-                isSupplement: true,
-                children: [
-                  {
-                    id: "n2057",
-                    kind: "feedback",
-                    text: "L2.5 材料获取途径面板弹出，展示可获取渠道",
-                    feedbackType: "layer_transition",
-                    expression: "L2.5 获取途径面板从底部抽屉式弹出，渠道列表依次渲染",
-                    outcome: "层级跳转至 L2.5，目标材料获取渠道数据加载",
-                    refFeature: null,
-                    targetLayer: "L2.5"
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        supplements: [
-          {
-            id: "n2058",
-            refNearFeature: "f_su_1",
-            text: "材料获取跳转入口",
-            reason: "升级面板内材料不足时若无跳转路径，玩家将被迫关闭面板自行查找，形成操作死胡同"
-          }
-        ]
-      }
-    ]
-  },
-  "s002": {
-    loops: [
-      {
-        id: "n2032",
-        title: "查看框架详情",
-        type: "happy_path",
-        refStage: "s002",
-        startPoint: "玩家在 L1 神经框架管理界面浏览框架列表",
-        endPoint: "玩家获知目标框架详情与获取途径",
-        collapsed: false,
-        coveredFeatures: ["f_nf_1", "f_nf_2", "f_nf_3", "f_nft_1", "f_nft_2"],
-        steps: [
-          {
-            id: "n2033",
-            kind: "validation",
-            condition: "IF: 存在可浏览的神经框架",
-            elseNote: "框架库存为空时走 edge_case 分支，展示空状态界面并引导获取",
-            children: [
-              {
-                id: "n2034",
-                kind: "action",
-                text: "浏览框架列表",
-                refFeature: "f_nf_1",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2035",
-                    kind: "feedback",
-                    text: "L1 框架列表已加载，展示全部神经框架条目",
-                    feedbackType: "visual_only",
-                    expression: "框架卡片列表从上至下逐项渲染，每项显示框架名称与稀有度图标",
-                    outcome: null,
-                    refFeature: "f_nf_1",
-                    targetLayer: "L1"
-                  }
-                ]
-              },
-              {
-                id: "n2036",
-                kind: "action",
-                text: "使用排序筛选功能定位目标框架",
-                refFeature: "f_nf_2",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2037",
-                    kind: "feedback",
-                    text: "L1 框架列表按筛选条件重新排列",
-                    feedbackType: "visual_only",
-                    expression: "框架列表以洗牌动效重新排序，当前激活筛选标签高亮显示",
-                    outcome: null,
-                    refFeature: "f_nf_2",
-                    targetLayer: "L1"
-                  }
-                ]
-              },
-              {
-                id: "n2038",
-                kind: "action",
-                text: "点击目标框架查看详情Tips",
-                refFeature: "f_nf_3",
-                triggersLayer: "L1.5",
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2039",
-                    kind: "feedback",
-                    text: "L1.5 框架Tips弹窗开启，覆盖于 L1 之上",
-                    feedbackType: "layer_transition",
-                    expression: "L1.5 框架详情弹窗以淡入+向上位移动效展开，遮罩覆盖 L1 列表区",
-                    outcome: "层级切换至 L1.5，目标框架详情数据加载显示",
-                    refFeature: null,
-                    targetLayer: "L1.5"
-                  }
-                ]
-              },
-              {
-                id: "n2040",
-                kind: "action",
-                text: "查阅框架预期效果详情",
-                refFeature: "f_nft_1",
-                triggersLayer: null,
-                isAnchor: true,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2041",
-                    kind: "feedback",
-                    text: "L1.5 弹窗内展示框架预期效果数值与描述",
-                    feedbackType: "visual_only",
-                    expression: "弹窗内框架预期效果数值与效果描述文本逐行淡入，关键数值加粗高亮",
-                    outcome: null,
-                    refFeature: "f_nft_1",
-                    targetLayer: "L1.5"
-                  }
-                ]
-              },
-              {
-                id: "n2042",
-                kind: "action",
-                text: "点击获取途径跳转入口",
-                refFeature: "f_nft_2",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2043",
-                    kind: "feedback",
-                    text: "系统跳转至对应框架的获取途径页面，玩家获知获取方式",
-                    feedbackType: "layer_transition",
-                    expression: "界面以全屏推入动效跳转至框架获取途径专属页面，来源路径面包屑更新",
-                    outcome: "页面路由跳转至框架获取途径页，当前框架 ID 传参携带",
-                    refFeature: "f_nft_2",
-                    targetLayer: "L1.5"
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        supplements: []
-      },
-      {
-        id: "n2100",
-        title: "框架列表为空",
-        type: "edge_case",
-        refStage: "s002",
-        startPoint: "玩家在 L1 神经框架管理界面打开框架列表",
-        endPoint: "玩家获知无可用框架并获得获取引导",
-        collapsed: false,
-        coveredFeatures: ["f_nf_1"],
-        steps: [
-          {
-            id: "n2101",
-            kind: "validation",
-            condition: "ELSE IF: 框架库存为空（无任何神经框架）",
-            elseNote: "无满足条件时走向，此为空状态兜底Loop",
-            children: [
-              {
-                id: "n2102",
-                kind: "action",
-                text: "系统渲染空状态界面",
-                refFeature: "f_nf_1",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2103",
-                    kind: "feedback",
-                    text: "L1 框架列表区展示空状态插图与「暂无神经框架」提示文案",
-                    feedbackType: "visual_only",
-                    expression: "L1 框架列表区渲染空状态插图与「暂无可用框架」提示文案",
-                    outcome: null,
-                    refFeature: "f_nf_1",
-                    targetLayer: "L1"
-                  }
-                ]
-              },
-              {
-                id: "n2104",
-                kind: "action",
-                text: "点击空状态引导入口前往获取",
-                refFeature: "f_nf_1",
-                triggersLayer: null,
-                isAnchor: true,
-                isSupplement: true,
-                children: [
-                  {
-                    id: "n2105",
-                    kind: "feedback",
-                    text: "系统跳转至框架获取途径页面，玩家获知获取方式",
-                    feedbackType: "layer_transition",
-                    expression: "跳转至框架获取途径说明页面，以覆盖层或新页面展示",
-                    outcome: "路由跳转完成，框架获取渠道数据加载，玩家可查阅获取路径",
-                    refFeature: null,
-                    targetLayer: "L1"
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        supplements: [
-          {
-            id: "n2106",
-            refNearFeature: "f_nf_1",
-            text: "空状态获取引导入口",
-            reason: "框架列表为空时若无获取引导，玩家将面对白屏无从操作，提供获取路径是最低限度导航补全"
-          }
-        ]
-      }
-    ]
-  },
-  "s003": {
-    loops: [
-      {
-        id: "n2044",
-        title: "合成递质",
-        type: "happy_path",
-        refStage: "s003",
-        startPoint: "玩家在 L1 递质管理界面点击递质合成入口",
-        endPoint: "递质合成完成，L1 递质列表刷新",
-        collapsed: false,
-        coveredFeatures: ["f_tm_1", "f_tm_2", "f_tm_3", "f_ts_1", "f_ts_2", "f_ts_3"],
-        steps: [
-          {
-            id: "n2045",
-            kind: "validation",
-            condition: "IF: 存在可合成的递质配方",
-            elseNote: "不满足时 → 进入「合成材料不足」Edge Case Loop，渲染材料缺口提示",
-            children: [
-              {
-                id: "n2046",
-                kind: "action",
-                text: "浏览递质列表",
-                refFeature: "f_tm_1",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2047",
-                    kind: "feedback",
-                    text: "L1 递质列表已加载，展示全部递质条目",
-                    feedbackType: "layer_transition",
-                    expression: "合成配方选择弹窗以 slide-in 动效从底部或右侧滑入",
-                    outcome: "进入 L1.5 层级，配方列表数据加载完成",
-                    refFeature: "f_tm_1",
-                    targetLayer: "L1"
-                  }
-                ]
-              },
-              {
-                id: "n2048",
-                kind: "action",
-                text: "使用排序筛选功能定位目标递质",
-                refFeature: "f_tm_2",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2049",
-                    kind: "feedback",
-                    text: "L1 递质列表按筛选条件重新排列",
-                    feedbackType: "state_change",
-                    expression: "各材料行展示当前持有量与所需量对比，缺口材料以红色标注",
-                    outcome: "玩家已知材料充足状态，系统缓存校验结果",
-                    refFeature: "f_tm_2",
-                    targetLayer: "L1"
-                  }
-                ]
-              },
-              {
-                id: "n2060",
-                kind: "action",
-                text: "点击递质合成入口",
-                refFeature: "f_tm_3",
-                triggersLayer: "L2",
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2061",
-                    kind: "feedback",
-                    text: "L2 递质合成面板开启",
-                    feedbackType: "state_change",
-                    expression: "合成进度条动画开始播放，操作按钮进入加载态",
-                    outcome: "合成任务写入队列，等待系统处理",
-                    refFeature: null,
-                    targetLayer: "L2"
-                  }
-                ]
-              },
-              {
-                id: "n2062",
-                kind: "action",
-                text: "选择合成材料",
-                refFeature: "f_ts_1",
-                triggersLayer: null,
-                isAnchor: true,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2063",
-                    kind: "feedback",
-                    text: "L2 已选材料高亮，合成预览区更新",
-                    feedbackType: "data_write",
-                    expression: "合成完成动效播放，结果弹窗淡入展示产物信息",
-                    outcome: "合成结果写入背包，材料消耗数据更新",
-                    refFeature: "f_ts_1",
-                    targetLayer: "L2"
-                  }
-                ]
-              },
-              {
-                id: "n2064",
-                kind: "action",
-                text: "查阅消耗预览详情",
-                refFeature: "f_ts_2",
-                triggersLayer: null,
-                isAnchor: true,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2065",
-                    kind: "feedback",
-                    text: "L2 消耗预览区展示各材料消耗量与持有量对比",
-                    feedbackType: "visual_only",
-                    expression: "Toast 提示「合成成功」，弹窗自动关闭",
-                    outcome: null,
-                    refFeature: "f_ts_2",
-                    targetLayer: "L2"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            id: "n2066",
-            kind: "validation",
-            condition: "IF: 合成材料充足",
-            elseNote: "无异常路径，操作确认后直接执行合成",
-            children: [
-              {
-                id: "n2067",
-                kind: "action",
-                text: "点击合成确认按钮",
-                refFeature: "f_ts_3",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2068",
-                    kind: "feedback",
-                    text: "递质合成完成，L2 面板关闭，L1 递质列表数据刷新，新递质出现在列表中",
-                    feedbackType: "state_change",
-                    expression: "配方选择弹窗关闭，L1 主界面回到初始状态",
-                    outcome: "合成流程结束，状态重置为可再次发起",
-                    refFeature: "f_tm_1",
-                    targetLayer: "L1"
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        supplements: []
-      },
-      {
-        id: "n2150",
-        title: "合成材料不足",
-        type: "edge_case",
-        refStage: "s003",
-        startPoint: "玩家在 L2 递质合成面板查看消耗预览",
-        endPoint: "玩家获知材料缺口，合成确认按钮置灰",
-        collapsed: false,
-        coveredFeatures: ["f_ts_1", "f_ts_2", "f_ts_3"],
-        steps: [
-          {
-            id: "n2151",
-            kind: "validation",
-            condition: "ELSE IF: 合成所需材料不足",
-            elseNote: "无进一步分支，阻断后引导至材料获取路径",
-            children: [
-              {
-                id: "n2152",
-                kind: "action",
-                text: "系统检测材料库存并标记不足项",
-                refFeature: "f_ts_2",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2153",
-                    kind: "feedback",
-                    text: "L2 消耗预览中不足材料项红色高亮，缺口数量显著标注",
-                    feedbackType: "block",
-                    expression: "缺口材料行以红色高亮，合成确认按钮置灰不可点击",
-                    outcome: "合成操作被系统拦截，等待玩家获取材料后重试",
-                    refFeature: "f_ts_2",
-                    targetLayer: "L2"
-                  }
-                ]
-              },
-              {
-                id: "n2154",
-                kind: "action",
-                text: "合成确认按钮被系统置灰",
-                refFeature: "f_ts_3",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2155",
-                    kind: "feedback",
-                    text: "L2 合成确认按钮不可点击，玩家获知需先补齐材料",
-                    feedbackType: "visual_only",
-                    expression: "Toast 弹出「材料不足，无法合成」提示文案",
-                    outcome: null,
-                    refFeature: "f_ts_3",
-                    targetLayer: "L2"
-                  }
-                ]
-              },
-              {
-                id: "n2156",
-                kind: "action",
-                text: "点击不足材料项跳转获取途径",
-                refFeature: "f_ts_1",
-                triggersLayer: "L2.5",
-                isAnchor: true,
-                isSupplement: true,
-                children: [
-                  {
-                    id: "n2157",
-                    kind: "feedback",
-                    text: "L2.5 材料获取途径面板弹出，展示可获取渠道",
-                    feedbackType: "layer_transition",
-                    expression: "材料获取途径弹窗从底部滑入，展示快捷获取渠道列表",
-                    outcome: "进入 L2 层级，玩家可查阅并跳转到对应获取页面",
-                    refFeature: null,
-                    targetLayer: "L2.5"
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        supplements: [
-          {
-            id: "n2158",
-            refNearFeature: "f_ts_2",
-            text: "材料获取跳转入口",
-            reason: "合成面板内材料不足时若无跳转路径，玩家将被迫关闭面板自行查找，形成操作死胡同"
-          }
-        ]
-      }
-    ]
-  },
-  "s004": {
-    loops: [
-      {
-        id: "n2069",
-        title: "打造摇篮",
-        type: "happy_path",
-        refStage: "s004",
-        startPoint: "玩家在 L1 摇篮工艺台界面浏览异常物列表",
-        endPoint: "摇篮打造完成，成品展示界面呈现",
-        collapsed: false,
-        coveredFeatures: ["f_cb_1", "f_cb_2", "f_cb_3", "f_cb_4", "f_cb_5"],
-        steps: [
-          {
-            id: "n2070",
-            kind: "validation",
-            condition: "IF: 存在可用异常物且打造材料充足",
-            elseNote: "不满足时 → 材料不足拦截分支，进入对应 Edge Case Loop",
-            children: [
-              {
-                id: "n2071",
-                kind: "action",
-                text: "浏览异常物列表",
-                refFeature: "f_cb_1",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2072",
-                    kind: "feedback",
-                    text: "L1 异常物列表已加载，展示全部可用异常物",
-                    feedbackType: "layer_transition",
-                    expression: "摇篮打造配置弹窗滑入，展示词条选择与属性预览区",
-                    outcome: "进入 L1.5 层级，打造配置界面就绪",
-                    refFeature: "f_cb_1",
-                    targetLayer: "L1"
-                  }
-                ]
-              },
-              {
-                id: "n2073",
-                kind: "action",
-                text: "使用异常物筛选功能定位目标",
-                refFeature: "f_cb_2",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2074",
-                    kind: "feedback",
-                    text: "L1 异常物列表按筛选条件重新排列",
-                    feedbackType: "state_change",
-                    expression: "所选词条高亮选中态，属性预览区实时更新",
-                    outcome: "词条选择状态暂存，等待最终确认",
-                    refFeature: "f_cb_2",
-                    targetLayer: "L1"
-                  }
-                ]
-              },
-              {
-                id: "n2075",
-                kind: "action",
-                text: "选定目标异常物，查看打造消耗详情",
-                refFeature: "f_cb_3",
-                triggersLayer: null,
-                isAnchor: true,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2076",
-                    kind: "feedback",
-                    text: "L1 打造消耗面板展示所需材料与数量",
-                    feedbackType: "layer_transition",
-                    expression: "打造二次确认弹窗以居中覆盖层弹出，展示最终词条与消耗材料详情",
-                    outcome: "进入 L2 层级，待玩家最终确认",
-                    refFeature: "f_cb_3",
-                    targetLayer: "L1"
-                  }
-                ]
-              },
-              {
-                id: "n2077",
-                kind: "action",
-                text: "点击开始打造按钮",
-                refFeature: "f_cb_4",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2078",
-                    kind: "feedback",
-                    text: "L1 打造流程启动，系统执行打造操作",
-                    feedbackType: "data_write",
-                    expression: "打造成功动效播放，结果弹窗展示新摇篮属性详情",
-                    outcome: "摇篮打造结果写入，材料消耗数据更新，摇篮列表刷新",
-                    refFeature: null,
-                    targetLayer: "L1"
-                  }
-                ]
-              },
-              {
-                id: "n2079",
-                kind: "action",
-                text: "等待打造完成，查看成品展示",
-                refFeature: "f_cb_5",
-                triggersLayer: null,
-                isAnchor: true,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2080",
-                    kind: "feedback",
-                    text: "L1 成品展示界面呈现，展示打造完成的摇篮成品详情",
-                    feedbackType: "visual_only",
-                    expression: "Toast 提示「打造成功」，弹窗自动关闭，回到主界面",
-                    outcome: null,
-                    refFeature: "f_cb_5",
-                    targetLayer: "L1"
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        supplements: []
-      },
-      {
-        id: "n2081",
-        title: "神经构建",
-        type: "happy_path",
-        refStage: "s004",
-        startPoint: "玩家在 L1 摇篮工艺台界面选择摇篮与框架",
-        endPoint: "构建完成，玩家选定保留词条",
-        collapsed: false,
-        coveredFeatures: ["f_nc_1", "f_nc_2", "f_nc_3", "f_nc_4", "f_ncr_1", "f_ncr_2", "f_ncr_3"],
-        steps: [
-          {
-            id: "n2082",
-            kind: "validation",
-            condition: "IF: 存在可构建的摇篮与框架",
-            elseNote: "不满足时 → 构建材料不足拦截，进入对应 Edge Case Loop",
-            children: [
-              {
-                id: "n2083",
-                kind: "action",
-                text: "在摇篮选择列表中点击目标摇篮",
-                refFeature: "f_nc_1",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2084",
-                    kind: "feedback",
-                    text: "L1 目标摇篮已选中高亮",
-                    feedbackType: "layer_transition",
-                    expression: "神经构建配置界面以覆盖层滑入，展示节点树与构建选项",
-                    outcome: "进入 L1.5 层级，构建配置数据加载完成",
-                    refFeature: "f_nc_1",
-                    targetLayer: "L1"
-                  }
-                ]
-              },
-              {
-                id: "n2085",
-                kind: "action",
-                text: "在框架选择列表中点击目标框架",
-                refFeature: "f_nc_2",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2086",
-                    kind: "feedback",
-                    text: "L1 目标框架已选中高亮",
-                    feedbackType: "state_change",
-                    expression: "目标节点高亮选中，右侧属性面板实时更新构建效果预览",
-                    outcome: "节点选择状态暂存",
-                    refFeature: "f_nc_2",
-                    targetLayer: "L1"
-                  }
-                ]
-              },
-              {
-                id: "n2087",
-                kind: "action",
-                text: "查阅构建预期展示",
-                refFeature: "f_nc_3",
-                triggersLayer: null,
-                isAnchor: true,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2088",
-                    kind: "feedback",
-                    text: "L1 构建预期面板展示预期词条与属性变化",
-                    feedbackType: "state_change",
-                    expression: "构建参数输入区激活，实时校验输入合法性并更新预览",
-                    outcome: "参数配置写入临时状态",
-                    refFeature: "f_nc_3",
-                    targetLayer: "L1"
-                  }
-                ]
-              },
-              {
-                id: "n2089",
-                kind: "action",
-                text: "点击开始构建按钮",
-                refFeature: "f_nc_4",
-                triggersLayer: "L1.5",
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2090",
-                    kind: "feedback",
-                    text: "L1.5 构建结果选择弹窗开启，展示新旧词条对比",
-                    feedbackType: "layer_transition",
-                    expression: "构建确认弹窗居中弹出，展示消耗材料与最终属性对比",
-                    outcome: "进入 L2 层级，等待最终确认",
-                    refFeature: null,
-                    targetLayer: "L1.5"
-                  }
-                ]
-              },
-              {
-                id: "n2091",
-                kind: "action",
-                text: "查阅新旧词条对比详情",
-                refFeature: "f_ncr_1",
-                triggersLayer: null,
-                isAnchor: true,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2092",
-                    kind: "feedback",
-                    text: "L1.5 弹窗内新旧词条并排展示，差异项高亮标注",
-                    feedbackType: "data_write",
-                    expression: "构建成功动效播放，节点树更新为新状态",
-                    outcome: "构建结果持久化，材料消耗更新，可用神经节点刷新",
-                    refFeature: "f_ncr_1",
-                    targetLayer: "L1.5"
-                  }
-                ]
-              },
-              {
-                id: "n2093",
-                kind: "action",
-                text: "点击保留新词条按钮或保留旧词条按钮",
-                refFeature: "f_ncr_2",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2094",
-                    kind: "feedback",
-                    text: "词条选择确认，L1.5 弹窗关闭，L1 构建结果已写入，摇篮属性刷新",
-                    feedbackType: "visual_only",
-                    expression: "Toast 提示「构建成功」，界面回到节点树主视图",
-                    outcome: null,
-                    refFeature: "f_ncr_3",
-                    targetLayer: "L1"
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        supplements: []
-      },
-      {
-        id: "n2200",
-        title: "词条覆盖拦截",
-        type: "edge_case",
-        refStage: "s004",
-        startPoint: "玩家在 L1.5 构建结果选择弹窗尝试保留新词条",
-        endPoint: "玩家确认或取消覆盖操作",
-        collapsed: false,
-        coveredFeatures: ["f_ncr_1", "f_ncr_2", "f_ncr_4"],
-        steps: [
-          {
-            id: "n2201",
-            kind: "validation",
-            condition: "IF: 当前摇篮已有高价值词条（覆盖将导致不可逆替换）",
-            elseNote: "满足时走正常覆盖流程，此为 Edge Case 分支入口",
-            children: [
-              {
-                id: "n2202",
-                kind: "action",
-                text: "点击保留新词条按钮",
-                refFeature: "f_ncr_2",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2203",
-                    kind: "feedback",
-                    text: "L1.5 系统触发改造覆盖提示拦截",
-                    feedbackType: "block",
-                    expression: "二次确认弹窗居中弹出，高亮显示将被覆盖的现有词条",
-                    outcome: "覆盖操作被拦截，等待玩家确认或取消",
-                    refFeature: "f_ncr_4",
-                    targetLayer: "L1.5"
-                  }
-                ]
-              },
-              {
-                id: "n2204",
-                kind: "action",
-                text: "阅读改造覆盖提示内容",
-                refFeature: "f_ncr_4",
-                triggersLayer: null,
-                isAnchor: true,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2205",
-                    kind: "feedback",
-                    text: "L1.5 二次确认弹窗展示覆盖警告与确认/取消选项",
-                    feedbackType: "state_change",
-                    expression: "弹窗关闭，词条选择界面恢复可操作状态",
-                    outcome: "本次覆盖操作取消，原词条保留",
-                    refFeature: "f_ncr_4",
-                    targetLayer: "L1.5"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            id: "n2206",
-            kind: "validation",
-            condition: "IF: 玩家确认覆盖",
-            elseNote: "玩家放弃覆盖则关闭弹窗，返回词条选择",
-            children: [
-              {
-                id: "n2207",
-                kind: "action",
-                text: "点击确认覆盖按钮",
-                refFeature: "f_ncr_2",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2208",
-                    kind: "feedback",
-                    text: "词条覆盖写入，L1.5 弹窗关闭，L1 摇篮属性以新词条刷新",
-                    feedbackType: "data_write",
-                    expression: "覆盖成功动效播放，词条列表更新为新词条，旧词条位置显示新内容",
-                    outcome: "词条覆盖结果写入，历史词条数据清除，摇篮属性数据更新",
-                    refFeature: null,
-                    targetLayer: "L1"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            id: "n2209",
-            kind: "validation",
-            condition: "ELSE: 玩家取消覆盖",
-            elseNote: "无进一步分支，确认后执行覆盖",
-            children: [
-              {
-                id: "n2210",
-                kind: "action",
-                text: "点击取消按钮回退",
-                refFeature: "f_ncr_4",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2211",
-                    kind: "feedback",
-                    text: "覆盖取消，回退至 L1.5 新旧词条对比界面，玩家可重新选择",
-                    feedbackType: "visual_only",
-                    expression: "Toast 提示「词条覆盖成功」，短暂展示后自动消失",
-                    outcome: null,
-                    refFeature: "f_ncr_1",
-                    targetLayer: "L1.5"
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        supplements: []
-      }
-    ]
-  },
-  "s005": {
-    loops: [
-      {
-        id: "n2095",
-        title: "鉴定递质",
-        type: "happy_path",
-        refStage: "s005",
-        startPoint: "玩家在 L1 物品背包界面浏览未鉴定递质列表",
-        endPoint: "递质鉴定完成，L1 列表刷新",
-        collapsed: false,
-        coveredFeatures: ["f_bp_1", "f_bp_2", "f_bpt_1", "f_bpt_2", "f_bpt_3", "f_bpt_4"],
-        steps: [
-          {
-            id: "n2096",
-            kind: "validation",
-            condition: "IF: 存在未鉴定递质且鉴定资源充足",
-            elseNote: "不满足时 → 递质列表为空提示，或鉴定资源不足拦截分支",
-            children: [
-              {
-                id: "n2097",
-                kind: "action",
-                text: "浏览未鉴定递质列表",
-                refFeature: "f_bp_1",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2098",
-                    kind: "feedback",
-                    text: "L1 未鉴定递质列表已加载，展示全部待鉴定条目",
-                    feedbackType: "layer_transition",
-                    expression: "递质鉴定详情弹窗从右侧以 slide-in 动效滑入，展示递质属性与鉴定结果预览区",
-                    outcome: "进入 L1.5 层级，鉴定数据加载完成，可查阅属性详情",
-                    refFeature: "f_bp_1",
-                    targetLayer: "L1"
-                  }
-                ]
-              },
-              {
-                id: "n2099",
-                kind: "action",
-                text: "点击目标递质查看详情",
-                refFeature: "f_bp_2",
-                triggersLayer: "L1.5",
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2110",
-                    kind: "feedback",
-                    text: "L1.5 未鉴定Tips弹窗开启，覆盖于 L1 之上",
-                    feedbackType: "state_change",
-                    expression: "鉴定进度动画播放，属性栏逐项以淡入效果揭示",
-                    outcome: "鉴定结果数据计算完成，属性值确定，等待最终展示",
-                    refFeature: null,
-                    targetLayer: "L1.5"
-                  }
-                ]
-              },
-              {
-                id: "n2111",
-                kind: "action",
-                text: "查阅能力预期展示与鉴定消耗详情",
-                refFeature: "f_bpt_1",
-                triggersLayer: null,
-                isAnchor: true,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2112",
-                    kind: "feedback",
-                    text: "L1.5 弹窗内展示递质能力预期范围与鉴定消耗数值",
-                    feedbackType: "data_write",
-                    expression: "鉴定结果完整展示，新揭示属性高亮，特殊词条以金色标注",
-                    outcome: "鉴定结果写入递质数据，状态更新为「已鉴定」，不可再次鉴定",
-                    refFeature: "f_bpt_2",
-                    targetLayer: "L1.5"
-                  }
-                ]
-              },
-              {
-                id: "n2113",
-                kind: "action",
-                text: "点击单次鉴定按钮执行鉴定",
-                refFeature: "f_bpt_3",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2114",
-                    kind: "feedback",
-                    text: "鉴定完成，L1.5 弹窗展示鉴定结果，L1 列表状态刷新",
-                    feedbackType: "visual_only",
-                    expression: "Toast 提示「鉴定完成」，弹窗底部出现「关闭」与「继续鉴定」按钮",
-                    outcome: null,
-                    refFeature: "f_bpt_3",
-                    targetLayer: "L1"
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        supplements: []
-      },
-      {
-        id: "n2250",
-        title: "批量鉴定递质",
-        type: "edge_case",
-        refStage: "s005",
-        startPoint: "玩家在 L1.5 未鉴定Tips弹窗查看鉴定消耗",
-        endPoint: "批量鉴定完成，L1 列表批量刷新",
-        collapsed: false,
-        coveredFeatures: ["f_bpt_2", "f_bpt_4"],
-        steps: [
-          {
-            id: "n2251",
-            kind: "validation",
-            condition: "IF: 存在多个同类未鉴定递质且鉴定资源充足",
-            elseNote: "不满足时 → 未选中任何递质，批量鉴定按钮保持置灰，操作被拦截",
-            children: [
-              {
-                id: "n2252",
-                kind: "action",
-                text: "查阅鉴定消耗详情确认总消耗",
-                refFeature: "f_bpt_2",
-                triggersLayer: null,
-                isAnchor: true,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2253",
-                    kind: "feedback",
-                    text: "L1.5 弹窗展示批量鉴定总消耗预览",
-                    feedbackType: "state_change",
-                    expression: "多选模式激活，各递质卡片左上角出现复选框，已选项以高亮边框标注",
-                    outcome: "批量选择状态激活，选中列表初始化为空，等待玩家勾选",
-                    refFeature: "f_bpt_2",
-                    targetLayer: "L1.5"
-                  }
-                ]
-              },
-              {
-                id: "n2254",
-                kind: "action",
-                text: "点击批量鉴定按钮",
-                refFeature: "f_bpt_4",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2255",
-                    kind: "feedback",
-                    text: "批量鉴定执行完成，L1.5 弹窗展示全部鉴定结果，L1 列表批量状态刷新",
-                    feedbackType: "layer_transition",
-                    expression: "批量鉴定确认弹窗从底部滑入，展示所选递质数量与预计材料消耗",
-                    outcome: "进入 L1.5 确认层级，等待玩家最终确认或取消",
-                    refFeature: "f_bpt_4",
-                    targetLayer: "L1"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            id: "n2256",
-            kind: "validation",
-            condition: "ELSE IF: 鉴定资源不足以完成批量鉴定",
-            elseNote: "无进一步分支，玩家确认后直接批量执行鉴定",
-            children: [
-              {
-                id: "n2257",
-                kind: "action",
-                text: "系统检测鉴定资源并标记不足",
-                refFeature: "f_bpt_2",
-                triggersLayer: null,
-                isAnchor: false,
-                isSupplement: false,
-                children: [
-                  {
-                    id: "n2258",
-                    kind: "feedback",
-                    text: "L1.5 鉴定消耗项红色高亮，批量鉴定按钮置灰或提示资源不足",
-                    feedbackType: "data_write",
-                    expression: "批量鉴定进度条播放，完成后展示所有鉴定结果摘要列表，特殊词条高亮标注",
-                    outcome: "所有选中递质鉴定结果批量写入，状态全部更新为「已鉴定」，材料消耗数据更新",
-                    refFeature: "f_bpt_4",
-                    targetLayer: "L1.5"
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        supplements: []
-      }
-    ]
-  }
-};
+const mockDataB = {};
 
 // ============================================================
 // S2: 交互稿数据层 (storeC)
@@ -2912,52 +1490,8 @@ function nid() { return 'n' + (_uid++); }
 // S2-1: storeC —— 交互稿数据存储（结构与旧编辑器 store.D 完全一致）
 let storeC = [];
 
-// S2-2: Mock 数据（至少 1 个规格卡用于调试验证）
-const mockDataC = [
-  {
-    id: 'c001', specName: '科技研究台 — 主界面', collapsed: false,
-    elements: [
-      { id: 'c_e1', area: '顶部信息栏', items: [
-        { id: 'c_e1_1', label: '科技等级进度条', desc: '进度不足时灰色填充，满时金色脉动' },
-        { id: 'c_e1_2', label: '强化机会角标', desc: '无可用机会时隐藏；有机会时红色数字角标' }
-      ]},
-      { id: 'c_e2', area: 'Tab切换栏', items: [
-        { id: 'c_e2_1', label: 'Tab按钮', desc: '选中态高亮+下划线；未选中态默认色' },
-        { id: 'c_e2_2', label: '页面布局', desc: '全屏界面，纵向三段式（顶部信息栏 | Tab切换栏 | 内容区）' }
-      ]}
-    ],
-    flows: [
-      { id: 'c_f1', action: '切换功能Tab', trigger: '点击「逆向研究」或「科技发明」Tab', validation: '无',
-        steps: [{ id: 'c_f1_1', desc: '下划线指示器平滑滑动至目标Tab' }, { id: 'c_f1_2', desc: '内容区切换至对应子页面' }],
-        exceptions: [] },
-      { id: 'c_f2', action: '查看强化机会', trigger: '点击强化机会角标', validation: '无',
-        steps: [{ id: 'c_f2_1', desc: '弹出气泡提示，展示可用机会数量' }, { id: 'c_f2_2', desc: '点击气泡跳转科技强化界面' }],
-        exceptions: [] }
-    ],
-    boundaries: [
-      { id: 'c_b1', scenario: '设施被破坏', trigger: '耐久为0或被攻击', defense: 'Toast提示"研究台已损坏，请先修复"', recovery: '提示修复所需材料' },
-      { id: 'c_b2', scenario: '首次打开引导', trigger: '玩家首次交互研究台', defense: '新手引导蒙层，高亮Tab', recovery: '按序引导' }
-    ]
-  },
-  {
-    id: 'c002', specName: '逆向研究子页面', collapsed: true,
-    elements: [
-      { id: 'c_e3', area: '研究槽位区', items: [
-        { id: 'c_e3_1', label: '槽位布局', desc: '5个槽位横向排列，空闲态显示"+"图标' },
-        { id: 'c_e3_2', label: '研究中状态', desc: '显示道具图标 + 进度条 + 剩余时间' },
-        { id: 'c_e3_3', label: '已完成状态', desc: '道具图标发光 + "完成"标识' }
-      ]}
-    ],
-    flows: [
-      { id: 'c_f3', action: '选择空闲槽位', trigger: '点击空闲槽位', validation: '槽位状态为空闲',
-        steps: [{ id: 'c_f3_1', desc: '打开道具选择列表' }],
-        exceptions: [{ id: 'c_f3_e1', scenario: '槽位已满', trigger: '5个槽位均在研究中', defense: '新增槽位按钮置灰 + Toast提示', recovery: '等待或加速完成' }] }
-    ],
-    boundaries: [
-      { id: 'c_b3', scenario: '网络超时', trigger: '研究请求发出后5s无响应', defense: '加载态按钮切换为错误态，顶部红色提示', recovery: '按钮恢复可点击，显示"重新研究"' }
-    ]
-  }
-];
+// S2-2: Mock 数据（初始为空，用户通过导入加载）
+const mockDataC = [];
 
 // S2-3: migrateC() —— 兼容旧版 D 模块数据结构
 function migrateC() {
@@ -3010,6 +1544,7 @@ const C_ICONS = {
   chevronDown:  '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
   chevronRight: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
   drag: '<svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor"><circle cx="4" cy="2.5" r="1.2"/><circle cx="8" cy="2.5" r="1.2"/><circle cx="4" cy="7" r="1.2"/><circle cx="8" cy="7" r="1.2"/><circle cx="4" cy="11.5" r="1.2"/><circle cx="8" cy="11.5" r="1.2"/></svg>',
+  copy: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>',
 };
 
 // ── Helpers ──
@@ -3028,6 +1563,153 @@ function focusEl(selector) {
     const el = document.querySelector(selector);
     if (el) { el.focus(); if (el.contentEditable === 'true') { const range = document.createRange(); range.selectNodeContents(el); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } }
   });
+}
+
+// ── C: 复制工具函数（富文本剪贴板）──
+function stripEmoji(str) {
+  return (str||'').replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').replace(/\s{2,}/g,' ').trim();
+}
+function safePrefix(prefix, value) {
+  const v = stripEmoji(value);
+  const p = prefix.replace(/：$/, '');
+  return (v.startsWith(p+'：') || v.startsWith(p+':') || v===p) ? v : `${prefix}${v}`;
+}
+function copyRichText(lines) {
+  const plain = lines.map(l => (l.indent||'') + l.text).join('\n');
+  const html = '<div style="font-family:sans-serif;font-size:14px;line-height:1.8;">' +
+    lines.map(l => {
+      const t = l.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const ind = l.indent ? `<span style="white-space:pre;">${l.indent}</span>` : '';
+      return l.bold
+        ? `<p style="margin:0;">${ind}<strong>${t}</strong></p>`
+        : `<p style="margin:0;">${ind}${t}</p>`;
+    }).join('') + '</div>';
+  try {
+    const item = new ClipboardItem({
+      'text/html' : new Blob([html],  { type:'text/html'  }),
+      'text/plain': new Blob([plain], { type:'text/plain' })
+    });
+    navigator.clipboard.write([item]).then(()=>mmToast('已复制到剪贴板（含格式）')).catch(()=>_copyPlainFallback(plain));
+  } catch(e) { _copyPlainFallback(plain); }
+}
+function _copyPlainFallback(text) {
+  navigator.clipboard.writeText(text).then(()=>mmToast('已复制到剪贴板')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);mmToast('已复制到剪贴板');
+  });
+}
+
+// ── C: 复制函数（5 个粒度）──
+function cCopySpec(spId) {
+  const sp=cFindSpec(spId);if(!sp)return;
+  const L=[];
+  L.push({text:`【交互稿】${stripEmoji(sp.specName)}`,bold:true});
+  L.push({text:''});
+  if(sp.elements&&sp.elements.length){
+    L.push({text:'元素状态与基础逻辑：',bold:true});
+    sp.elements.forEach(el=>{
+      L.push({text:`【${stripEmoji(el.area)}】`,bold:true,indent:'  '});
+      (el.items||[]).forEach(it=>L.push({text:`• ${stripEmoji(it.label)}：${stripEmoji(it.desc)}`,indent:'    '}));
+    });
+    L.push({text:''});
+  }
+  if(sp.flows&&sp.flows.length){
+    L.push({text:'核心场景交互流：',bold:true});
+    sp.flows.forEach((fl,idx,arr)=>{
+      L.push({text:`操作：${stripEmoji(fl.action)}`,bold:true,indent:'  '});
+      if(fl.trigger)L.push({text:safePrefix('触发条件：',fl.trigger),indent:'    '});
+      if(fl.validation)L.push({text:safePrefix('系统校验：',fl.validation),indent:'    '});
+      (fl.steps||[]).forEach((st,i)=>L.push({text:`${i+1}. ${stripEmoji(st.desc)}`,indent:'    '}));
+      (fl.exceptions||[]).forEach(ex=>{
+        L.push({text:`异常分支：${stripEmoji(ex.scenario)}`,bold:true,indent:'    '});
+        L.push({text:safePrefix('触发条件：',ex.trigger),indent:'      '});
+        L.push({text:safePrefix('防错设计：',ex.defense),indent:'      '});
+        L.push({text:safePrefix('流程反馈：',ex.recovery),indent:'      '});
+      });
+      if(idx<arr.length-1)L.push({text:''});
+    });
+    L.push({text:''});
+  }
+  if(sp.boundaries&&sp.boundaries.length){
+    L.push({text:'系统级边界：',bold:true});
+    sp.boundaries.forEach(b=>{
+      L.push({text:`【${stripEmoji(b.scenario)}】`,bold:true,indent:'  '});
+      L.push({text:safePrefix('触发条件：',b.trigger),indent:'    '});
+      L.push({text:safePrefix('防错设计：',b.defense),indent:'    '});
+      L.push({text:safePrefix('流程反馈：',b.recovery),indent:'    '});
+    });
+    L.push({text:''});
+  }
+  copyRichText(L);
+}
+
+function cCopyElements(spId) {
+  const sp=cFindSpec(spId);if(!sp)return;
+  const L=[];
+  L.push({text:'元素状态与基础逻辑',bold:true});
+  L.push({text:''});
+  (sp.elements||[]).forEach(el=>{
+    L.push({text:`【${stripEmoji(el.area)}】`,bold:true,indent:'  '});
+    (el.items||[]).forEach(it=>L.push({text:`• ${stripEmoji(it.label)}：${stripEmoji(it.desc)}`,indent:'    '}));
+  });
+  copyRichText(L);
+}
+
+function cCopyFlows(spId) {
+  const sp=cFindSpec(spId);if(!sp)return;
+  const L=[];
+  L.push({text:'核心场景交互流',bold:true});
+  L.push({text:''});
+  const flows=sp.flows||[];
+  flows.forEach((fl,idx)=>{
+    L.push({text:`操作：${stripEmoji(fl.action)}`,bold:true,indent:'  '});
+    if(fl.trigger)L.push({text:safePrefix('触发条件：',fl.trigger),indent:'    '});
+    if(fl.validation)L.push({text:safePrefix('系统校验：',fl.validation),indent:'    '});
+    (fl.steps||[]).forEach((st,i)=>L.push({text:`${i+1}. ${stripEmoji(st.desc)}`,indent:'    '}));
+    (fl.exceptions||[]).forEach(ex=>{
+      L.push({text:`异常分支：${stripEmoji(ex.scenario)}`,bold:true,indent:'    '});
+      L.push({text:safePrefix('触发条件：',ex.trigger),indent:'      '});
+      L.push({text:safePrefix('防错设计：',ex.defense),indent:'      '});
+      L.push({text:safePrefix('流程反馈：',ex.recovery),indent:'      '});
+    });
+    if(idx<flows.length-1)L.push({text:''});
+  });
+  copyRichText(L);
+}
+
+function cCopyFlow(spId, flId) {
+  const sp=cFindSpec(spId);if(!sp)return;
+  const fl=(sp.flows||[]).find(x=>x.id===flId);if(!fl)return;
+  const L=[];
+  L.push({text:`操作：${stripEmoji(fl.action)}`,bold:true});
+  if(fl.trigger)L.push({text:safePrefix('触发条件：',fl.trigger)});
+  if(fl.validation)L.push({text:safePrefix('系统校验：',fl.validation)});
+  L.push({text:''});
+  L.push({text:'UI 反馈：',bold:true});
+  (fl.steps||[]).forEach((st,i)=>L.push({text:`${i+1}. ${stripEmoji(st.desc)}`,indent:'  '}));
+  if((fl.exceptions||[]).length>0){
+    L.push({text:''});
+    (fl.exceptions||[]).forEach(ex=>{
+      L.push({text:`异常分支：${stripEmoji(ex.scenario)}`,bold:true});
+      L.push({text:safePrefix('触发条件：',ex.trigger),indent:'  '});
+      L.push({text:safePrefix('防错设计：',ex.defense),indent:'  '});
+      L.push({text:safePrefix('流程反馈：',ex.recovery),indent:'  '});
+    });
+  }
+  copyRichText(L);
+}
+
+function cCopyBoundaries(spId) {
+  const sp=cFindSpec(spId);if(!sp)return;
+  const L=[];
+  L.push({text:'系统级边界',bold:true});
+  L.push({text:''});
+  (sp.boundaries||[]).forEach(b=>{
+    L.push({text:`【${stripEmoji(b.scenario)}】`,bold:true,indent:'  '});
+    L.push({text:safePrefix('触发条件：',b.trigger),indent:'    '});
+    L.push({text:safePrefix('防错设计：',b.defense),indent:'    '});
+    L.push({text:safePrefix('流程反馈：',b.recovery),indent:'    '});
+  });
+  copyRichText(L);
 }
 
 // ── C: Find ──
@@ -3148,6 +1830,7 @@ function renderCFlow(spId, fl) {
     <button class="c-block-del" onclick="cDelFlow('${spId}','${fl.id}')" title="删除操作">${C_ICONS.x}</button>
     <div class="c-flow-title">
       <span>操作：<span class="c-editable" contenteditable="true" data-f="c-faction" data-i="${fl.id}" data-sp="${spId}" data-placeholder="操作名称">${esc(fl.action)}</span></span>
+      <button class="c-sec-copy" onclick="cCopyFlow('${spId}','${fl.id}')" title="复制该操作内容" style="margin-left:auto;">${C_ICONS.copy}</button>
     </div>
     <div class="c-flow-meta">触发条件：<span class="c-editable" contenteditable="true" data-f="c-ftrig" data-i="${fl.id}" data-sp="${spId}" data-placeholder="触发条件">${esc(fl.trigger)}</span></div>
     <div class="c-flow-meta c-flow-meta-row">系统校验：<span class="c-editable" contenteditable="true" data-f="c-fvalid" data-i="${fl.id}" data-sp="${spId}" data-placeholder="校验条件">${esc(fl.validation)}</span></div>
@@ -3285,7 +1968,17 @@ function renderCSidePanel() {
         cSaveAndRender();
       });
     } else {
-      // 普通模式：点击切换选中
+      // 普通模式：点击切换选中 + 复制按钮
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'c-spec-copy-btn';
+      copyBtn.title = '复制交互稿内容';
+      copyBtn.innerHTML = C_ICONS.copy;
+      copyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        cCopySpec(spec.id);
+      });
+      item.appendChild(copyBtn);
+
       item.addEventListener('click', () => {
         state.activeSpecId = spec.id;
         cSaveAndRender();
@@ -3295,8 +1988,10 @@ function renderCSidePanel() {
     el.appendChild(item);
   }
 
-  // ── 底部按钮区 ──
-  renderCSpecFooter();
+  // ── 底部按钮区（空数据时隐藏）──
+  if (storeC.length > 0) {
+    renderCSpecFooter();
+  }
 }
 
 // S4.6: Mode C Spec 编辑模式底部按钮
@@ -3355,9 +2050,14 @@ function renderCDetail() {
   // 无数据：空状态
   if (!storeC || storeC.length === 0) {
     el.innerHTML = `<div class="mm-c-detail-empty">
-      <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect x="8" y="6" width="32" height="36" rx="4" stroke="#333" stroke-width="1.5"/><path d="M16 16h16M16 22h12M16 28h8" stroke="#333" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <p>暂无交互稿数据</p>
-      <button class="c-add-spec" onclick="cAddSpecFromDetail()" style="max-width:240px;margin:0 auto">＋ 新增交互说明</button>
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect x="6" y="10" width="36" height="28" rx="3" stroke="#666" stroke-width="1.5"/>
+        <path d="M6 18h36" stroke="#666" stroke-width="1.5"/>
+        <path d="M20 28l4 4 4-4" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M24 22v10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <p>请导入 JSON 或拖入文件</p>
+      <p style="font-size:12px;color:#666666;margin-top:-4px;">点击顶栏「导入」按钮粘贴 JSON，或直接将 .json / .uxshare 文件拖入窗口</p>
     </div>`;
     return;
   }
@@ -3377,6 +2077,7 @@ function renderCDetail() {
         <span>🧩 元素状态与基础逻辑</span>
         <span class="c-sec-actions">
           <button class="c-add-inline" onclick="cAddArea('${spec.id}')">＋区域</button>
+          <button class="c-sec-copy" onclick="cCopyElements('${spec.id}')" title="复制元素内容">${C_ICONS.copy}</button>
           <button class="c-sec-toggle" onclick="cToggleSec('${spec.id}','_colElem')">${spec._colElem ? C_ICONS.chevronRight : C_ICONS.chevronDown}</button>
         </span>
       </div>
@@ -3390,6 +2091,7 @@ function renderCDetail() {
         <span>🖱️ 核心场景交互流</span>
         <span class="c-sec-actions">
           <button class="c-add-inline" onclick="cAddFlow('${spec.id}')">＋操作</button>
+          <button class="c-sec-copy" onclick="cCopyFlows('${spec.id}')" title="复制交互流内容">${C_ICONS.copy}</button>
           <button class="c-sec-toggle" onclick="cToggleSec('${spec.id}','_colFlow')">${spec._colFlow ? C_ICONS.chevronRight : C_ICONS.chevronDown}</button>
         </span>
       </div>
@@ -3403,6 +2105,7 @@ function renderCDetail() {
         <span>🚧 系统级边界</span>
         <span class="c-sec-actions">
           <button class="c-add-inline" onclick="cAddBoundary('${spec.id}')">＋边界</button>
+          <button class="c-sec-copy" onclick="cCopyBoundaries('${spec.id}')" title="复制边界内容">${C_ICONS.copy}</button>
           <button class="c-sec-toggle" onclick="cToggleSec('${spec.id}','_colBound')">${spec._colBound ? C_ICONS.chevronRight : C_ICONS.chevronDown}</button>
         </span>
       </div>
@@ -3895,7 +2598,7 @@ function openShareManager() {
   const m = state.viewMode;
   const ov = document.createElement('div');
   ov.className = 'mm-modal-overlay';
-  ov.innerHTML = `<div class="mm-modal" style="max-width:420px;">
+  ov.innerHTML = `<div class="mm-modal">
     <h2>📤 导出分享文件</h2>
     <p>下载 .uxshare 文件发送给对方，对方拖入编辑器即可加载</p>
     <div class="share-modal-row">
@@ -4002,7 +2705,7 @@ function loadShareFileContent(content, fileName) {
 function clearStorage() {
   const ov = document.createElement('div');
   ov.className = 'mm-modal-overlay';
-  ov.innerHTML = `<div class="mm-modal" style="max-width:420px;">
+  ov.innerHTML = `<div class="mm-modal">
     <h2>🗑️ 清除数据</h2>
     <p>此操作将清除<strong class="hl-text">三个模式（A/B/C）下的所有数据</strong>，且<strong class="hl-red">无法撤销</strong>。<br>确定要继续吗？</p>
     <div class="mm-modal-actions">
@@ -4019,10 +2722,22 @@ function doClearStorage() {
   location.reload();
 }
 
-// ── 全局拖拽导入 .uxshare / .json 文件 ──
+// ── 全局拖拽导入 .uxshare / .json 文件（含拖入悬浮视觉反馈）──
 document.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); });
+document.addEventListener('dragenter', e => {
+  const ov = document.getElementById('mmEmptyOverlay');
+  if (ov && ov.style.display !== 'none') ov.classList.add('drag-over');
+});
+document.addEventListener('dragleave', e => {
+  if (!e.relatedTarget || e.relatedTarget === document.documentElement) {
+    const ov = document.getElementById('mmEmptyOverlay');
+    if (ov) ov.classList.remove('drag-over');
+  }
+});
 document.addEventListener('drop', e => {
   e.preventDefault(); e.stopPropagation();
+  const ov = document.getElementById('mmEmptyOverlay');
+  if (ov) ov.classList.remove('drag-over');
   const file = e.dataTransfer?.files?.[0];
   if (file && (file.name.endsWith('.uxshare') || file.name.endsWith('.json'))) {
     handleShareFileSelect(file);
@@ -4031,174 +2746,9 @@ document.addEventListener('drop', e => {
 
 // ── 全局点击关闭下拉菜单 ──
 document.addEventListener('click', () => { closeExportDropdown(); });
-
 const mockData = {
-  groupingType: "modular",
-  activeStageId: "s001",
-  stages: [
-    {
-      id: "s001", label: "摇篮装备",
-      modules: [
-        {
-          id: "m001", name: "状态总览", layer: "L1",
-          features: [
-            { id: "f_ce_1", text: "玩家模型展示", layer: "L1", priority: "Low", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-            { id: "f_ce_2", text: "综合评分显示", layer: "L1", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null }
-          ]
-        },
-        {
-          id: "m002", name: "装备详情", layer: "L1",
-          features: [
-            { id: "f_ce_3", text: "基础数据展示", layer: "L1", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-            {
-              id: "f_ce_4", text: "技能组展示", layer: "L1", priority: "High", role: "trigger", isUXSupplement: false, supplementReason: "", l3Reason: "",
-              childModule: {
-                id: "cm_skill_tips", name: "技能Tips", targetLayer: "L1.5",
-                features: [
-                  { id: "f_st_1", text: "技能详细描述", layer: "L1.5", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-                  { id: "f_st_2", text: "基本属性加成", layer: "L1.5", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-                  {
-                    id: "f_st_3", text: "技能升级入口", layer: "L1.5", priority: "High", role: "trigger", isUXSupplement: false, supplementReason: "", l3Reason: "",
-                    childModule: {
-                      id: "cm_skill_upgrade", name: "技能升级", targetLayer: "L2",
-                      features: [
-                        { id: "f_su_1", text: "消耗材料展示", layer: "L2", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-                        { id: "f_su_2", text: "升级确认按钮", layer: "L2", priority: "High", role: "confirm", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null }
-                      ]
-                    }
-                  }
-                ]
-              }
-            },
-            { id: "f_ce_5", text: "递质属性展示", layer: "L1", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-            {
-              id: "f_ce_6", text: "摇篮管理入口", layer: "L1", priority: "High", role: "trigger", isUXSupplement: false, supplementReason: "", l3Reason: "",
-              childModule: {
-                id: "cm_cradle_manage", name: "摇篮管理", targetLayer: "L2",
-                features: [
-                  { id: "f_cm_1", text: "摇篮列表展示", layer: "L2", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-                  { id: "f_cm_2", text: "排序筛选功能", layer: "L2", priority: "Mid", role: "navigate", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-                  {
-                    id: "f_cm_3", text: "摇篮详情预览", layer: "L2", priority: "High", role: "trigger", isUXSupplement: false, supplementReason: "", l3Reason: "",
-                    childModule: {
-                      id: "cm_cradle_preview", name: "摇篮预览", targetLayer: "L2.5",
-                      features: [
-                        { id: "f_cp_1", text: "3D模型旋转", layer: "L2.5", priority: "Low", role: "configure", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-                        { id: "f_cp_2", text: "装备替换按钮", layer: "L2.5", priority: "High", role: "confirm", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null }
-                      ]
-                    }
-                  }
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      id: "s002", label: "神经框架管理",
-      modules: [
-        {
-          id: "m003", name: "库存总览", layer: "L1",
-          features: [
-            { id: "f_nf_1", text: "框架列表展示", layer: "L1", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-            { id: "f_nf_2", text: "排序筛选功能", layer: "L1", priority: "Mid", role: "navigate", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-            {
-              id: "f_nf_3", text: "框架详情Tips", layer: "L1", priority: "High", role: "trigger", isUXSupplement: false, supplementReason: "", l3Reason: "",
-              childModule: {
-                id: "cm_nf_tips", name: "框架Tips", targetLayer: "L1.5",
-                features: [
-                  { id: "f_nft_1", text: "预期效果展示", layer: "L1.5", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-                  { id: "f_nft_2", text: "获取途径跳转", layer: "L1.5", priority: "Mid", role: "navigate", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null }
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      id: "s003", label: "递质管理",
-      modules: [
-        {
-          id: "m004", name: "库存总览", layer: "L1",
-          features: [
-            { id: "f_tm_1", text: "递质列表展示", layer: "L1", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-            { id: "f_tm_2", text: "排序筛选功能", layer: "L1", priority: "Mid", role: "navigate", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-            {
-              id: "f_tm_3", text: "递质合成入口", layer: "L1", priority: "High", role: "trigger", isUXSupplement: false, supplementReason: "", l3Reason: "",
-              childModule: {
-                id: "cm_tm_synth", name: "递质合成", targetLayer: "L2",
-                features: [
-                  { id: "f_ts_1", text: "合成材料选择", layer: "L2", priority: "High", role: "configure", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-                  { id: "f_ts_2", text: "消耗预览展示", layer: "L2", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-                  { id: "f_ts_3", text: "合成确认按钮", layer: "L2", priority: "High", role: "confirm", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null }
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      id: "s004", label: "摇篮工艺台",
-      modules: [
-        {
-          id: "m005", name: "摇篮打造", layer: "L1",
-          features: [
-            { id: "f_cb_1", text: "异常物列表", layer: "L1", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-            { id: "f_cb_2", text: "异常物筛选", layer: "L1", priority: "Mid", role: "navigate", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-            { id: "f_cb_3", text: "打造消耗展示", layer: "L1", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-            { id: "f_cb_4", text: "开始打造按钮", layer: "L1", priority: "High", role: "confirm", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-            { id: "f_cb_5", text: "成品展示界面", layer: "L1", priority: "High", role: "feedback", isUXSupplement: true, supplementReason: "打造完成后的结果反馈", l3Reason: "", childModule: null }
-          ]
-        },
-        {
-          id: "m006", name: "神经构建", layer: "L1",
-          features: [
-            { id: "f_nc_1", text: "摇篮选择列表", layer: "L1", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-            { id: "f_nc_2", text: "框架选择列表", layer: "L1", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-            { id: "f_nc_3", text: "构建预期展示", layer: "L1", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-            {
-              id: "f_nc_4", text: "开始构建按钮", layer: "L1", priority: "High", role: "confirm", isUXSupplement: false, supplementReason: "", l3Reason: "",
-              childModule: {
-                id: "cm_nc_result", name: "构建结果选择", targetLayer: "L1.5",
-                features: [
-                  { id: "f_ncr_1", text: "新旧词条对比", layer: "L1.5", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-                  { id: "f_ncr_2", text: "保留新词条", layer: "L1.5", priority: "High", role: "confirm", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-                  { id: "f_ncr_3", text: "保留旧词条", layer: "L1.5", priority: "High", role: "confirm", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-                  { id: "f_ncr_4", text: "改造覆盖提示", layer: "L1.5", priority: "High", role: "guard", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null }
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      id: "s005", label: "物品背包",
-      modules: [
-        {
-          id: "m007", name: "未鉴定递质", layer: "L1",
-          features: [
-            { id: "f_bp_1", text: "未鉴定递质列表", layer: "L1", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-            {
-              id: "f_bp_2", text: "递质详情查看", layer: "L1", priority: "High", role: "trigger", isUXSupplement: false, supplementReason: "", l3Reason: "",
-              childModule: {
-                id: "cm_bp_tips", name: "未鉴定Tips", targetLayer: "L1.5",
-                features: [
-                  { id: "f_bpt_1", text: "能力预期展示", layer: "L1.5", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-                  { id: "f_bpt_2", text: "鉴定消耗展示", layer: "L1.5", priority: "High", role: "display", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-                  { id: "f_bpt_3", text: "单次鉴定按钮", layer: "L1.5", priority: "High", role: "confirm", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null },
-                  { id: "f_bpt_4", text: "批量鉴定按钮", layer: "L1.5", priority: "Mid", role: "confirm", isUXSupplement: false, supplementReason: "", l3Reason: "", childModule: null }
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    }
-  ]
+  activeStageId: null,
+  stages: []
 };
 
 // ============================================================
@@ -4209,7 +2759,7 @@ const state = {
   activeStageId: mockData.activeStageId,
   selectedLoopId: null,   // Mode B 当前选中的 Loop ID
   selectedBLineIds: new Set(),  // Mode B 当前选中的连线 ID（支持 Shift 多选）
-  expandedStageIds: new Set([mockData.activeStageId]), // Mode B 左侧面板展开状态
+  expandedStageIds: new Set(mockData.activeStageId ? [mockData.activeStageId] : []), // Mode B 左侧面板展开状态
   selectedLineIds: new Map(),   // Mode A 当前选中的连线（lineId → featId，支持 Shift 多选）
   openPriorityFeatId: null,
   stageEditMode: false,        // B2-2: Stage TAB 编辑模式
@@ -5542,6 +4092,12 @@ function renderStageTabs() {
 
   const el = document.getElementById('stageList');
   el.innerHTML = '';
+
+  // 空数据时隐藏阶段管理按钮
+  if (mockData.stages.length === 0 && mainBtnReset) {
+    mainBtnReset.style.display = 'none';
+  }
+
   for (const stage of mockData.stages) {
     const item = document.createElement('div');
     item.className = 'mm-stage-item' + (stage.id === state.activeStageId ? ' active' : '');
@@ -5610,13 +4166,16 @@ function renderStageTabs() {
     el.appendChild(item);
   }
 
-  // ── 底部按钮区 ──
-  renderStageFooter();
+  // ── 底部按钮区（空数据时隐藏）──
+  if (mockData.stages.length > 0) {
+    renderStageFooter();
+  }
 }
 
 // B2-2/B2-6: 编辑模式入口 & 退出
 function renderStageFooter() {
   const mainBtn = document.getElementById('stageAddBtn');
+  mainBtn.style.display = '';  // 确保可见（从空状态恢复时）
   if (state.stageEditMode) {
     // 编辑模式：主按钮变为「完成编辑」（与「阶段管理」同位置）
     mainBtn.className = 'mm-stage-done';
@@ -5710,6 +4269,13 @@ function initTabEvents() {
 function render() {
   renderHeaderTabs();
 
+  // ── 空数据检测：空状态遮罩层显隐 ──
+  const hasDataAB = mockData.stages.length > 0;
+  const hasDataC  = storeC && storeC.length > 0;
+  const isEmptyCurrentMode = (state.viewMode === 'C') ? !hasDataC : !hasDataAB;
+  const emptyOverlay = document.getElementById('mmEmptyOverlay');
+  if (emptyOverlay) emptyOverlay.style.display = isEmptyCurrentMode ? '' : 'none';
+
   // S4.6: Mode C 通过 .mode-c class 控制画布/详情面板显隐
   //        画布不用 display:none，改用 CSS visibility:hidden + height:0 保留宽度占位
   const mmCDetail = document.getElementById('mm-c-detail');
@@ -5767,8 +4333,10 @@ function renderBSidePanel() {
   const addNewBtn = document.getElementById('stageAddNewBtn');
   if (addNewBtn) addNewBtn.remove();
 
-  // ── Loop 管理按钮区（Stage 列表上方，与 Mode A stageAddBtn 同交互逻辑）──
-  renderBLoopManagementBtn(el);
+  // ── 空数据时不渲染 Loop 管理按钮 ──
+  if (mockData.stages.length > 0) {
+    renderBLoopManagementBtn(el);
+  }
 
   for (const stage of mockData.stages) {
     const isActiveStage = stage.id === state.activeStageId;
@@ -6006,14 +4574,22 @@ function countActionSteps(steps) {
 // 违反此约束将导致 Mode A/B 画布功能不同步。
 function renderCanvas() {
   const stage = getActiveStage();
-  const cardMap = buildCardMap(stage);
-  const colCards = buildColCards(stage);
   const canvasInner = document.getElementById('canvasInner');
   const svg = document.getElementById('mm-lines');
   const svgB = document.getElementById('mm-b-lines');
   canvasInner.innerHTML = '';
   canvasInner.appendChild(svg);
   if (svgB) canvasInner.appendChild(svgB);
+
+  // ── 无数据时直接返回（空状态由 #mmEmptyOverlay 遮罩层处理）──
+  if (!stage) {
+    svg.innerHTML = '';
+    if (svgB) svgB.innerHTML = '';
+    return;
+  }
+
+  const cardMap = buildCardMap(stage);
+  const colCards = buildColCards(stage);
 
   for (const layer of LAYERS) {
     const col = renderLayerCol(layer, colCards[layer], cardMap, stage);

@@ -12,7 +12,7 @@
 
 | 文件 | 说明 | 备注 |
 |------|------|------|
-| `ux-design-editor.html` | **主文件** — 单文件 Mindmap 编辑器（8200+ 行） | HTML + CSS + Vanilla JS，无第三方依赖 |
+| `ux-design-editor.html` | **主文件** — 单文件 Mindmap 编辑器（6800+ 行） | HTML + CSS + Vanilla JS，无第三方依赖 |
 | `index.html` | 入口页 — 重定向到 `ux-design-editor.html` | GitHub Pages 入口 |
 | `PROJECT_RESUME.md` | 项目续接文档（本文件） | 新对话必读 |
 | `.codemaker/skills/ux-design.md` | Skill 指令文件 — AI 四模式执行规范 | 随版本同步维护 |
@@ -319,6 +319,14 @@ AI 输出 → stripJsonComments → JSON.parse → normalizeBData → migrateSte
 - 旧版 LocalStorage 数据自动清除迁移
 - 文档合并：`MINDMAP_EDITOR_DEV_PLAN.md` → `PROJECT_RESUME.md`
 
+### v5.0.1（2026-04-23）— 交互稿复制 + 空状态引导
+
+- Mode C 交互稿完整复制系统（5 个粒度的富文本复制：整卡/元素/全部交互流/单条操作/边界）
+- 富文本剪贴板：同时写入 `text/html` + `text/plain`，支持粘贴到飞书/Notion 等编辑器保留格式
+- 初始空状态：三模式初始数据清空，首次打开或清除数据后显示 ICON + 引导文案「请导入 JSON 或拖入文件」
+- 全局拖拽导入增加悬浮视觉反馈（drag-over 时空状态图标/文字变为主题色高亮）
+- 移除 1600+ 行内置示例数据（mockData / mockDataB / mockDataC），文件从 8200+ 行精简至 6800+ 行
+
 ### v5.0.0 开发会话记录
 
 #### 会话一（2026-04-22）：2.0 接管 + 七项核心功能
@@ -365,6 +373,7 @@ AI 输出 → stripJsonComments → JSON.parse → normalizeBData → migrateSte
 
 ## 六、待办事项
 
+- [x] Mode C 交互稿复制系统（5 个粒度）— v5.0.1 完成
 - [ ] 合并导入弹窗「B 模式冲突」二级选项联动隐藏待验证
 - [ ] Mode C 分段输出规范待补充
 - [ ] `role` 字段可视化（画布展示）未实现，如有需求可后续添加
