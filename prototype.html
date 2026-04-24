@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>超频翻牌大厅原型</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { 
+            darkMode: 'class', 
+            theme: { 
+                extend: {
+                    keyframes: {
+                        scan: {
+                            '0%, 100%': { transform: 'translateY(-10px)', opacity: '0' },
+                            '50%': { transform: 'translateY(180px)', opacity: '1' }
+                        }
+                    },
+                    animation: {
+                        'scan': 'scan 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                    }
+                } 
+            } 
+        }
+    </script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { background-color: #0b1120; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(148, 163, 184, 0.1); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .perspective-1000 { perspective: 1000px; }
+        .preserve-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-slide-in { animation: slideIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body>
+    <div id="root" class="min-h-screen w-screen relative"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const Button = ({ children, onClick, variant = 'primary', disabled = false, className = '' }) => {
+            const base = "px-4 py-2 rounded font-bold transition-all duration-200 active:scale-95 flex justify-center items-center gap-2";
+            const variants = {
+                primary: disabled ? "bg-slate-700 text-slate-400" : "bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]",
+                outline: disabled ? "border-slate-700 text-slate-500" : "border border-blue-500 text-blue-400 hover:bg-blue-900/30",
+                ghost: "hover:bg-slate-800 text-slate-300 hover:text-white"
+            };
+            return (
+                <button onClick={onClick} disabled={disabled} className={`${base} ${variants[variant]} ${className}`}>
+                    {children}
+                </button>
+            );
+        };
+
+        const Modal = ({ isOpen, onClose, title, children, hideClose }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80">
+                    <div className="glass-panel w-full max-w-lg rounded-xl shadow-2xl animate-slide-in flex flex-col max-h-[90vh]">
+                        <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50 shrink-0">
+                            <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300">{title}</h3>
+                            {!hideClose && <button onClick={onClose} className="text-slate-400 hover:text-white pb-1 text-2xl">×</button>}
+                        </div>
+                        <div className="p-5 overflow-y-auto no-scrollbar">{children}</div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Toast = ({ msg, type, onHide }) => {
+            useEffect(() => { const t = setTimeout(onHide, 2500); return () => clearTimeout(t); }, [onHide]);
+            return (
+                <div className={`fixed top-20 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full border shadow-2xl backdrop-blur-sm z-[100] animate-slide-in flex gap-3 
+                    ${type === 'error' ? 'bg-red-900/90 border-red-500 text-red-200' : 'bg-slate-800/90 border-blue-500 text-white'}`}>
+                    <span>{type === 'error' ? '⚠️' : '💡'}</span> {msg}
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [layer, setLayer] = useState(null);
+            const [toast, setToast] = useState(null);
+            const showToast = (msg, type='info') => setToast({ msg, type, id: Date.now() });
+
+            // 补发逻辑
+            const [hasChecked, setHasChecked] = useState(false);
+            const [reissueClaimed, setReissueClaimed] = useState(false);
+            useEffect(() => {
+                if (!hasChecked) { setTimeout(() => { setHasChecked(true); setLayer('reissue'); }, 300); }
+            }, [hasChecked]);
+
+            // 核心状态
+            const [chances, setChances] = useState(3);
+            const [progress, setProgress] = useState(350);
+            const [score, setScore] = useState(40);
+            const [boxClaimed, setBoxClaimed] = useState(false);
+            const [resets, setResets] = useState(2);
+            
+            const generateCards = (pid) => Array.from({length: 8}, (_, i) => ({
+                id: `${pid}_${i}`,
+                flipped: false,
+                overclocked: Math.random() > 0.8,
+                reward: Math.random() > 0.5 ? '100金币' : '5材料'
+            }));
+            const [poolId, setPoolId] = useState(1);
+            const [cards, setCards] = useState(generateCards(1));
+            const [isFlipping, setIsFlipping] = useState(false);
+
+            const remaining = cards.filter(c => !c.flipped).length;
+            const isCleared = remaining === 0;
+
+            useEffect(() => {
+                if (isCleared && layer === null && !isFlipping) {
+                    setTimeout(() => setLayer('clear'), 800);
+                }
+            }, [isCleared, isFlipping, layer]);
+
+            const handleFlip = (id) => {
+                if (chances <= 0) {
+                    showToast('翻牌次数不足，请获取', 'error');
+                    setTimeout(() => setLayer('tasks'), 800);
+                    return;
+                }
+                if (isFlipping) return;
+
+                setIsFlipping(true);
+                setChances(c => c - 1);
+                setTimeout(() => {
+                    setCards(prev => prev.map(c => c.id === id ? { ...c, flipped: true } : c));
+                    const isOc = cards.find(c => c.id === id).overclocked;
+                    const sp = isOc ? 20 : 10;
+                    setScore(s => s + sp);
+                    setProgress(p => p + sp);
+                    setIsFlipping(false);
+                }, 500);
+            };
+
+            const doReset = () => {
+                if (resets <= 0) return showToast('重置次数耗尽', 'error');
+                setLayer(null);
+                setResets(r => r - 1);
+                setPoolId(p => p + 1);
+                setCards(generateCards(poolId + 1));
+                showToast('已重置卡池');
+            };
+
+            return (
+                <div className="flex flex-col h-screen overflow-hidden text-slate-200">
+                    <div className="absolute inset-0 bg-slate-950 -z-20"></div>
+                    
+                    {toast && <Toast msg={toast.msg} type={toast.type} onHide={() => setToast(null)} />}
+
+                    {/* M1001 顶部纯文本类TAB */}
+                    <nav className="flex justify-center px-6 pt-4 gap-12 border-b border-slate-800 bg-slate-950/80 z-20 shrink-0">
+                        {['推荐活动', '超频翻牌大厅', '日常签到', '新兵特训', '积分商城'].map((tab, i) => (
+                            <div key={i} className={`pb-3 text-base font-bold cursor-pointer transition-colors border-b-[3px] px-2 hover:-translate-y-0.5
+                                ${i === 1 ? 'border-blue-500 text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
+                                {tab}
+                            </div>
+                        ))}
+                    </nav>
+
+                    <main className="flex-1 flex flex-col lg:flex-row p-4 pt-6 gap-6 overflow-y-auto no-scrollbar z-10">
+                        {/* 极左侧：活动切换 TAB，预留4个长方形卡片 */}
+                        <div className="hidden lg:flex w-48 flex-col gap-3 shrink-0">
+                            {[1, 2, 3, 4].map(idx => (
+                                <div key={idx} className={`w-full py-4 rounded-lg border-2 shadow-sm flex items-center justify-center cursor-pointer transition-all
+                                    ${idx === 1 
+                                        ? 'bg-gradient-to-r from-blue-900/50 to-slate-800 border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.2)] text-blue-100' 
+                                        : 'bg-slate-900/60 border-slate-800 text-slate-500 hover:border-slate-600 hover:bg-slate-800 hover:text-slate-300'}`}>
+                                    <span className="font-bold tracking-wide">{idx === 1 ? '超频协议' : `备用计划 ${idx}`}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* 右侧：完整的活动主体区域 (包含顶部标题 + 下方的卡池区和总进度区) */}
+                        <div className="flex-1 flex flex-col gap-4 min-w-0">
+                            
+                            {/* M1001 头：玩法标题调整至此，横跨整个右侧活动区域 */}
+                            <header className="p-4 border border-slate-700/50 rounded-lg flex justify-between items-center bg-slate-900/80 shadow-lg shrink-0">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-2xl drop-shadow-[0_0_8px_rgba(56,189,248,0.8)]">⚡</span>
+                                    <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300 tracking-wider">超频翻牌大厅</h1>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setLayer('rules')} className="w-10 h-10 rounded-full bg-slate-800/80 border border-slate-700/80 hover:bg-slate-700 hover:scale-105 active:scale-95 transition-all text-xl shadow flex items-center justify-center" title="规则说明">ℹ️</button>
+                                    <button onClick={() => setLayer('history')} className="w-10 h-10 rounded-full bg-slate-800/80 border border-slate-700/80 hover:bg-slate-700 hover:scale-105 active:scale-95 transition-all text-xl shadow flex items-center justify-center" title="翻牌记录">🕒</button>
+                                </div>
+                            </header>
+
+                            {/* 下半部分：左右分栏封装 (左:今日/卡池 | 右:总进度) */}
+                            <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
+                                
+                                {/* 中间主力交互区：整体封装为一个完整的联合面板 (M1003, M1004, M1005) */}
+                                <div className="glass-panel flex-1 rounded-xl flex flex-col relative overflow-hidden border border-cyan-900/30 min-w-0">
+                                    
+                                    {/* 今日概览数据：现在移动到最顶层 */}
+                                    <div className="px-6 py-4 flex justify-between items-center gap-6 bg-gradient-to-r from-blue-900/10 via-slate-900/40 to-transparent border-b border-transparent shrink-0">
+                                        
+                                        {/* 整合左侧控制区与总进度区使其无缝连续 */}
+                                        <div className="flex items-center gap-8 flex-1 mr-6">
+                                            
+                                            {/* 次数控制（更紧凑地和右侧衔接，消除割裂感） */}
+                                            <div className="flex items-center gap-4 bg-slate-900/60 pl-4 pr-2 py-2 rounded-2xl border border-slate-700/30 shrink-0">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-bold text-slate-500 tracking-wider mb-1">
+                                                        今日翻牌频次
+                                                    </span>
+                                                    <span className="text-4xl font-black font-mono leading-none text-transparent bg-clip-text bg-gradient-to-b from-white via-cyan-100 to-blue-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.4)]">
+                                                        {chances}
+                                                    </span>
+                                                </div>
+                                                <button onClick={() => setLayer('tasks')} className="w-10 h-10 rounded-xl bg-blue-900/20 border border-blue-500/30 flex items-center justify-center text-xl text-blue-400 font-bold hover:bg-blue-600/80 hover:text-white hover:border-blue-400 transition-all hover:scale-105 active:scale-95 shadow-[0_0_10px_rgba(59,130,246,0.1)]" title="获取翻牌次数">
+                                                    ➕
+                                                </button>
+                                            </div>
+
+                                            {/* 今日结算进度 */}
+                                            <div className="flex-1 flex flex-col justify-center">
+                                                <div className="flex items-center gap-1.5 mb-1.5">
+                                                    <span className="text-[11px] font-bold text-slate-400 tracking-wider">今日可提取能量预期：<span className="text-blue-300 font-mono shadow-sm ml-1 text-sm">{score}<span className="text-slate-500">/100</span></span></span>
+                                                    <button onClick={() => setLayer('targetBox')} className="text-[14px] opacity-70 hover:opacity-100 transition-all cursor-pointer focus:outline-none drop-shadow-sm hover:drop-shadow-[0_0_5px_rgba(217,70,239,0.5)] hover:scale-110" title="档位宝箱图鉴">
+                                                        🎁
+                                                    </button>
+                                                </div>
+                                                
+                                                <div className="relative w-full h-2.5 bg-slate-950/80 rounded-full mt-1 mb-1 shadow-inner overflow-hidden border border-slate-800">
+                                                    <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-cyan-300 transition-all duration-500 shadow-[0_0_10px_cyan]" style={{width: `${Math.min(score, 100)}%`}}></div>
+                                                    {/* 档位标记点 */}
+                                                    <div className="absolute top-0 bottom-0 left-[30%] w-px bg-slate-900/80 pointer-events-none"></div>
+                                                    <div className="absolute top-0 bottom-0 left-[60%] w-px bg-slate-900/80 pointer-events-none"></div>
+                                                </div>
+                                                
+                                                <div className="flex justify-between items-center px-1">
+                                                    <div className="text-[9px] text-slate-500 font-mono w-[30%] text-center">30PT</div>
+                                                    <div className="text-[9px] text-slate-500 font-mono w-[30%] text-center">60PT</div>
+                                                    <div className="text-[9px] text-slate-500 font-mono w-[40%] text-right pr-2">100PT</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 极简化结算入口，利用半透明背景和投影强化可点击区域 */}
+                                        <div className="flex items-center justify-center bg-slate-900/40 rounded-2xl border border-slate-700/30 p-2 min-w-[80px]">
+                                            <div className="relative group cursor-pointer" onClick={() => {
+                                                if(boxClaimed) return;
+                                                if(score < 30) return showToast('未达到最低结算刻度 30PT', 'error');
+                                                setBoxClaimed(true); showToast('今日收益已结算至系统！', 'success');
+                                            }}>
+                                                <div className={`text-5xl transition-all duration-300 relative z-10 ${boxClaimed ? 'opacity-30 grayscale' : score >= 30 ? 'group-hover:scale-110 group-active:scale-95 animate-bounce drop-shadow-[0_0_15px_rgba(217,70,239,0.8)]' : 'opacity-30 grayscale'}`} title={boxClaimed ? '已完成提取' : score >= 30 ? '点击提取当前阶段宝箱' : '解析能量不足 30PT'}>
+                                                    {score >= 100 ? '🎁' : score >= 60 ? '🛍️' : '🎒'}
+                                                </div>
+                                                {/* 底部光晕底座承托 */}
+                                                {!boxClaimed && score >= 30 && (
+                                                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-10 h-3 bg-fuchsia-500/40 rounded-[100%] blur-[4px] group-hover:bg-fuchsia-400/60 transition-colors"></div>
+                                                )}
+                                                {boxClaimed && (
+                                                    <div className="absolute -bottom-1 -right-2 bg-slate-800 border border-slate-600 text-slate-400 text-[8px] font-bold px-1 rounded z-20 shadow">
+                                                        ✓
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* 联合面板次头部信息：包含了牌库推算和重置控制，现在放在进度条下方 */}
+                                    <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50 flex-shrink-0">
+                                        <div className="flex gap-4 items-center pl-2">
+                                            <div className="flex items-center gap-2"><span className="text-xs text-slate-400">剩余卡牌</span><span className="font-mono text-xl text-cyan-400 font-bold">{remaining}<span className="text-slate-500 text-sm">/8</span></span></div>
+                                            <div className="h-6 w-px bg-slate-700"></div>
+                                            <button onClick={() => setLayer('deck')} className="group flex items-center justify-center text-slate-400 hover:text-blue-400 transition-all text-sm gap-1 pl-1" title="牌库占比与概率信息">
+                                                <span className="text-lg">📊</span>
+                                                <span className="text-xs font-bold border-b border-dashed border-transparent group-hover:border-blue-400">牌库信息</span>
+                                            </button>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-4 pr-2">
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-[10px] text-slate-500 leading-none">重置凭证</span>
+                                                <span className="text-sm font-mono font-bold text-slate-300">{resets} 次</span>
+                                            </div>
+                                            <button onClick={doReset} className="w-10 h-10 rounded-full bg-slate-800/80 border border-blue-500/50 flex items-center justify-center text-xl hover:bg-slate-700 hover:scale-110 active:-rotate-90 transition-all duration-300 shadow-[0_0_10px_rgba(59,130,246,0.3)] relative group cursor-pointer" title="放弃并刷新卡池">
+                                                🔄
+                                                <span className="absolute -bottom-7 right-0 text-[10px] text-blue-300 opacity-0 group-hover:opacity-100 whitespace-nowrap transition-opacity pointer-events-none z-50">刷新卡池</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* 绝对核心区：卡牌阵列与流光背景。没有任何框线分割，直接承接上半部分概念 */}
+                                    <div className="flex-1 p-6 flex flex-col justify-center items-center relative min-h-[380px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/10 via-transparent to-transparent">
+                                        
+                                        {/* 巨大的背景水印，增加连贯沉浸感 */}
+                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8rem] md:text-[12rem] lg:text-[14rem] leading-none select-none opacity-5 font-black text-blue-500 tracking-tighter blur-sm z-0 pointer-events-none whitespace-nowrap">
+                                            DECODE
+                                        </div>
+
+                                        {isCleared ? (
+                                            <div className="text-center animate-slide-in relative z-10 p-8 rounded-2xl bg-slate-900/50 backdrop-blur border border-fuchsia-500/30 shadow-[0_0_50px_rgba(217,70,239,0.1)]">
+                                                <span className="text-6xl mb-4 block animate-bounce">🎉</span>
+                                                <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-purple-400 mb-2">满池物质解析完毕</h3>
+                                                <p className="text-slate-400 text-sm mb-6">当前网格矩阵已完全解锁，请收起汇报。</p>
+                                                <Button onClick={() => setLayer('clear')} className="px-8 shadow-fuchsia-500/20 active:scale-95 text-sm bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 border-none">查看收益并重启晶格</Button>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-4 gap-3 lg:gap-6 w-full max-w-[600px] relative z-10 pt-2 pb-4">
+                                                {cards.map(c => (
+                                                    <div key={c.id} onClick={() => handleFlip(c.id)} className={`perspective-1000 aspect-[2/3] cursor-pointer group ${isFlipping && !c.flipped ? 'opacity-50 pointer-events-none' : ''}`}>
+                                                        <div className={`relative w-full h-full preserve-3d transition-all duration-700 rounded-xl
+                                                            ${c.flipped ? 'rotate-y-180' : 'hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(56,189,248,0.2)] active:scale-95'}`}>
+                                                            
+                                                            {/* 背面：未翻开状态 (科幻机甲风) */}
+                                                            <div className="absolute inset-0 backface-hidden rounded-xl border border-slate-600/50 flex flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-slate-800 focus:outline-none to-slate-950 shadow-inner group-hover:border-cyan-500/50 transition-colors">
+                                                                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTAgMGgyMHYyMEgwem0xMCAxMGwxMC0xMGgtMjB6IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDMpIi8+PC9zdmc+')] opacity-50"></div>
+                                                                <div className="absolute top-0 left-0 w-full h-0.5 bg-cyan-400 shadow-[0_0_15px_cyan] animate-scan opacity-70"></div>
+                                                                <div className="w-14 h-14 rounded-full border border-slate-500/50 flex items-center justify-center bg-slate-900/80 shadow-[0_0_20px_rgba(0,0,0,0.8)] z-10 group-hover:border-cyan-500/50 group-hover:shadow-[0_0_15px_rgba(34,211,238,0.4)] transition-all">
+                                                                     <span className="text-2xl opacity-50 drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] group-hover:animate-pulse">🔒</span>
+                                                                </div>
+                                                                <div className="absolute top-3 left-3 text-[8px] text-cyan-500/50 font-mono hidden sm:block">SECTOR</div>
+                                                                <div className="absolute top-3 right-3 text-[8px] text-cyan-500/50 font-mono hidden sm:block">{c.id.slice(-1)}</div>
+                                                                <div className="absolute bottom-4 text-[10px] text-cyan-400/60 font-mono tracking-[0.3em] font-bold border-t border-cyan-900/50 pt-1 w-[80%] text-center group-hover:text-cyan-300 transition-colors">ENCRYPTED</div>
+                                                            </div>
+
+                                                            {/* 正面：翻开状态 (礼包揭晓风) */}
+                                                            <div className={`absolute inset-0 backface-hidden rotate-y-180 rounded-xl border-2 flex flex-col items-center justify-center overflow-hidden transition-all duration-300
+                                                                ${c.overclocked 
+                                                                    ? 'bg-gradient-to-b from-fuchsia-900/80 to-purple-950 border-fuchsia-500 shadow-[0_0_30px_rgba(217,70,239,0.5)]' 
+                                                                    : 'bg-gradient-to-b from-cyan-900/60 to-blue-950 border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]'}`}>
+                                                                
+                                                                {/* 背景发光层：限制在卡片内部 */}
+                                                                <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full blur-2xl 
+                                                                    ${c.overclocked ? 'bg-fuchsia-500/60' : 'bg-cyan-400/40'}`}></div>
+
+                                                                {/* 礼包 ICON */}
+                                                                <div className={`text-4xl lg:text-5xl drop-shadow-2xl z-10 
+                                                                    ${c.overclocked ? 'drop-shadow-[0_0_15px_rgba(217,70,239,0.8)]' : 'drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]'}`}>
+                                                                    {c.overclocked ? '🎁' : '🎒'}
+                                                                </div>
+                                                                
+                                                                {/* 入库标签 */}
+                                                                <div className={`absolute bottom-2 px-2 py-0.5 rounded bg-slate-950/80 backdrop-blur border text-[8px] sm:text-[9px] font-bold z-10 whitespace-nowrap
+                                                                    ${c.overclocked ? 'border-fuchsia-500/50 text-fuchsia-300' : 'border-cyan-500/50 text-cyan-300'}`}>
+                                                                    已解密入库
+                                                                </div>
+
+                                                                {/* 超频专属角标：缩小并保证不超界 */}
+                                                                {c.overclocked && (
+                                                                    <div className="absolute top-1 right-1 flex items-center gap-1 z-20">
+                                                                        <span className="relative flex h-1.5 w-1.5 shrink-0 hidden sm:flex">
+                                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-fuchsia-400 opacity-75"></span>
+                                                                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-fuchsia-500"></span>
+                                                                        </span>
+                                                                        <span className="bg-fuchsia-600 text-white text-[8px] px-1 py-0.5 rounded italic font-black tracking-tighter shadow-[0_0_10px_fuchsia] border border-fuchsia-300/50 scale-75 sm:scale-100 origin-top-right">
+                                                                            OVERCLOCK
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* 右侧：总进度模块占比缩小20% (大约 w-64) M1002 */}
+                                <div className="w-full lg:w-64 flex flex-col shrink-0">
+                                    <div className="glass-panel p-5 rounded-lg flex-1 h-full flex flex-col border-t-4 border-fuchsia-500">
+                                        <h3 className="text-sm font-bold text-slate-400 mb-4 flex items-center gap-2">
+                                            <span className="bg-fuchsia-500/20 text-fuchsia-400 px-2 py-0.5 rounded">Total</span>
+                                            总阶段进度
+                                        </h3>
+                                        
+                                        <div className="flex items-end gap-1 mb-6 justify-center mt-2 border-b border-slate-700/50 pb-4">
+                                            <span className="text-4xl font-mono text-fuchsia-400 font-black tracking-wider">{progress}</span>
+                                            <span className="text-[10px] text-slate-500 mb-1.5 uppercase font-bold">/1000PT</span>
+                                        </div>
+                                        
+                                        <div className="relative pt-2 flex-1 flex flex-col items-center min-h-[300px]">
+                                            {/* 修复：进度条和阶段奖励更紧密，改为从下往上增长 */}
+                                            <div className="absolute top-4 bottom-4 left-1/2 -translate-x-1/2 w-1.5 bg-slate-800 rounded-full shadow-inner"></div>
+                                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-1.5 bg-gradient-to-t from-fuchsia-500 to-purple-600 rounded-full transition-all duration-700"
+                                                style={{ height: `${(progress / 1000) * 100}%`, maxHeight: 'calc(100% - 8px)' }}
+                                            ></div>
+
+                                            {/* 垂直节点渲染：为了匹配从下往上的进度，节点倒序排列 */}
+                                            <div className="flex flex-col-reverse justify-between h-full w-full relative z-10 py-1">
+                                                {[
+                                                    { t: 200, icon: '📦' },
+                                                    { t: 500, icon: '🎁' },
+                                                    { t: 1000, icon: '🏆' }
+                                                ].map(({t, icon}, i) => {
+                                                    const reached = progress >= t;
+                                                    return (
+                                                        <div key={i} className="relative flex flex-col items-center group cursor-pointer w-full text-center" onClick={() => {
+                                                            if(reached) showToast('已提取阶段补给！', 'success');
+                                                            else showToast(`距离解锁还需要 ${t - progress} 积分`, 'error')
+                                                        }}>
+                                                            {/* 节点气泡：放在左侧 */}
+                                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-10 text-right pr-2">
+                                                                <span className="text-xs font-mono text-slate-400">{t}</span>
+                                                            </div>
+                                                            
+                                                            {/* ICON */}
+                                                            <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center border-2 text-xl z-10 transition-all duration-300 relative bg-slate-900 
+                                                            ${reached ? 'border-fuchsia-400 shadow-[0_0_15px_rgba(217,70,239,0.8)] scale-110 animate-pulse-slow' : 'border-slate-700 opacity-50 grayscale'}`}>
+                                                                {icon}
+                                                            </div>
+                                                            
+                                                            {/* 状态文字：放在右侧 */}
+                                                            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-14 text-left pl-2">
+                                                                <span className={`text-[10px] font-bold ${reached ? 'text-fuchsia-300' : 'text-slate-500'}`}>
+                                                                    {reached ? '可提取' : '加密中'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* Popup Modals */}
+                    <Modal isOpen={layer === 'reissue'} title="⚠️ 历史补偿明细" hideClose>
+                        <p className="text-sm text-slate-300 mb-4 bg-slate-800 p-3 rounded">检测到跨日未结算的物资，系统执行防阻断自动补发。</p>
+                        <div className="bg-slate-900 border border-slate-700 p-3 rounded mb-6">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <span className="font-bold text-white block">跨日补发奖励</span>
+                                    <span className="text-xs text-slate-400">来源：昨日未主动结算</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-cyan-300">
+                                    <span className="text-3xl">🎁</span>
+                                    <span className="text-xs font-mono">x3</span>
+                                </div>
+                            </div>
+                            <div className="mt-3 rounded border border-slate-800 bg-slate-950/60 p-2 text-xs text-slate-400">奖励条目完整展示后才可领取，已到账后会切换为完成态。</div>
+                        </div>
+                        <Button className="w-full" onClick={() => { setReissueClaimed(true); setLayer(null); showToast('补发奖励已入账', 'success'); }}>领取补发奖励</Button>
+                    </Modal>
+
+                    <Modal isOpen={layer === 'tasks'} onClose={() => setLayer(null)} title="协议频次补给">
+                         <div className="bg-blue-900/30 border border-blue-800 p-3 rounded flex justify-between mb-4">
+                             <span className="text-sm">剩余可用翻牌数</span><span className="font-bold font-mono text-xl">{chances}</span>
+                         </div>
+                         <div className="space-y-3">
+                             <div className="bg-slate-800 p-3 flex justify-between items-center rounded border border-slate-700">
+                                 <div>
+                                     <div className="text-sm font-bold mb-1">完成模拟战局</div>
+                                     <div className="text-xs text-slate-400 flex items-center gap-2"><span className="text-lg">🎁</span><span>领取后补充翻牌次数 x2</span></div>
+                                 </div>
+                                 <Button className="text-xs px-3" onClick={() => { setChances(c=>c+2); showToast('任务奖励已回写大厅次数','success'); setLayer(null); }}>领取</Button>
+                             </div>
+                             <div className="bg-slate-800 p-3 flex justify-between items-center rounded border border-slate-700 opacity-60">
+                                 <div>
+                                     <div className="text-sm font-bold mb-1">登录终端 3日</div>
+                                     <div className="text-xs text-slate-400">进度 2/3 · 前往指定玩法后完成</div>
+                                 </div>
+                                 <Button variant="outline" className="text-xs px-3">前往</Button>
+                             </div>
+                         </div>
+                    </Modal>
+
+                    <Modal isOpen={layer === 'clear'} hideClose title="满池收益汇总">
+                        <div className="text-center mb-6 py-4 bg-slate-900 border border-slate-700 rounded">
+                            <span className="text-5xl block mb-2">🏆</span>
+                            <p className="text-sm text-slate-400">本轮卡池 8 张已全部析出</p>
+                            <div className="mt-4 flex justify-center gap-4">
+                                <div><span className="text-xs block">普通物资</span><span className="font-mono text-xl text-blue-400">{cards.filter(c=>!c.overclocked).length}</span></div>
+                                <div><span className="text-xs block text-fuchsia-400">超频核心</span><span className="font-mono text-xl text-fuchsia-400">{cards.filter(c=>c.overclocked).length}</span></div>
+                            </div>
+                        </div>
+                        {resets > 0 ? (
+                            <Button className="w-full py-3" onClick={doReset}>消耗凭证刷新重开(余 {resets})</Button>
+                        ) : (
+                            <div className="text-center">
+                                <Button className="w-full py-3 opacity-50" disabled>重开机制锁定: 0次</Button>
+                                <p className="text-xs text-red-500 mt-2 bg-red-900/20 p-2 rounded">防盲操提示：当前无可用刷新次数，请通过活动赚取。</p>
+                                <Button variant="ghost" className="mt-3 w-full" onClick={() => setLayer(null)}>返回废墟</Button>
+                            </div>
+                        )}
+                    </Modal>
+
+                    <Modal isOpen={layer === 'history'} onClose={() => setLayer(null)} title="翻牌记录面板">
+                        <div className="flex gap-2 mb-4 flex-wrap">
+                            <span className="bg-blue-900 text-blue-300 px-3 py-1 rounded text-xs">今日</span>
+                            <span className="bg-slate-800 text-slate-300 px-3 py-1 rounded text-xs">近3日</span>
+                            <span className="bg-slate-800 text-slate-300 px-3 py-1 rounded text-xs">活动期</span>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="bg-slate-800 p-3 rounded text-sm text-slate-300 flex items-center justify-between"><span>14:02 · 超频翻牌命中稀有结果</span><span className="text-2xl">🎁</span></div>
+                            <div className="bg-slate-800 p-3 rounded text-sm text-slate-300 flex items-center justify-between"><span>14:00 · 普通翻牌完成结算</span><span className="text-2xl">🎁</span></div>
+                            <div className="bg-slate-900/70 border border-dashed border-slate-700 p-4 rounded text-xs text-slate-400">切换筛选后列表局部刷新；若无数据，则这里展示默认插画与空状态说明。</div>
+                        </div>
+                    </Modal>
+
+                    <Modal isOpen={layer === 'deck'} onClose={() => setLayer(null)} title="牌库详情">
+                        <div className="bg-slate-900 border border-slate-700 p-4 rounded mb-2">
+                            <div className="font-bold text-blue-400 mb-1">【普通礼包池】70%</div>
+                            <div className="text-xs text-slate-400 flex items-center gap-2"><span className="text-2xl">🎁</span><span>常规奖励以礼包图标统一承接。</span></div>
+                        </div>
+                        <div className="bg-slate-900 border border-fuchsia-900 p-4 rounded">
+                            <div className="font-bold text-fuchsia-400 mb-1 flex items-center gap-1">⚡【超频礼包池】30%</div>
+                            <div className="text-xs text-slate-400 flex items-center gap-2"><span className="text-2xl">🎁</span><span>稀有结果附带超频特效反馈。</span></div>
+                        </div>
+                    </Modal>
+                    
+                    <Modal isOpen={layer === 'targetBox'} onClose={() => setLayer(null)} title="今日进度宝箱档位">
+                        <div className="space-y-3 mt-4">
+                            {[
+                                { name: 'I型礼包', score: 30 },
+                                { name: 'II型礼包', score: 60 },
+                                { name: 'III型礼包', score: 100 },
+                            ].map(tier => (
+                                <div key={tier.name} className="flex justify-between items-center bg-slate-900 border border-slate-700 p-3 rounded">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-3xl">🎁</span>
+                                        <div>
+                                            <h5 className="font-bold text-blue-300">{tier.name}</h5>
+                                            <p className="text-xs text-slate-500 mt-1">今日进度达到后可直接结算领取</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-xs font-bold px-2 py-1 bg-slate-800 rounded text-slate-400">所需进度 {tier.score}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </Modal>
+
+                    <Modal isOpen={layer === 'rules'} onClose={() => setLayer(null)} title="活动规章">
+                        <div className="text-sm text-slate-300 space-y-2">
+                            <p>1. 交互进程每次消耗 <b className="text-blue-300">1次翻牌动作权限</b>。</p>
+                            <p>2. 解析卡位有概率触发<b className="text-fuchsia-300">超频特效</b>，产出跃级奖励。</p>
+                            <p>3. 跨日未结算的宝箱，将于您下一次校验时触发<b className="text-yellow-300">自动补发强截断弹层</b>，确保您的收益永不流失。</p>
+                        </div>
+                    </Modal>
+                </div>
+            );
+        };
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

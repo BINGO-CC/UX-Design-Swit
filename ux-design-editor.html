@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mindmap 编辑器原型</title>
+<!-- Umami Analytics -->
+<script defer src="https://cloud.umami.is/script.js" data-website-id="e7e9b40f-fa7b-4b33-bccc-7f431290ba25"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -2336,6 +2338,7 @@ function isStoreEmptyMM() {
 }
 
 function applyImportedData(data) {
+  if (typeof umami !== 'undefined') umami.track('import-data');
   const hasContent = {
     A: data.A && Array.isArray(data.A.stages) && data.A.stages.length > 0,
     B: data.B && typeof data.B === 'object' && Object.keys(data.B).length > 0,
@@ -2628,6 +2631,7 @@ function onShareModeToggle() {
 
 function doExportShareFile() {
   if (isStoreEmptyMM()) { mmToast('当前无数据'); return; }
+  if (typeof umami !== 'undefined') umami.track('export-share');
   const nameInput = document.getElementById('shareFileName');
   const selectedOnly = document.getElementById('shareSelectedOnly')?.checked;
   let fileName = (nameInput?.value || '').trim().replace(/[<>:"/\\|?*]/g, '');
@@ -2718,6 +2722,7 @@ function clearStorage() {
 }
 
 function doClearStorage() {
+  if (typeof umami !== 'undefined') umami.track('clear-data');
   localStorage.removeItem(MM_STORAGE_KEY);
   location.reload();
 }
@@ -4250,6 +4255,7 @@ function initTabEvents() {
     btn.addEventListener('click', () => {
       if (btn.dataset.mode === state.viewMode) return; // 点当前 tab 无需重渲染
       state.viewMode = btn.dataset.mode;
+      if (typeof umami !== 'undefined') umami.track('tab-switch', { mode: btn.dataset.mode });
       closeStepsPanel();
       state.selectedLoopId = null;
       state.loopEditMode = false;
