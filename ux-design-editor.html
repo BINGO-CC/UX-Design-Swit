@@ -2347,6 +2347,24 @@ function applyImportedData(data) {
     C: data.C && Array.isArray(data.C) && data.C.length > 0
   };
   if (hasContent.A) {
+    // ── 自动补全 module.targetLayer ──────────────────────────────
+    // Skill 输出的 JSON 中 targetLayer 写在 feature.layer 上，module 本身无此字段。
+    // buildCardMap / buildColCards 依赖 module.targetLayer 决定卡片落列，
+    // 缺失时所有卡片均回退到 L1。此处在写入前统一补全。
+    function inferModuleLayer(mod) {
+      if (mod.targetLayer) return; // 已有则跳过
+      // 取第一个 feature 的 layer；若还没有则 L1
+      const firstFeatLayer = (mod.features && mod.features[0] && mod.features[0].layer) || 'L1';
+      mod.targetLayer = firstFeatLayer;
+      // 递归处理 childModule
+      for (const feat of (mod.features || [])) {
+        if (feat.childModule) inferModuleLayer(feat.childModule);
+      }
+    }
+    for (const stage of (data.A.stages || [])) {
+      for (const mod of (stage.modules || [])) inferModuleLayer(mod);
+    }
+    // ────────────────────────────────────────────────────────────
     mockData.stages = data.A.stages;
     mockData.activeStageId = data.A.activeStageId || (data.A.stages[0] && data.A.stages[0].id) || null;
     state.activeStageId = mockData.activeStageId;
@@ -5241,6 +5259,9 @@ function applyAutoLayout(stage, cardMap, colCards) {
   // ── 一次性统一读取所有列和卡片的 X 坐标（批量 getBoundingClientRect，避免散落在 renderLines 里多次触发 reflow）
   const canvasInner = document.getElementById('canvasInner');
   const canvasRect  = canvasInner ? canvasInner.getBoundingClientRect() : { left: 0, top: 0 };
+  // ⚠️ 不需要加 scrollLeft/scrollTop：
+  //    element.getBoundingClientRect() - canvasInner.getBoundingClientRect() 已是 canvas 内容坐标，
+  //    滚动量在两者之间完全抵消。若再加 scroll 值会产生双重偏移，导致切 Tab / resize 后连线位移。
   const scrollLeft  = canvasInner ? canvasInner.closest('.mm-canvas').scrollLeft : 0;
   const scrollTop   = canvasInner ? canvasInner.closest('.mm-canvas').scrollTop  : 0;
 
@@ -5257,17 +5278,17 @@ function applyAutoLayout(stage, cardMap, colCards) {
     let cardLeft, cardRight;
     if (sampleCard) {
       const cr = sampleCard.getBoundingClientRect();
-      cardLeft  = cr.left  - canvasRect.left + scrollLeft;
-      cardRight = cr.right - canvasRect.left + scrollLeft;
+      cardLeft  = cr.left  - canvasRect.left;
+      cardRight = cr.right - canvasRect.left;
     } else {
       // 无卡片时用 colCards 区域推算（60px padding 两侧）
-      cardLeft  = colCardsRect.left  - canvasRect.left + scrollLeft + 60;
-      cardRight = colCardsRect.right - canvasRect.left + scrollLeft - 60;
+      cardLeft  = colCardsRect.left  - canvasRect.left + 60;
+      cardRight = colCardsRect.right - canvasRect.left - 60;
     }
     colXInfo[layer] = {
-      colLeft:   colRect.left      - canvasRect.left + scrollLeft,
-      colRight:  colRect.right     - canvasRect.left + scrollLeft,
-      colCardsTop: colCardsRect.top - canvasRect.top  + scrollTop,
+      colLeft:     colRect.left      - canvasRect.left,
+      colRight:    colRect.right     - canvasRect.left,
+      colCardsTop: colCardsRect.top  - canvasRect.top,   // 正确的 canvas 内容 Y，无需加 scrollTop
       cardLeft,
       cardRight,
     };
@@ -6693,10 +6714,11 @@ window.addEventListener('resize', () => {
   _resizeTimer = setTimeout(_doRelayout, 100);
 });
 
-// 切回 Tab 时补一次重绘（浏览器缩放后切回页面确保坐标正确）
+// 切回 Tab 时补一次重绘（浏览器恢复后需给 150ms 让布局完全稳定，再读坐标）
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
-    _doRelayout();
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(_doRelayout, 150);
   }
 });
 
