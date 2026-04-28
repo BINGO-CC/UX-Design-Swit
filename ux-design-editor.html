@@ -2892,6 +2892,10 @@ function createBLineElements(svg, d, fromPt, toPt, opts) {
 
   const baseClass = sameLayer ? 'line-same-layer' : '';
 
+  // 每条连线用 <g> 包裹，hover/选中时 svg.appendChild(group) 移至末尾 = 渲染最上层
+  const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  group.dataset.lineGroupId = lineId;
+
   // 透明宽击打区
   const hitPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   hitPath.setAttribute('d', d);
@@ -2899,33 +2903,32 @@ function createBLineElements(svg, d, fromPt, toPt, opts) {
   hitPath.dataset.lineId = lineId;
   hitPath.addEventListener('mouseenter', () => {
     svg.classList.add('elevated');
-    svg.querySelectorAll(`[data-line-id="${lineId}"].line-path`).forEach(p => {
+    svg.appendChild(group); // 移到末尾确保渲染在所有其他连线之上
+    group.querySelectorAll('.line-path').forEach(p => {
       p.classList.add('hovered');
       if (!p.classList.contains('selected')) p.setAttribute('marker-end', showArrow ? 'url(#b-arrowhead-hover)' : '');
     });
-    svg.querySelectorAll(`[data-line-id="${lineId}"].line-dot`).forEach(p => p.classList.add('hovered'));
-    svg.querySelectorAll(`[data-line-id="${lineId}"].line-diamond`).forEach(p => p.classList.add('hovered'));
+    group.querySelectorAll('.line-dot').forEach(p => p.classList.add('hovered'));
+    group.querySelectorAll('.line-diamond').forEach(p => p.classList.add('hovered'));
   });
   hitPath.addEventListener('mouseleave', () => {
     if (!state.selectedBLineIds.size) svg.classList.remove('elevated');
-    svg.querySelectorAll(`[data-line-id="${lineId}"].line-path`).forEach(p => {
+    group.querySelectorAll('.line-path').forEach(p => {
       p.classList.remove('hovered');
       if (!p.classList.contains('selected')) p.setAttribute('marker-end', showArrow ? 'url(#b-arrowhead)' : '');
     });
-    svg.querySelectorAll(`[data-line-id="${lineId}"].line-dot`).forEach(p => p.classList.remove('hovered'));
-    svg.querySelectorAll(`[data-line-id="${lineId}"].line-diamond`).forEach(p => p.classList.remove('hovered'));
+    group.querySelectorAll('.line-dot').forEach(p => p.classList.remove('hovered'));
+    group.querySelectorAll('.line-diamond').forEach(p => p.classList.remove('hovered'));
   });
   hitPath.addEventListener('click', (e) => {
     e.stopPropagation();
     if (e.shiftKey) {
-      // Shift 多选：已选则取消，未选则加入
       if (state.selectedBLineIds.has(lineId)) {
         state.selectedBLineIds.delete(lineId);
       } else {
         state.selectedBLineIds.add(lineId);
       }
     } else {
-      // 普通点击：仅选中当前线（已选则取消）
       if (state.selectedBLineIds.size === 1 && state.selectedBLineIds.has(lineId)) {
         state.selectedBLineIds.clear();
       } else {
@@ -2934,7 +2937,6 @@ function createBLineElements(svg, d, fromPt, toPt, opts) {
     }
     renderBLines(state.selectedLoopId);
   });
-  svg.appendChild(hitPath);
 
   // 视觉路径
   const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -2944,7 +2946,6 @@ function createBLineElements(svg, d, fromPt, toPt, opts) {
     path.setAttribute('marker-end', isSelected ? 'url(#b-arrowhead-white)' : 'url(#b-arrowhead)');
   }
   path.dataset.lineId = lineId;
-  svg.appendChild(path);
 
   // 起点圆点
   if (showDot) {
@@ -2954,10 +2955,10 @@ function createBLineElements(svg, d, fromPt, toPt, opts) {
     dot.setAttribute('r', '3');
     dot.setAttribute('class', ('line-dot ' + baseClass + (isSelected ? ' selected' : '')).trim());
     dot.dataset.lineId = lineId;
-    svg.appendChild(dot);
+    group.appendChild(dot);
   }
 
-  // 菱形把手：折点 X（由调用方传入 diamondX）+ Y 取起终点中点，与 Mode A 完全一致
+  // 菱形把手
   const midX = (diamondX !== undefined) ? diamondX : (fromPt.x + toPt.x) / 2;
   const midY = (fromPt.y + toPt.y) / 2;
   const ds = 5;
@@ -2965,7 +2966,16 @@ function createBLineElements(svg, d, fromPt, toPt, opts) {
   diamond.setAttribute('points', `${midX},${midY-ds} ${midX+ds},${midY} ${midX},${midY+ds} ${midX-ds},${midY}`);
   diamond.setAttribute('class', ('line-diamond ' + baseClass + (isSelected ? ' selected' : '')).trim());
   diamond.dataset.lineId = lineId;
-  svg.appendChild(diamond);
+
+  // 装入 group，选中线置顶追加，非选中线插到最前
+  group.appendChild(hitPath);
+  group.appendChild(path);
+  group.appendChild(diamond);
+  if (isSelected) {
+    svg.appendChild(group);
+  } else {
+    svg.insertBefore(group, svg.firstChild);
+  }
 }
 
 // ── Step B helper 1：获取 feature 在画布中的连接坐标（完全复用 _layoutResult，零 DOM bounding rect）──
@@ -5495,6 +5505,10 @@ function renderLines(stage, cardMap) {
 
       const lineId = `line-${feat.id}-${childId}`;
 
+      // 每条连线用 <g> 包裹，hover/选中时 svg.appendChild(group) 移至末尾 = 渲染最上层
+      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      group.dataset.lineGroupId = lineId;
+
       // 透明宽击打区（pointer-events 便于点击细线）
       const hitPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       hitPath.setAttribute('d', d);
@@ -5522,24 +5536,25 @@ function renderLines(stage, cardMap) {
         }
         requestAnimationFrame(() => renderLines(stage, cardMap));
       });
-      // B2-10: 连线 hover 高亮 + 层级提升
+      // B2-10: 连线 hover 高亮 + 层级提升（将 group 移至 SVG 末尾 = 画家模型最顶层）
       hitPath.addEventListener('mouseenter', () => {
         svg.classList.add('elevated');
-        svg.querySelectorAll(`.line-path[data-line-id="${lineId}"]`).forEach(p => {
+        svg.appendChild(group); // 移到末尾确保渲染在所有其他连线之上
+        group.querySelectorAll(`.line-path`).forEach(p => {
           p.classList.add('hovered');
           if (!p.classList.contains('selected')) p.setAttribute('marker-end', 'url(#arrowhead-hover)');
         });
-        svg.querySelectorAll(`.line-dot[data-line-id="${lineId}"]`).forEach(d => d.classList.add('hovered'));
-        svg.querySelectorAll(`.line-diamond[data-line-id="${lineId}"]`).forEach(d => d.classList.add('hovered'));
+        group.querySelectorAll(`.line-dot`).forEach(d => d.classList.add('hovered'));
+        group.querySelectorAll(`.line-diamond`).forEach(d => d.classList.add('hovered'));
       });
       hitPath.addEventListener('mouseleave', () => {
         if (!state.selectedLineIds.size) svg.classList.remove('elevated');
-        svg.querySelectorAll('.line-path.hovered').forEach(p => {
+        group.querySelectorAll('.line-path.hovered').forEach(p => {
           p.classList.remove('hovered');
           if (!p.classList.contains('selected')) p.setAttribute('marker-end', 'url(#arrowhead)');
         });
-        svg.querySelectorAll('.line-dot.hovered').forEach(d => d.classList.remove('hovered'));
-        svg.querySelectorAll('.line-diamond.hovered').forEach(d => d.classList.remove('hovered'));
+        group.querySelectorAll('.line-dot.hovered').forEach(d => d.classList.remove('hovered'));
+        group.querySelectorAll('.line-diamond.hovered').forEach(d => d.classList.remove('hovered'));
       });
 
       // 视觉线
@@ -5552,10 +5567,7 @@ function renderLines(stage, cardMap) {
       path.dataset.childId = childId;
       path.dataset.lineId  = lineId;
 
-      svg.appendChild(hitPath);
-      svg.appendChild(path);
-
-      // 起点实心圆（isSelected 已在视觉线处声明）
+      // 起点实心圆
       const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       dot.setAttribute('cx', xs);
       dot.setAttribute('cy', ys);
@@ -5564,7 +5576,6 @@ function renderLines(stage, cardMap) {
       dot.dataset.featId  = feat.id;
       dot.dataset.childId = childId;
       dot.dataset.lineId  = lineId;
-      svg.appendChild(dot);
 
       // B4-1: 菱形把手（折点中心，选中时显示）
       const midX = divX;
@@ -5574,7 +5585,18 @@ function renderLines(stage, cardMap) {
       diamond.setAttribute('points', `${midX},${midY-ds} ${midX+ds},${midY} ${midX},${midY+ds} ${midX-ds},${midY}`);
       diamond.setAttribute('class', 'line-diamond' + (isSelected ? ' selected' : ''));
       diamond.dataset.lineId = lineId;
-      svg.appendChild(diamond);
+
+      // 将所有元素装入 group，最后统一追加到 SVG
+      // 选中状态的连线最后追加，确保始终渲染在最顶层
+      group.appendChild(hitPath);
+      group.appendChild(path);
+      group.appendChild(dot);
+      group.appendChild(diamond);
+      if (isSelected) {
+        svg.appendChild(group); // 选中线置顶
+      } else {
+        svg.insertBefore(group, svg.firstChild); // 非选中线插到最前（不影响已置顶的选中线）
+      }
 
       collectLines(feat.childModule);
     }
