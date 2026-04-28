@@ -5757,31 +5757,62 @@ function syncPriorityByOrder(features) {
 function highlightLinesForModule(moduleId, on) {
   const svg = document.getElementById('mm-lines');
   if (!svg) return;
+  const overlay = svg.querySelector('.mm-a-hover-overlay');
+  const hitGroups = new Set();
   svg.querySelectorAll('.line-path, .line-dot').forEach(el => {
     if (el.dataset.childId === moduleId) {
       el.classList.toggle('hovered', on);
-      // 同步切换箭头颜色（仅 path 元素有 marker-end）
       if (el.nodeName === 'path' && !el.classList.contains('selected')) {
         el.setAttribute('marker-end', on ? 'url(#arrowhead-hover)' : 'url(#arrowhead)');
       }
+      if (on) {
+        const g = el.closest('[data-line-group-id]');
+        if (g) hitGroups.add(g);
+      }
     }
   });
+  if (overlay) {
+    overlay.innerHTML = '';
+    if (on) {
+      // 将高亮线的视觉元素克隆到覆盖层，确保渲染在所有其他线之上
+      hitGroups.forEach(g => {
+        g.querySelectorAll('.line-path, .line-dot, .line-diamond').forEach(el => {
+          overlay.appendChild(el.cloneNode(true));
+        });
+      });
+    }
+  }
 }
 
 function highlightLinesForFeature(featId, on) {
   const svg = document.getElementById('mm-lines');
   if (!svg) return;
+  const overlay = svg.querySelector('.mm-a-hover-overlay');
+  const hitGroups = new Set();
   svg.querySelectorAll('.line-path, .line-dot').forEach(el => {
     if (el.dataset.featId === featId) {
       el.classList.toggle('hovered', on);
+      if (on) {
+        const g = el.closest('[data-line-group-id]');
+        if (g) hitGroups.add(g);
+      }
     }
   });
-  // 同步切换箭头颜色
   svg.querySelectorAll('.line-path').forEach(el => {
     if (el.dataset.featId === featId && !el.classList.contains('selected')) {
       el.setAttribute('marker-end', on ? 'url(#arrowhead-hover)' : 'url(#arrowhead)');
     }
   });
+  if (overlay) {
+    overlay.innerHTML = '';
+    if (on) {
+      hitGroups.forEach(g => {
+        g.querySelectorAll('.line-path, .line-dot, .line-diamond').forEach(el => {
+          overlay.appendChild(el.cloneNode(true));
+        });
+      });
+    }
+  }
 }
 
 // ============================================================
