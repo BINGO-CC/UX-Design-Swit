@@ -140,7 +140,7 @@ const mockData = {
         {
           id: "m001",
           name: "功能模块名称",
-          layer: "L1",
+          targetLayer: "L1",    // ⚠️ 强制必填：决定卡片渲染列（L1/L1.5/L2/L2.5/L3）
           features: [
             {
               id: "f001",
