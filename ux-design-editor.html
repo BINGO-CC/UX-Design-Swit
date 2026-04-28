@@ -787,7 +787,7 @@
   /* UX Supplement icon */
   .mm-ux-icon {
     font-size: 13px; color: #FFD700;
-    flex-shrink: 0; cursor: default; position: relative;
+    flex-shrink: 0; cursor: pointer; position: relative;
   }
   .mm-ux-tooltip {
     position: absolute; right: 0; top: calc(100% + 8px);
@@ -862,7 +862,9 @@
   .mm-ux-edit-bubble textarea {
     width: 100%; height: 48px; resize: none;
     background: #2a2a2a !important; border: 1px solid #333333; border-radius: 4px;
-    color: #EBEBEB !important; font-size: 12px; padding: 6px 8px;
+    color: #EBEBEB !important; -webkit-text-fill-color: #EBEBEB !important;
+    -webkit-text-stroke: 0 !important; text-stroke: 0 !important;
+    font-size: 12px; padding: 6px 8px;
     line-height: 1.5; outline: none; font-family: inherit;
     -webkit-text-fill-color: #EBEBEB !important;
     caret-color: #EBEBEB;
@@ -5123,14 +5125,10 @@ function renderFeatureWrap(feat, parentModule) {
 
   featureEl.appendChild(textEl);
   if (layerTag) featureEl.appendChild(layerTag);
+  // 布局顺序：[文字] [layer标签] [×删除] [✦UX补充]
+  // Mode A/B 所有节点均渲染 ✦，空心态 hover 显示，实心态常驻
   featureEl.appendChild(delBtn);
-  // 架构例外：
-  //   Mode A：isUXSupplement=true 均显示 ✦
-  //   Mode B：仅幽灵补全节点（supplementSourceId 存在）显示 ✦，Mode A 增补节点不显示
-  const showUxIcon = state.viewMode === 'A'
-    ? feat.isUXSupplement
-    : !!feat.supplementSourceId;
-  if (showUxIcon) featureEl.appendChild(uxIcon);
+  featureEl.appendChild(uxIcon);
   wrap.appendChild(featureEl);
 
   // B2-13: 功能节点 hover → 高亮其发起的结构连线
