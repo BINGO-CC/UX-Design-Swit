@@ -2903,7 +2903,7 @@ function createBLineElements(svg, d, fromPt, toPt, opts) {
   hitPath.dataset.lineId = lineId;
   hitPath.addEventListener('mouseenter', () => {
     svg.classList.add('elevated');
-    svg.appendChild(group); // 移到末尾确保渲染在所有其他连线之上
+    // ⚠️ 不调用 svg.appendChild(group)：移动 DOM 节点会触发伪 mouseleave，导致 hovered 永久残留
     group.querySelectorAll('.line-path').forEach(p => {
       p.classList.add('hovered');
       if (!p.classList.contains('selected')) p.setAttribute('marker-end', showArrow ? 'url(#b-arrowhead-hover)' : '');
@@ -5536,10 +5536,11 @@ function renderLines(stage, cardMap) {
         }
         requestAnimationFrame(() => renderLines(stage, cardMap));
       });
-      // B2-10: 连线 hover 高亮 + 层级提升（将 group 移至 SVG 末尾 = 画家模型最顶层）
+      // B2-10: 连线 hover 高亮 + 层级提升
+      // ⚠️ 不在此处调用 svg.appendChild(group)：移动 DOM 节点会触发伪 mouseleave，导致 hovered 状态永久残留
+      // 层级提升由 svg.classList.add('elevated') 完成（SVG 整体 z-index: 1 → 20，高于卡片）
       hitPath.addEventListener('mouseenter', () => {
         svg.classList.add('elevated');
-        svg.appendChild(group); // 移到末尾确保渲染在所有其他连线之上
         group.querySelectorAll(`.line-path`).forEach(p => {
           p.classList.add('hovered');
           if (!p.classList.contains('selected')) p.setAttribute('marker-end', 'url(#arrowhead-hover)');
