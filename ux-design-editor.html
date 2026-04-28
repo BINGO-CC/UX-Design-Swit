@@ -2903,13 +2903,20 @@ function createBLineElements(svg, d, fromPt, toPt, opts) {
   hitPath.dataset.lineId = lineId;
   hitPath.addEventListener('mouseenter', () => {
     svg.classList.add('elevated');
-    // ⚠️ 不调用 svg.appendChild(group)：移动 DOM 节点会触发伪 mouseleave，导致 hovered 永久残留
     group.querySelectorAll('.line-path').forEach(p => {
       p.classList.add('hovered');
       if (!p.classList.contains('selected')) p.setAttribute('marker-end', showArrow ? 'url(#b-arrowhead-hover)' : '');
     });
     group.querySelectorAll('.line-dot').forEach(p => p.classList.add('hovered'));
     group.querySelectorAll('.line-diamond').forEach(p => p.classList.add('hovered'));
+    // 克隆到覆盖层，确保悬浮线渲染在最顶层
+    const overlay = svg.querySelector('.mm-b-hover-overlay');
+    if (overlay) {
+      overlay.innerHTML = '';
+      group.querySelectorAll('.line-path, .line-dot, .line-diamond').forEach(el => {
+        overlay.appendChild(el.cloneNode(true));
+      });
+    }
   });
   hitPath.addEventListener('mouseleave', () => {
     if (!state.selectedBLineIds.size) svg.classList.remove('elevated');
@@ -2919,6 +2926,9 @@ function createBLineElements(svg, d, fromPt, toPt, opts) {
     });
     group.querySelectorAll('.line-dot').forEach(p => p.classList.remove('hovered'));
     group.querySelectorAll('.line-diamond').forEach(p => p.classList.remove('hovered'));
+    // 清空覆盖层
+    const overlay = svg.querySelector('.mm-b-hover-overlay');
+    if (overlay) overlay.innerHTML = '';
   });
   hitPath.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -3281,6 +3291,11 @@ function renderBLines(loopId) {
   renderSupplementGhosts(loop);
   // ── Phase 6：Steps 详情 ICON ──
   renderBStepIcon(loop);
+
+  // 悬浮覆盖层：始终挂在 SVG 末尾，确保克隆的 hovered 视觉元素永远渲染在最顶层
+  const bHoverOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  bHoverOverlay.classList.add('mm-b-hover-overlay');
+  svg.appendChild(bHoverOverlay);
 }
 
 // ── Phase 5：renderSupplementGhosts — 幽灵补全节点写入 ──
@@ -5537,16 +5552,24 @@ function renderLines(stage, cardMap) {
         requestAnimationFrame(() => renderLines(stage, cardMap));
       });
       // B2-10: 连线 hover 高亮 + 层级提升
-      // ⚠️ 不在此处调用 svg.appendChild(group)：移动 DOM 节点会触发伪 mouseleave，导致 hovered 状态永久残留
-      // 层级提升由 svg.classList.add('elevated') 完成（SVG 整体 z-index: 1 → 20，高于卡片）
+      // 策略：将悬浮/选中线的视觉元素克隆到 SVG 末尾的 .mm-a-hover-overlay 组内
+      // 覆盖层始终最后渲染（最高层），原始元素不移动 → 不触发伪 mouseleave
       hitPath.addEventListener('mouseenter', () => {
         svg.classList.add('elevated');
-        group.querySelectorAll(`.line-path`).forEach(p => {
+        group.querySelectorAll('.line-path').forEach(p => {
           p.classList.add('hovered');
           if (!p.classList.contains('selected')) p.setAttribute('marker-end', 'url(#arrowhead-hover)');
         });
-        group.querySelectorAll(`.line-dot`).forEach(d => d.classList.add('hovered'));
-        group.querySelectorAll(`.line-diamond`).forEach(d => d.classList.add('hovered'));
+        group.querySelectorAll('.line-dot').forEach(d => d.classList.add('hovered'));
+        group.querySelectorAll('.line-diamond').forEach(d => d.classList.add('hovered'));
+        // 将当前线视觉元素克隆到覆盖层，确保渲染在所有其他线之上
+        const overlay = svg.querySelector('.mm-a-hover-overlay');
+        if (overlay) {
+          overlay.innerHTML = '';
+          group.querySelectorAll('.line-path, .line-dot, .line-diamond').forEach(el => {
+            overlay.appendChild(el.cloneNode(true));
+          });
+        }
       });
       hitPath.addEventListener('mouseleave', () => {
         if (!state.selectedLineIds.size) svg.classList.remove('elevated');
@@ -5556,6 +5579,9 @@ function renderLines(stage, cardMap) {
         });
         group.querySelectorAll('.line-dot.hovered').forEach(d => d.classList.remove('hovered'));
         group.querySelectorAll('.line-diamond.hovered').forEach(d => d.classList.remove('hovered'));
+        // 清空覆盖层
+        const overlay = svg.querySelector('.mm-a-hover-overlay');
+        if (overlay) overlay.innerHTML = '';
       });
 
       // 视觉线
@@ -5604,6 +5630,11 @@ function renderLines(stage, cardMap) {
   }
 
   for (const mod of (stage.modules || [])) collectLines(mod);
+
+  // 悬浮覆盖层：始终挂在 SVG 末尾，确保克隆的 hovered 视觉元素永远渲染在最顶层
+  const hoverOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  hoverOverlay.classList.add('mm-a-hover-overlay');
+  svg.appendChild(hoverOverlay);
 
   // B5: 如果处于创建模式，重绘预览连线（避免 svg.innerHTML='' 清除）
   if (state.connectMode && _previewCardEl) {
