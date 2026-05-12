@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  stock-mcp:
+    build: .
+    container_name: stock-mcp-server
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8000
+      - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN:-your_secure_token_here}
+      - CACHE_TTL_REALTIME=5
+      - CACHE_TTL_TECHNICAL=60
+      - CACHE_TTL_FUNDAMENTAL=14400
+      - CACHE_TTL_EVENT=3600
+      - AKSHARE_RATE_LIMIT=0.5
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/sse')"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
